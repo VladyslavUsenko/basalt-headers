@@ -18,6 +18,7 @@ compile:
     - make -j4
     - cd test/
     - ctest -V
+    - ./benchmark_camera
     - cd ../../
     - mkdir build_coverage
     - cd build_coverage

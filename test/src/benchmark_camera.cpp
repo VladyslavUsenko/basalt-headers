@@ -1,6 +1,6 @@
 #include <benchmark/benchmark.h>
 
-#include <basalt/camera/camera_utils.hpp>
+#include <basalt/camera/generic_camera.hpp>
 
 template <class CamT>
 void BM_Project(benchmark::State &state) {
@@ -121,51 +121,33 @@ void BM_UnprojectJacobians(benchmark::State &state) {
   }
 }
 
-// BENCHMARK_TEMPLATE(BM_Project, basalt::PinholeCamera<float>);
-// BENCHMARK_TEMPLATE(BM_Project, basalt::ExtendedUnifiedCamera<float>);
-// BENCHMARK_TEMPLATE(BM_Project, basalt::UnifiedCamera<float>);
-// BENCHMARK_TEMPLATE(BM_Project, basalt::EquidistantCamera<float>);
-
-// BENCHMARK_TEMPLATE(BM_ProjectJacobians, basalt::PinholeCamera<float>);
-// BENCHMARK_TEMPLATE(BM_ProjectJacobians,
-// basalt::ExtendedUnifiedCamera<float>);
-// BENCHMARK_TEMPLATE(BM_ProjectJacobians, basalt::UnifiedCamera<float>);
-// BENCHMARK_TEMPLATE(BM_ProjectJacobians, basalt::EquidistantCamera<float>);
-
-// BENCHMARK_TEMPLATE(BM_Project, basalt::PinholeCamera<double>);
+BENCHMARK_TEMPLATE(BM_Project, basalt::PinholeCamera<double>);
 BENCHMARK_TEMPLATE(BM_Project, basalt::ExtendedUnifiedCamera<double>);
-// BENCHMARK_TEMPLATE(BM_Project, basalt::UnifiedCamera<double>);
-// BENCHMARK_TEMPLATE(BM_Project, basalt::EquidistantCamera4<double>);
-// BENCHMARK_TEMPLATE(BM_Project, basalt::EquidistantCamera2<double>);
-// BENCHMARK_TEMPLATE(BM_Project, basalt::DoubleSphereCamera<double>);
-// BENCHMARK_TEMPLATE(BM_Project, basalt::FovCamera<double>);
+BENCHMARK_TEMPLATE(BM_Project, basalt::UnifiedCamera<double>);
+BENCHMARK_TEMPLATE(BM_Project, basalt::KannalaBrandtCamera4<double>);
+BENCHMARK_TEMPLATE(BM_Project, basalt::DoubleSphereCamera<double>);
+BENCHMARK_TEMPLATE(BM_Project, basalt::FovCamera<double>);
 
-// BENCHMARK_TEMPLATE(BM_ProjectJacobians, basalt::PinholeCamera<double>);
+BENCHMARK_TEMPLATE(BM_ProjectJacobians, basalt::PinholeCamera<double>);
 BENCHMARK_TEMPLATE(BM_ProjectJacobians, basalt::ExtendedUnifiedCamera<double>);
-// BENCHMARK_TEMPLATE(BM_ProjectJacobians, basalt::UnifiedCamera<double>);
-// BENCHMARK_TEMPLATE(BM_ProjectJacobians, basalt::EquidistantCamera4<double>);
-// BENCHMARK_TEMPLATE(BM_ProjectJacobians, basalt::EquidistantCamera2<double>);
-// BENCHMARK_TEMPLATE(BM_ProjectJacobians, basalt::DoubleSphereCamera<double>);
-// BENCHMARK_TEMPLATE(BM_ProjectJacobians, basalt::FovCamera<double>);
+BENCHMARK_TEMPLATE(BM_ProjectJacobians, basalt::UnifiedCamera<double>);
+BENCHMARK_TEMPLATE(BM_ProjectJacobians, basalt::KannalaBrandtCamera4<double>);
+BENCHMARK_TEMPLATE(BM_ProjectJacobians, basalt::DoubleSphereCamera<double>);
+BENCHMARK_TEMPLATE(BM_ProjectJacobians, basalt::FovCamera<double>);
 
-// BENCHMARK_TEMPLATE(BM_Unproject, basalt::PinholeCamera<double>);
+BENCHMARK_TEMPLATE(BM_Unproject, basalt::PinholeCamera<double>);
 BENCHMARK_TEMPLATE(BM_Unproject, basalt::ExtendedUnifiedCamera<double>);
-// BENCHMARK_TEMPLATE(BM_Unproject, basalt::UnifiedCamera<double>);
-// BENCHMARK_TEMPLATE(BM_Unproject, basalt::EquidistantCamera4<double>);
-// BENCHMARK_TEMPLATE(BM_Unproject, basalt::EquidistantCamera2<double>);
-// BENCHMARK_TEMPLATE(BM_Unproject, basalt::DoubleSphereCamera<double>);
-// BENCHMARK_TEMPLATE(BM_Unproject, basalt::FovCamera<double>);
+BENCHMARK_TEMPLATE(BM_Unproject, basalt::UnifiedCamera<double>);
+BENCHMARK_TEMPLATE(BM_Unproject, basalt::KannalaBrandtCamera4<double>);
+BENCHMARK_TEMPLATE(BM_Unproject, basalt::DoubleSphereCamera<double>);
+BENCHMARK_TEMPLATE(BM_Unproject, basalt::FovCamera<double>);
 
-// BENCHMARK_TEMPLATE(BM_UnprojectJacobians, basalt::PinholeCamera<double>);
+BENCHMARK_TEMPLATE(BM_UnprojectJacobians, basalt::PinholeCamera<double>);
 BENCHMARK_TEMPLATE(BM_UnprojectJacobians,
                    basalt::ExtendedUnifiedCamera<double>);
-// BENCHMARK_TEMPLATE(BM_UnprojectJacobians, basalt::UnifiedCamera<double>);
-// BENCHMARK_TEMPLATE(BM_UnprojectJacobians,
-// basalt::EquidistantCamera4<double>);
-// BENCHMARK_TEMPLATE(BM_UnprojectJacobians,
-// basalt::EquidistantCamera2<double>);
-// BENCHMARK_TEMPLATE(BM_UnprojectJacobians,
-// basalt::DoubleSphereCamera<double>);
-// BENCHMARK_TEMPLATE(BM_UnprojectJacobians, basalt::FovCamera<double>);
+BENCHMARK_TEMPLATE(BM_UnprojectJacobians, basalt::UnifiedCamera<double>);
+BENCHMARK_TEMPLATE(BM_UnprojectJacobians, basalt::KannalaBrandtCamera4<double>);
+BENCHMARK_TEMPLATE(BM_UnprojectJacobians, basalt::DoubleSphereCamera<double>);
+BENCHMARK_TEMPLATE(BM_UnprojectJacobians, basalt::FovCamera<double>);
 
 BENCHMARK_MAIN();

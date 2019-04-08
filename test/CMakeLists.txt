@@ -8,12 +8,12 @@ set(GTEST_MAIN_LIBRARY gtest_main)
 set(GTEST_LIBRARY gtest)
 
 
-#set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "disable tests")
-#set(BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "disable exceptions")
-#set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "disable gtests")
-#add_subdirectory(benchmark)
-
-#include_directories(benchmark/include)
+set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "disable tests")
+set(BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "disable exceptions")
+set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "disable gtests")
+set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "disable install")
+add_subdirectory(benchmark)
+include_directories(benchmark/include)
 
 include_directories(include)
 
@@ -33,9 +33,8 @@ add_executable(test_preintegration src/test_preintegration.cpp)
 target_link_libraries(test_preintegration ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} ${TBB_LIBRARIES})
 
 # benchmarks
-
-#add_executable(benchmark_camera src/benchmark_camera.cpp)
-#target_link_libraries(benchmark_camera benchmark opengv)
+add_executable(benchmark_camera src/benchmark_camera.cpp)
+target_link_libraries(benchmark_camera benchmark)
 
 enable_testing()
 
