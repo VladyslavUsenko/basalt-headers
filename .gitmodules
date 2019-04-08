@@ -1,0 +1,12 @@
+[submodule "thirdparty/Sophus"]
+	path = thirdparty/Sophus
+	url = https://github.com/strasdat/Sophus.git
+[submodule "thirdparty/eigen"]
+	path = thirdparty/eigen
+	url = https://github.com/eigenteam/eigen-git-mirror.git
+[submodule "thirdparty/cereal"]
+	path = thirdparty/cereal
+	url = https://github.com/USCiLab/cereal
+[submodule "test/googletest"]
+	path = test/googletest
+	url = https://github.com/google/googletest.git
