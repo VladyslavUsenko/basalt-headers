@@ -1,0 +1,31 @@
+image: vladyslavusenko/b_image:latest
+
+compile:
+  stage: build
+  before_script:
+    - mkdir -p ccache
+    - export CCACHE_BASEDIR=${PWD}
+    - export CCACHE_DIR=${PWD}/ccache
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+  cache:
+    paths:
+    - ccache/
+  script:
+    - mkdir build
+    - cd build
+    - cmake ..
+    - make -j4
+    - cd test/
+    - ctest -V
+    - cd ../../
+    - mkdir build_coverage
+    - cd build_coverage
+    - cmake .. -DCMAKE_BUILD_TYPE=Coverage
+    - make -j4
+    - cd test
+    - ctest -V
+    - cd ..
+    - lcov --directory . --capture --output-file coverage.info
+    - lcov --remove coverage.info '*test/*' '/usr/*' '*thirdparty*' '*googletest*' --output-file coverage.info
+    - lcov --list coverage.info

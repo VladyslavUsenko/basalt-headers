@@ -40,8 +40,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 template <int DIM, int N, int DERIV>
 void test_evaluate(const basalt::RdSpline<DIM, N> &spline, int64_t t_ns) {
-  typedef typename basalt::RdSpline<DIM, N>::VecD VectorD;
-  typedef typename basalt::RdSpline<DIM, N>::MatD MatrixD;
+  using VectorD = typename basalt::RdSpline<DIM, N>::VecD;
+  using MatrixD = typename basalt::RdSpline<DIM, N>::MatD;
 
   typename basalt::RdSpline<DIM, N>::JacobianStruct J;
 
@@ -75,7 +75,7 @@ void test_evaluate(const basalt::RdSpline<DIM, N> &spline, int64_t t_ns) {
 
 template <int DIM, int N, int DERIV>
 void test_time_deriv(const basalt::RdSpline<DIM, N> &spline, int64_t t_ns) {
-  typedef typename basalt::RdSpline<DIM, N>::VecD VectorD;
+  using VectorD = typename basalt::RdSpline<DIM, N>::VecD;
 
   VectorD d_val_d_t = spline.template evaluate<DERIV + 1>(t_ns);
 
@@ -92,9 +92,9 @@ void test_time_deriv(const basalt::RdSpline<DIM, N> &spline, int64_t t_ns) {
 
 template <int N>
 void test_evaluate_so3(const basalt::So3Spline<N> &spline, int64_t t_ns) {
-  typedef typename basalt::So3Spline<N>::VecD VectorD;
-  typedef typename basalt::So3Spline<N>::MatD MatrixD;
-  typedef typename basalt::So3Spline<N>::SO3 SO3;
+  using VectorD = typename basalt::So3Spline<5>::VecD;
+  using MatrixD = typename basalt::So3Spline<5>::MatD;
+  using SO3 = typename basalt::So3Spline<5>::SO3;
 
   typename basalt::So3Spline<N>::JacobianStruct J;
 
@@ -130,11 +130,11 @@ void test_evaluate_so3(const basalt::So3Spline<N> &spline, int64_t t_ns) {
 
 template <int N>
 void test_time_deriv_so3(const basalt::So3Spline<N> &spline, int64_t t_ns) {
-  typedef typename basalt::So3Spline<N>::VecD VectorD;
-  typedef typename basalt::So3Spline<N>::SO3 SO3;
+  using VectorD = typename basalt::So3Spline<5>::VecD;
+  using SO3 = typename basalt::So3Spline<5>::SO3;
 
-  typedef typename basalt::So3Spline<N>::VecD VectorD;
-  typedef typename basalt::So3Spline<N>::SO3 SO3;
+  using VectorD = typename basalt::So3Spline<5>::VecD;
+  using SO3 = typename basalt::So3Spline<5>::SO3;
 
   typename basalt::So3Spline<N>::JacobianStruct J;
 
@@ -155,9 +155,9 @@ void test_time_deriv_so3(const basalt::So3Spline<N> &spline, int64_t t_ns) {
 
 template <int N>
 void test_evaluate_so3_vel(const basalt::So3Spline<N> &spline, int64_t t_ns) {
-  typedef typename basalt::So3Spline<N>::VecD VectorD;
-  typedef typename basalt::So3Spline<N>::MatD MatrixD;
-  typedef typename basalt::So3Spline<N>::SO3 SO3;
+  using VectorD = typename basalt::So3Spline<5>::VecD;
+  using MatrixD = typename basalt::So3Spline<5>::MatD;
+  using SO3 = typename basalt::So3Spline<5>::SO3;
 
   typename basalt::So3Spline<N>::JacobianStruct J;
 

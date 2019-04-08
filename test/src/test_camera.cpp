@@ -40,12 +40,12 @@ template <typename CamT>
 void test_project_jacobian() {
   Eigen::vector<CamT> test_cams = CamT::getTestProjections();
 
-  typedef typename CamT::VecN VecN;
+  using VecN = typename CamT::VecN;
+  using Vec2 = typename CamT::Vec2;
+  using Vec4 = typename CamT::Vec4;
 
-  typedef typename CamT::Vec2 Vec2;
-  typedef typename CamT::Vec4 Vec4;
-  typedef typename CamT::Mat24 Mat24;
-  typedef typename CamT::Mat2N Mat2N;
+  using Mat24 = typename CamT::Mat24;
+  using Mat2N = typename CamT::Mat2N;
 
   for (const CamT &cam : test_cams) {
     for (int x = -10; x <= 10; x++) {
@@ -86,8 +86,8 @@ template <typename CamT>
 void test_project_unproject() {
   Eigen::vector<CamT> test_cams = CamT::getTestProjections();
 
-  typedef typename CamT::Vec2 Vec2;
-  typedef typename CamT::Vec4 Vec4;
+  using Vec2 = typename CamT::Vec2;
+  using Vec4 = typename CamT::Vec4;
 
   for (const CamT &cam : test_cams) {
     for (int x = -10; x <= 10; x++) {
@@ -113,12 +113,12 @@ template <typename CamT>
 void test_unproject_jacobians() {
   Eigen::vector<CamT> test_cams = CamT::getTestProjections();
 
-  typedef typename CamT::Vec2 Vec2;
-  typedef typename CamT::Vec4 Vec4;
-  typedef typename CamT::VecN VecN;
+  using VecN = typename CamT::VecN;
+  using Vec2 = typename CamT::Vec2;
+  using Vec4 = typename CamT::Vec4;
 
-  typedef typename CamT::Mat42 Mat42;
-  typedef typename CamT::Mat4N Mat4N;
+  using Mat42 = typename CamT::Mat42;
+  using Mat4N = typename CamT::Mat4N;
 
   for (const CamT &cam : test_cams) {
     for (int x = -10; x <= 10; x++) {
@@ -249,12 +249,12 @@ TEST(CameraTestCase, FovUnprojectJacobians) {
 
 ////////////////////////////////////////////////////////////////
 
-TEST(CameraTestCase, UnitSphereParamProjectJacobians) {
-  typedef basalt::StereographicParam<double> CamT;
+TEST(CameraTestCase, StereographicParamProjectJacobians) {
+  using CamT = basalt::StereographicParam<double>;
 
-  typedef typename CamT::Vec2 Vec2;
-  typedef typename CamT::Vec4 Vec4;
-  typedef typename CamT::Mat24 Mat24;
+  using Vec2 = typename CamT::Vec2;
+  using Vec4 = typename CamT::Vec4;
+  using Mat24 = typename CamT::Mat24;
 
   for (int x = -10; x <= 10; x++) {
     for (int y = -10; y <= 10; y++) {
@@ -275,11 +275,11 @@ TEST(CameraTestCase, UnitSphereParamProjectJacobians) {
   }
 }
 
-TEST(CameraTestCase, UnitSphereParamProjectUnproject) {
-  typedef basalt::StereographicParam<double> CamT;
+TEST(CameraTestCase, StereographicParamProjectUnproject) {
+  using CamT = basalt::StereographicParam<double>;
 
-  typedef typename CamT::Vec2 Vec2;
-  typedef typename CamT::Vec4 Vec4;
+  using Vec2 = typename CamT::Vec2;
+  using Vec4 = typename CamT::Vec4;
 
   for (int x = -10; x <= 10; x++) {
     for (int y = -10; y <= 10; y++) {
@@ -296,13 +296,13 @@ TEST(CameraTestCase, UnitSphereParamProjectUnproject) {
   }
 }
 
-TEST(CameraTestCase, UnitSphereParamUnprojectJacobians) {
-  typedef basalt::StereographicParam<double> CamT;
+TEST(CameraTestCase, StereographicParamUnprojectJacobians) {
+  using CamT = basalt::StereographicParam<double>;
 
-  typedef typename CamT::Vec2 Vec2;
-  typedef typename CamT::Vec4 Vec4;
+  using Vec2 = typename CamT::Vec2;
+  using Vec4 = typename CamT::Vec4;
 
-  typedef typename CamT::Mat42 Mat42;
+  using Mat42 = typename CamT::Mat42;
 
   for (int x = -10; x <= 10; x++) {
     for (int y = -10; y <= 10; y++) {

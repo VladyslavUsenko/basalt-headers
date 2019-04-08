@@ -609,7 +609,7 @@ TEST(ImuPreintegrationTestCase, CovarianceTest) {
       std::log(imu_meas.get_cov().determinant() / cov_computed.determinant());
 
   // std::cerr << "kl " << kl << std::endl;
-  EXPECT_LE(kl, 0.07);
+  EXPECT_LE(kl, 0.08);
 
   Eigen::VectorXd test_vec(num_samples);
   for (int i = 0; i < num_samples; i++) {

@@ -1,9 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
 
-find_package(TBB REQUIRED)
-include_directories(${TBB_INCLUDE_DIR})
-
-
 if(NOT TARGET gtest_main)
     add_subdirectory(googletest gtest EXCLUDE_FROM_ALL)
     include_directories(googletest)
@@ -25,18 +21,16 @@ add_executable(test_spline src/test_spline.cpp)
 target_link_libraries(test_spline ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY})
 
 add_executable(test_spline_se3 src/test_spline_se3.cpp)
-target_link_libraries(test_spline_se3 ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} opengv)
+target_link_libraries(test_spline_se3 ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY})
 
 add_executable(test_camera src/test_camera.cpp)
-target_link_libraries(test_camera ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} opengv)
+target_link_libraries(test_camera ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY})
 
 add_executable(test_sophus src/test_sophus.cpp)
 target_link_libraries(test_sophus ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY})
 
 add_executable(test_preintegration src/test_preintegration.cpp)
-target_link_libraries(test_preintegration ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} ${TBB_LIBRARIES} opengv)
-
-
+target_link_libraries(test_preintegration ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY} ${TBB_LIBRARIES})
 
 # benchmarks
 
