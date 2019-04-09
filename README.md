@@ -5,9 +5,9 @@
 This repository contains reusable components of Basalt project as header-only library.
 
 This library includes:
-* Camera models
-* Uniform B-Splines for Rd (d-dimentional vectors), SO(3) and SE(3)
-* Preintegration of inertial-measurement unit (IMU) measurements
+* Camera models.
+* Uniform B-Splines for Rd (d-dimentional vectors), SO(3) and SE(3).
+* Preintegration of inertial-measurement unit (IMU) measurements.
 * Data types to store IMU-camera calibration.
 
 
