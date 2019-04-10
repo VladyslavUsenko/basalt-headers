@@ -48,9 +48,11 @@ struct Calibration {
   Calibration() {
     cam_time_offset_ns = 0;
 
+    imu_update_rate = 0;
+
     // reasonable defaults
-    gyro_noise_std = 0.004;
-    accel_noise_std = 0.23;
+    gyro_noise_std = 0.000282;
+    accel_noise_std = 0.016;
     accel_bias_std = 0.001;
     gyro_bias_std = 0.0001;
   }
@@ -100,11 +102,23 @@ struct Calibration {
   CalibAccelBias<Scalar> calib_accel_bias;
   CalibGyroBias<Scalar> calib_gyro_bias;
 
-  Scalar gyro_noise_std;   // [ rad / s ]   ( gyro "white noise" )
-  Scalar accel_noise_std;  // [ m / s^2 ]   ( accel "white noise" )
+
+  Scalar imu_update_rate;
+
+  // All noise parameters are continous time
+  Scalar gyro_noise_std;
+  Scalar accel_noise_std;
 
   Scalar gyro_bias_std;
   Scalar accel_bias_std;
+
+  inline Scalar dicreete_time_gyro_noise_std() const {
+      return gyro_noise_std * std::sqrt(imu_update_rate);
+  }
+
+  inline Scalar dicreete_time_accel_noise_std() const {
+      return accel_noise_std * std::sqrt(imu_update_rate);
+  }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };

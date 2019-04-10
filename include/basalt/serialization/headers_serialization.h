@@ -220,6 +220,7 @@ inline void serialize(Archive& ar, basalt::Calibration<Scalar>& cam) {
      cereal::make_nvp("resolution", cam.resolution),
      cereal::make_nvp("calib_accel_bias", cam.calib_accel_bias.getParam()),
      cereal::make_nvp("calib_gyro_bias", cam.calib_gyro_bias.getParam()),
+     cereal::make_nvp("imu_update_rate", cam.imu_update_rate),
      cereal::make_nvp("accel_noise_std", cam.accel_noise_std),
      cereal::make_nvp("gyro_noise_std", cam.gyro_noise_std),
      cereal::make_nvp("accel_bias_std", cam.accel_bias_std),
