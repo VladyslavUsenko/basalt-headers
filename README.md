@@ -12,20 +12,12 @@ This library includes:
 
 
 ## Related Publications
-Camera models implemented in this project are described here: [arXiv:1807.08957](https://arxiv.org/abs/1807.08957)
-```
-@inproceedings{usenko3dv18, 
-    author={V. Usenko and N. Demmel and D. Cremers}, 
-    booktitle={2018 International Conference on 3D Vision (3DV)}, 
-    title={The Double Sphere Camera Model}, 
-    year={2018},
-    pages={552-560}, 
-    doi={10.1109/3DV.2018.00069}, 
-    ISSN={2475-7888}, 
-    month={Sep.},
-    epub={https://arxiv.org/abs/1807.08957}
-}
-```
+Visual-Inertial Odometry and Mapping:
+* **Visual-Inertial Mapping with Non-Linear Factor Recovery**, V. Usenko, N. Demmel, D. Schubert, J. Stückler, D. Cremers, In [[arXiv:]](https://arxiv.org/abs/).
+
+Calibration (explains implemented camera models):
+* **The Double Sphere Camera Model**, V. Usenko and N. Demmel and D. Cremers, In 2018 International Conference on 3D Vision (3DV), [[DOI:10.1109/3DV.2018.00069]](https://doi.org/10.1109/3DV.2018.00069), [[arXiv:1807.08957]](https://arxiv.org/abs/1807.08957).
+
 
 ## Licence
 
