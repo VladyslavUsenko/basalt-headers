@@ -1,6 +1,9 @@
 /**
 BSD 3-Clause License
 
+This file is part of the Basalt project.
+https://gitlab.com/VladyslavUsenko/basalt-headers.git
+
 Copyright (c) 2019, Vladyslav Usenko and Nikolaus Demmel.
 All rights reserved.
 
@@ -102,7 +105,6 @@ struct Calibration {
   CalibAccelBias<Scalar> calib_accel_bias;
   CalibGyroBias<Scalar> calib_gyro_bias;
 
-
   Scalar imu_update_rate;
 
   // All noise parameters are continous time
@@ -113,11 +115,11 @@ struct Calibration {
   Scalar accel_bias_std;
 
   inline Scalar dicreete_time_gyro_noise_std() const {
-      return gyro_noise_std * std::sqrt(imu_update_rate);
+    return gyro_noise_std * std::sqrt(imu_update_rate);
   }
 
   inline Scalar dicreete_time_accel_noise_std() const {
-      return accel_noise_std * std::sqrt(imu_update_rate);
+    return accel_noise_std * std::sqrt(imu_update_rate);
   }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
