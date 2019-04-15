@@ -22,5 +22,5 @@ Implemented IMU preintegration:
 
 ## Licence
 
-The code for this practical course is provided under a BSD 3-clause license. See the LICENSE file for details.
+The code is provided under a BSD 3-clause license. See the LICENSE file for details.
 Note also the different licenses of thirdparty submodules.
