@@ -2,12 +2,12 @@
 [![coverage report](https://gitlab.com/VladyslavUsenko/basalt-headers/badges/master/coverage.svg)](https://gitlab.com/VladyslavUsenko/basalt-headers/commits/master)
 
 ## Basalt Headers
-This repository contains reusable components of Basalt project as header-only library.
+This repository contains reusable components of Basalt project as header-only library. For more information see https://vision.in.tum.de/research/vslam/basalt.
 
 This library includes:
 * Camera models.
 * Uniform B-Splines for Rd (d-dimentional vectors), SO(3) and SE(3).
-* Preintegration of inertial-measurement unit (IMU) measurements.
+* Preintegration of inertial measurement unit (IMU) data.
 * Data types to store IMU-camera calibration.
 
 
