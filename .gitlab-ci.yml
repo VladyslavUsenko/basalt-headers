@@ -1,32 +1,49 @@
 image: vladyslavusenko/b_image:latest
 
-compile:
-  stage: build
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+  BUILD_TYPE: Release
+
+# template for docker builds with ccache
+.prepare_docker_template: &prepare_docker_definition
+  tags:
+    - docker
   before_script:
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
-  variables:
-    GIT_SUBMODULE_STRATEGY: recursive
   cache:
+    key: bionic
     paths:
     - ccache/
+
+# template for secondary build & unit test configurations
+.compile_and_test_template: &compile_and_test_definition
+  stage: build
   script:
     - mkdir build
     - cd build
-    - cmake ..
+    - cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
     - make -j4
-    - cd test/
-    - ctest -V
-    - ./benchmark_camera > ../../benchmark_camera.txt
-    - cd ../../
+    - ctest
+
+# main build with benchmark and coverage
+bionic-release-compile:
+  <<: *prepare_docker_definition
+  stage: build
+  script:
+    - mkdir build
+    - cd build
+    - cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+    - make -j4
+    - ctest
+    - ./test/benchmark_camera > ../benchmark_camera.txt
+    - cd ../
     - mkdir build_coverage
     - cd build_coverage
     - cmake .. -DCMAKE_BUILD_TYPE=Coverage
     - make -j4
-    - cd test
-    - ctest -V
-    - cd ..
+    - ctest
     - lcov --directory . --capture --output-file coverage.info
     - lcov --remove coverage.info '*test/*' '/usr/*' '*thirdparty*' '*googletest*' --output-file coverage.info
     - lcov --list coverage.info
@@ -34,3 +51,25 @@ compile:
     paths:
     - benchmark_camera.txt
 
+bionic-debug-compile:
+  <<: *prepare_docker_definition
+  <<: *compile_and_test_definition
+  variables:
+    BUILD_TYPE: Debug
+
+bionic-relwithdebinfo-compile:
+  <<: *prepare_docker_definition
+  <<: *compile_and_test_definition
+  variables:
+    BUILD_TYPE: RelWithDebInfo
+
+xenial-release-compile:
+  <<: *prepare_docker_definition
+  <<: *compile_and_test_definition
+  image: vladyslavusenko/b_image_xenial:latest
+  cache:
+    key: xenial
+
+elcapitan-release-compile:
+  <<: *compile_and_test_definition
+  tags: [macos, "10.11"]
