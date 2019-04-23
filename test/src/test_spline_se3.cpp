@@ -66,14 +66,15 @@ void test_gyro_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
       J.setZero();
     }
 
-    test_jacobian(ss.str(), J,
-                  [&](const Sophus::Vector3d &x) {
-                    basalt::Se3Spline<N> s1 = s;
-                    s1.getKnotSO3(i) = Sophus::SO3d::exp(x) * s.getKnotSO3(i);
+    test_jacobian(
+        ss.str(), J,
+        [&](const Sophus::Vector3d &x) {
+          basalt::Se3Spline<N> s1 = s;
+          s1.getKnotSO3(i) = Sophus::SO3d::exp(x) * s.getKnotSO3(i);
 
-                    return s1.gyroResidual(t_ns, measurement, bias);
-                  },
-                  x0);
+          return s1.gyroResidual(t_ns, measurement, bias);
+        },
+        x0);
   }
 
   {
@@ -83,13 +84,14 @@ void test_gyro_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
     std::stringstream ss;
     ss << "Spline order " << N << " d_gyro_res_d_bias";
 
-    test_jacobian(ss.str(), J_bias,
-                  [&](const Eigen::Matrix<double, 12, 1> &x) {
-                    auto b1 = bias;
-                    b1 += x;
-                    return s.gyroResidual(t_ns, measurement, b1);
-                  },
-                  x0);
+    test_jacobian(
+        ss.str(), J_bias,
+        [&](const Eigen::Matrix<double, 12, 1> &x) {
+          auto b1 = bias;
+          b1 += x;
+          return s.gyroResidual(t_ns, measurement, b1);
+        },
+        x0);
   }
 }
 
@@ -124,14 +126,15 @@ void test_accel_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
       J.setZero();
     }
 
-    test_jacobian(ss.str(), J,
-                  [&](const Sophus::Vector6d &x) {
-                    basalt::Se3Spline<N> s1 = s;
-                    s1.applyInc(i, x);
+    test_jacobian(
+        ss.str(), J,
+        [&](const Sophus::Vector6d &x) {
+          basalt::Se3Spline<N> s1 = s;
+          s1.applyInc(i, x);
 
-                    return s1.accelResidual(t_ns, measurement, bias, g);
-                  },
-                  x0);
+          return s1.accelResidual(t_ns, measurement, bias, g);
+        },
+        x0);
   }
 
   {
@@ -141,13 +144,14 @@ void test_accel_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
     std::stringstream ss;
     ss << "Spline order " << N << " d_accel_res_d_bias";
 
-    test_jacobian(ss.str(), J_bias,
-                  [&](const Eigen::Matrix<double, 9, 1> &x) {
-                    auto b1 = bias;
-                    b1 += x;
-                    return s.accelResidual(t_ns, measurement, b1, g);
-                  },
-                  x0);
+    test_jacobian(
+        ss.str(), J_bias,
+        [&](const Eigen::Matrix<double, 9, 1> &x) {
+          auto b1 = bias;
+          b1 += x;
+          return s.accelResidual(t_ns, measurement, b1, g);
+        },
+        x0);
   }
 
   {
@@ -157,11 +161,12 @@ void test_accel_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
     std::stringstream ss;
     ss << "Spline order " << N << " d_accel_res_d_g";
 
-    test_jacobian(ss.str(), J_g,
-                  [&](const Sophus::Vector3d &x) {
-                    return s.accelResidual(t_ns, measurement, bias, g + x);
-                  },
-                  x0);
+    test_jacobian(
+        ss.str(), J_g,
+        [&](const Sophus::Vector3d &x) {
+          return s.accelResidual(t_ns, measurement, bias, g + x);
+        },
+        x0);
   }
 }
 
@@ -189,18 +194,19 @@ void test_orientation_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
     Sophus::Vector3d x0;
     x0.setZero();
 
-    test_jacobian(ss.str(), J,
-                  [&](const Sophus::Vector3d &x_rot) {
-                    Sophus::Vector6d x;
-                    x.setZero();
-                    x.tail<3>() = x_rot;
+    test_jacobian(
+        ss.str(), J,
+        [&](const Sophus::Vector3d &x_rot) {
+          Sophus::Vector6d x;
+          x.setZero();
+          x.tail<3>() = x_rot;
 
-                    basalt::Se3Spline<N> s1 = s;
-                    s1.applyInc(i, x);
+          basalt::Se3Spline<N> s1 = s;
+          s1.applyInc(i, x);
 
-                    return s1.orientationResidual(t_ns, measurement);
-                  },
-                  x0);
+          return s1.orientationResidual(t_ns, measurement);
+        },
+        x0);
   }
 }
 
@@ -228,18 +234,19 @@ void test_position_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
     Sophus::Vector3d x0;
     x0.setZero();
 
-    test_jacobian(ss.str(), J,
-                  [&](const Sophus::Vector3d &x_rot) {
-                    Sophus::Vector6d x;
-                    x.setZero();
-                    x.head<3>() = x_rot;
+    test_jacobian(
+        ss.str(), J,
+        [&](const Sophus::Vector3d &x_rot) {
+          Sophus::Vector6d x;
+          x.setZero();
+          x.head<3>() = x_rot;
 
-                    basalt::Se3Spline<N> s1 = s;
-                    s1.applyInc(i, x);
+          basalt::Se3Spline<N> s1 = s;
+          s1.applyInc(i, x);
 
-                    return s1.positionResidual(t_ns, measurement);
-                  },
-                  x0);
+          return s1.positionResidual(t_ns, measurement);
+        },
+        x0);
   }
 }
 
@@ -264,14 +271,15 @@ void test_pose(const basalt::Se3Spline<N> &s, int64_t t_ns) {
       J.setZero();
     }
 
-    test_jacobian(ss.str(), J,
-                  [&](const Sophus::Vector6d &x) {
-                    basalt::Se3Spline<N> s1 = s;
-                    s1.applyInc(i, x);
+    test_jacobian(
+        ss.str(), J,
+        [&](const Sophus::Vector6d &x) {
+          basalt::Se3Spline<N> s1 = s;
+          s1.applyInc(i, x);
 
-                    return Sophus::logd(res.inverse() * s1.pose(t_ns));
-                  },
-                  x0);
+          return Sophus::logd(res.inverse() * s1.pose(t_ns));
+        },
+        x0);
   }
 
   {
@@ -285,14 +293,15 @@ void test_pose(const basalt::Se3Spline<N> &s, int64_t t_ns) {
 
     s.d_pose_d_t(t_ns, J);
 
-    test_jacobian("J_pose_time", J,
-                  [&](const Eigen::Matrix<double, 1, 1> &x) {
-                    int64_t t_ns_new = t_ns;
-                    t_ns_new += x[0] * 1e9;
+    test_jacobian(
+        "J_pose_time", J,
+        [&](const Eigen::Matrix<double, 1, 1> &x) {
+          int64_t t_ns_new = t_ns;
+          t_ns_new += x[0] * 1e9;
 
-                    return Sophus::logd(res.inverse() * s.pose(t_ns_new));
-                  },
-                  x0);
+          return Sophus::logd(res.inverse() * s.pose(t_ns_new));
+        },
+        x0);
   }
 }
 

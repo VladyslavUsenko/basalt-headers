@@ -144,52 +144,55 @@ TEST(ImuPreintegrationTestCase, PredictTest) {
     {
       basalt::PoseVelState::VecN x0;
       x0.setZero();
-      test_jacobian("F_TEST", F,
-                    [&](const basalt::PoseVelState::VecN& x) {
-                      basalt::PoseVelState curr_state1 = curr_state;
-                      curr_state1.applyInc(x);
-                      basalt::PoseVelState next_state1;
+      test_jacobian(
+          "F_TEST", F,
+          [&](const basalt::PoseVelState::VecN& x) {
+            basalt::PoseVelState curr_state1 = curr_state;
+            curr_state1.applyInc(x);
+            basalt::PoseVelState next_state1;
 
-                      basalt::IntegratedImuMeasurement::propagateState(
-                          curr_state1, data, next_state1);
+            basalt::IntegratedImuMeasurement::propagateState(curr_state1, data,
+                                                             next_state1);
 
-                      return next_state.diff(next_state1);
-                    },
-                    x0);
+            return next_state.diff(next_state1);
+          },
+          x0);
     }
 
     {
       Eigen::Vector3d x0;
       x0.setZero();
-      test_jacobian("A_TEST", A,
-                    [&](const Eigen::Vector3d& x) {
-                      basalt::ImuData data1 = data;
-                      data1.accel += x;
-                      basalt::PoseVelState next_state1;
+      test_jacobian(
+          "A_TEST", A,
+          [&](const Eigen::Vector3d& x) {
+            basalt::ImuData data1 = data;
+            data1.accel += x;
+            basalt::PoseVelState next_state1;
 
-                      basalt::IntegratedImuMeasurement::propagateState(
-                          curr_state, data1, next_state1);
+            basalt::IntegratedImuMeasurement::propagateState(curr_state, data1,
+                                                             next_state1);
 
-                      return next_state.diff(next_state1);
-                    },
-                    x0);
+            return next_state.diff(next_state1);
+          },
+          x0);
     }
 
     {
       Eigen::Vector3d x0;
       x0.setZero();
-      test_jacobian("G_TEST", G,
-                    [&](const Eigen::Vector3d& x) {
-                      basalt::ImuData data1 = data;
-                      data1.gyro += x;
-                      basalt::PoseVelState next_state1;
+      test_jacobian(
+          "G_TEST", G,
+          [&](const Eigen::Vector3d& x) {
+            basalt::ImuData data1 = data;
+            data1.gyro += x;
+            basalt::PoseVelState next_state1;
 
-                      basalt::IntegratedImuMeasurement::propagateState(
-                          curr_state, data1, next_state1);
+            basalt::IntegratedImuMeasurement::propagateState(curr_state, data1,
+                                                             next_state1);
 
-                      return next_state.diff(next_state1);
-                    },
-                    x0, 1e-8);
+            return next_state.diff(next_state1);
+          },
+          x0, 1e-8);
     }
   }
 }
@@ -252,51 +255,55 @@ TEST(ImuPreintegrationTestCase, ResidualTest) {
   {
     basalt::PoseVelState::VecN x0;
     x0.setZero();
-    test_jacobian("d_res_d_state0", d_res_d_state0,
-                  [&](const basalt::PoseVelState::VecN& x) {
-                    basalt::PoseVelState state0_new = state0;
-                    state0_new.applyInc(x);
+    test_jacobian(
+        "d_res_d_state0", d_res_d_state0,
+        [&](const basalt::PoseVelState::VecN& x) {
+          basalt::PoseVelState state0_new = state0;
+          state0_new.applyInc(x);
 
-                    return imu_meas.residual(state0_new, basalt::constants::g,
-                                             state1, bg, ba);
-                  },
-                  x0);
+          return imu_meas.residual(state0_new, basalt::constants::g, state1, bg,
+                                   ba);
+        },
+        x0);
   }
 
   {
     basalt::PoseVelState::VecN x0;
     x0.setZero();
-    test_jacobian("d_res_d_state1", d_res_d_state1,
-                  [&](const basalt::PoseVelState::VecN& x) {
-                    basalt::PoseVelState state1_new = state1;
-                    state1_new.applyInc(x);
+    test_jacobian(
+        "d_res_d_state1", d_res_d_state1,
+        [&](const basalt::PoseVelState::VecN& x) {
+          basalt::PoseVelState state1_new = state1;
+          state1_new.applyInc(x);
 
-                    return imu_meas.residual(state0, basalt::constants::g,
-                                             state1_new, bg, ba);
-                  },
-                  x0);
+          return imu_meas.residual(state0, basalt::constants::g, state1_new, bg,
+                                   ba);
+        },
+        x0);
   }
 
   {
     Sophus::Vector3d x0;
     x0.setZero();
-    test_jacobian("d_res_d_bg", d_res_d_bg,
-                  [&](const Sophus::Vector3d& x) {
-                    return imu_meas.residual(state0, basalt::constants::g,
-                                             state1, bg + x, ba);
-                  },
-                  x0);
+    test_jacobian(
+        "d_res_d_bg", d_res_d_bg,
+        [&](const Sophus::Vector3d& x) {
+          return imu_meas.residual(state0, basalt::constants::g, state1, bg + x,
+                                   ba);
+        },
+        x0);
   }
 
   {
     Sophus::Vector3d x0;
     x0.setZero();
-    test_jacobian("d_res_d_ba", d_res_d_ba,
-                  [&](const Sophus::Vector3d& x) {
-                    return imu_meas.residual(state0, basalt::constants::g,
-                                             state1, bg, ba + x);
-                  },
-                  x0);
+    test_jacobian(
+        "d_res_d_ba", d_res_d_ba,
+        [&](const Sophus::Vector3d& x) {
+          return imu_meas.residual(state0, basalt::constants::g, state1, bg,
+                                   ba + x);
+        },
+        x0);
   }
 }
 
@@ -347,47 +354,47 @@ TEST(ImuPreintegrationTestCase, BiasTest) {
   {
     Sophus::Vector3d x0;
     x0.setZero();
-    test_jacobian("d_res_d_bg", imu_meas.get_d_state_d_bg(),
-                  [&](const Sophus::Vector3d& x) {
-                    basalt::IntegratedImuMeasurement imu_meas1(0, bg + x, ba);
+    test_jacobian(
+        "d_res_d_bg", imu_meas.get_d_state_d_bg(),
+        [&](const Sophus::Vector3d& x) {
+          basalt::IntegratedImuMeasurement imu_meas1(0, bg + x, ba);
 
-                    for (size_t i = 0; i < timestamps_vec.size(); i++) {
-                      basalt::ImuData data;
-                      data.accel = accel_data_vec[i];
-                      data.gyro = gyro_data_vec[i];
-                      data.t_ns = timestamps_vec[i];
+          for (size_t i = 0; i < timestamps_vec.size(); i++) {
+            basalt::ImuData data;
+            data.accel = accel_data_vec[i];
+            data.gyro = gyro_data_vec[i];
+            data.t_ns = timestamps_vec[i];
 
-                      imu_meas1.integrate(data);
-                    }
+            imu_meas1.integrate(data);
+          }
 
-                    basalt::PoseVelState delta_state1 =
-                        imu_meas1.getDeltaState();
-                    return delta_state.diff(delta_state1);
-                  },
-                  x0);
+          basalt::PoseVelState delta_state1 = imu_meas1.getDeltaState();
+          return delta_state.diff(delta_state1);
+        },
+        x0);
   }
 
   {
     Sophus::Vector3d x0;
     x0.setZero();
-    test_jacobian("d_res_d_ba", imu_meas.get_d_state_d_ba(),
-                  [&](const Sophus::Vector3d& x) {
-                    basalt::IntegratedImuMeasurement imu_meas1(0, bg, ba + x);
+    test_jacobian(
+        "d_res_d_ba", imu_meas.get_d_state_d_ba(),
+        [&](const Sophus::Vector3d& x) {
+          basalt::IntegratedImuMeasurement imu_meas1(0, bg, ba + x);
 
-                    for (size_t i = 0; i < timestamps_vec.size(); i++) {
-                      basalt::ImuData data;
-                      data.accel = accel_data_vec[i];
-                      data.gyro = gyro_data_vec[i];
-                      data.t_ns = timestamps_vec[i];
+          for (size_t i = 0; i < timestamps_vec.size(); i++) {
+            basalt::ImuData data;
+            data.accel = accel_data_vec[i];
+            data.gyro = gyro_data_vec[i];
+            data.t_ns = timestamps_vec[i];
 
-                      imu_meas1.integrate(data);
-                    }
+            imu_meas1.integrate(data);
+          }
 
-                    basalt::PoseVelState delta_state1 =
-                        imu_meas1.getDeltaState();
-                    return delta_state.diff(delta_state1);
-                  },
-                  x0);
+          basalt::PoseVelState delta_state1 = imu_meas1.getDeltaState();
+          return delta_state.diff(delta_state1);
+        },
+        x0);
   }
 }
 
@@ -475,47 +482,47 @@ TEST(ImuPreintegrationTestCase, ResidualBiasTest) {
   {
     Sophus::Vector3d x0;
     x0.setZero();
-    test_jacobian("d_res_d_ba", d_res_d_ba,
-                  [&](const Sophus::Vector3d& x) {
-                    basalt::IntegratedImuMeasurement imu_meas1(0, bg_test,
-                                                               ba_test + x);
+    test_jacobian(
+        "d_res_d_ba", d_res_d_ba,
+        [&](const Sophus::Vector3d& x) {
+          basalt::IntegratedImuMeasurement imu_meas1(0, bg_test, ba_test + x);
 
-                    for (size_t i = 0; i < timestamps_vec.size(); i++) {
-                      basalt::ImuData data;
-                      data.accel = accel_data_vec[i];
-                      data.gyro = gyro_data_vec[i];
-                      data.t_ns = timestamps_vec[i];
+          for (size_t i = 0; i < timestamps_vec.size(); i++) {
+            basalt::ImuData data;
+            data.accel = accel_data_vec[i];
+            data.gyro = gyro_data_vec[i];
+            data.t_ns = timestamps_vec[i];
 
-                      imu_meas1.integrate(data);
-                    }
+            imu_meas1.integrate(data);
+          }
 
-                    return imu_meas1.residual(state0, basalt::constants::g,
-                                              state1, bg_test, ba_test + x);
-                  },
-                  x0);
+          return imu_meas1.residual(state0, basalt::constants::g, state1,
+                                    bg_test, ba_test + x);
+        },
+        x0);
   }
 
   {
     Sophus::Vector3d x0;
     x0.setZero();
-    test_jacobian("d_res_d_bg", d_res_d_bg,
-                  [&](const Sophus::Vector3d& x) {
-                    basalt::IntegratedImuMeasurement imu_meas1(0, bg_test + x,
-                                                               ba_test);
+    test_jacobian(
+        "d_res_d_bg", d_res_d_bg,
+        [&](const Sophus::Vector3d& x) {
+          basalt::IntegratedImuMeasurement imu_meas1(0, bg_test + x, ba_test);
 
-                    for (size_t i = 0; i < timestamps_vec.size(); i++) {
-                      basalt::ImuData data;
-                      data.accel = accel_data_vec[i];
-                      data.gyro = gyro_data_vec[i];
-                      data.t_ns = timestamps_vec[i];
+          for (size_t i = 0; i < timestamps_vec.size(); i++) {
+            basalt::ImuData data;
+            data.accel = accel_data_vec[i];
+            data.gyro = gyro_data_vec[i];
+            data.t_ns = timestamps_vec[i];
 
-                      imu_meas1.integrate(data);
-                    }
+            imu_meas1.integrate(data);
+          }
 
-                    return imu_meas1.residual(state0, basalt::constants::g,
-                                              state1, bg_test + x, ba_test);
-                  },
-                  x0, 1e-8, 1e-2);
+          return imu_meas1.residual(state0, basalt::constants::g, state1,
+                                    bg_test + x, ba_test);
+        },
+        x0, 1e-8, 1e-2);
   }
 }
 

@@ -62,14 +62,15 @@ void test_evaluate(const basalt::RdSpline<DIM, N> &spline, int64_t t_ns) {
       Ja.diagonal().setConstant(J.d_val_d_knot[i - J.start_idx]);
     }
 
-    test_jacobian(ss.str(), Ja,
-                  [&](const VectorD &x) {
-                    basalt::RdSpline<DIM, N> spline1 = spline;
-                    spline1.getKnot(i) += x;
+    test_jacobian(
+        ss.str(), Ja,
+        [&](const VectorD &x) {
+          basalt::RdSpline<DIM, N> spline1 = spline;
+          spline1.getKnot(i) += x;
 
-                    return spline1.template evaluate<DERIV>(t_ns);
-                  },
-                  x0);
+          return spline1.template evaluate<DERIV>(t_ns);
+        },
+        x0);
   }
 }
 
@@ -82,12 +83,13 @@ void test_time_deriv(const basalt::RdSpline<DIM, N> &spline, int64_t t_ns) {
   Eigen::Matrix<double, 1, 1> x0;
   x0.setZero();
 
-  test_jacobian("d_val_d_t", d_val_d_t,
-                [&](const Eigen::Matrix<double, 1, 1> &x) {
-                  int64_t inc = x[0] * 1e9;
-                  return spline.template evaluate<DERIV>(t_ns + inc);
-                },
-                x0);
+  test_jacobian(
+      "d_val_d_t", d_val_d_t,
+      [&](const Eigen::Matrix<double, 1, 1> &x) {
+        int64_t inc = x[0] * 1e9;
+        return spline.template evaluate<DERIV>(t_ns + inc);
+      },
+      x0);
 }
 
 template <int N>
@@ -115,16 +117,17 @@ void test_evaluate_so3(const basalt::So3Spline<N> &spline, int64_t t_ns) {
       Ja = J.d_val_d_knot[i - J.start_idx];
     }
 
-    test_jacobian(ss.str(), Ja,
-                  [&](const VectorD &x) {
-                    basalt::So3Spline<N> spline1 = spline;
-                    spline1.getKnot(i) = SO3::exp(x) * spline.getKnot(i);
+    test_jacobian(
+        ss.str(), Ja,
+        [&](const VectorD &x) {
+          basalt::So3Spline<N> spline1 = spline;
+          spline1.getKnot(i) = SO3::exp(x) * spline.getKnot(i);
 
-                    SO3 res1 = spline1.evaluate(t_ns);
+          SO3 res1 = spline1.evaluate(t_ns);
 
-                    return (res1 * res.inverse()).log();
-                  },
-                  x0);
+          return (res1 * res.inverse()).log();
+        },
+        x0);
   }
 }
 
@@ -145,12 +148,13 @@ void test_time_deriv_so3(const basalt::So3Spline<N> &spline, int64_t t_ns) {
   Eigen::Matrix<double, 1, 1> x0;
   x0.setZero();
 
-  test_jacobian("d_val_d_t", d_res_d_t,
-                [&](const Eigen::Matrix<double, 1, 1> &x) {
-                  int64_t inc = x[0] * 1e9;
-                  return (res.inverse() * spline.evaluate(t_ns + inc)).log();
-                },
-                x0);
+  test_jacobian(
+      "d_val_d_t", d_res_d_t,
+      [&](const Eigen::Matrix<double, 1, 1> &x) {
+        int64_t inc = x[0] * 1e9;
+        return (res.inverse() * spline.evaluate(t_ns + inc)).log();
+      },
+      x0);
 }
 
 template <int N>
@@ -181,14 +185,15 @@ void test_evaluate_so3_vel(const basalt::So3Spline<N> &spline, int64_t t_ns) {
       Ja = J.d_val_d_knot[i - J.start_idx];
     }
 
-    test_jacobian(ss.str(), Ja,
-                  [&](const VectorD &x) {
-                    basalt::So3Spline<N> spline1 = spline;
-                    spline1.getKnot(i) = SO3::exp(x) * spline.getKnot(i);
+    test_jacobian(
+        ss.str(), Ja,
+        [&](const VectorD &x) {
+          basalt::So3Spline<N> spline1 = spline;
+          spline1.getKnot(i) = SO3::exp(x) * spline.getKnot(i);
 
-                    return spline1.velocityBody(t_ns);
-                  },
-                  x0);
+          return spline1.velocityBody(t_ns);
+        },
+        x0);
   }
 }
 
