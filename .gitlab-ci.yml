@@ -12,6 +12,7 @@ variables:
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
+    - ccache -s
   cache:
     paths:
     - ccache/
