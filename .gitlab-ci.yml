@@ -13,7 +13,6 @@ variables:
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
   cache:
-    key: bionic
     paths:
     - ccache/
 
@@ -76,9 +75,11 @@ xenial-release-compile:
   cache:
     key: xenial-release
 
-elcapitan-release-compile:
+elcapitan-relwithdebinfo-compile:
   <<: *compile_and_test_definition
   tags: [macos, "10.11"]
+  variables:
+    BUILD_TYPE: RelWithDebInfo
 
 # check if clang-format would make any changes
 clang-format:
