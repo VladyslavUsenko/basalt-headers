@@ -58,25 +58,27 @@ void test_project_jacobian() {
         Vec2 res1;
         cam.project(p, res1, &Jp, &Jparam);
 
-        test_jacobian("d_r_d_p", Jp,
-                      [&](const Vec4 &x) {
-                        Vec2 res;
-                        cam.project(p + x, res);
-                        return res;
-                      },
-                      Vec4::Zero());
+        test_jacobian(
+            "d_r_d_p", Jp,
+            [&](const Vec4 &x) {
+              Vec2 res;
+              cam.project(p + x, res);
+              return res;
+            },
+            Vec4::Zero());
 
-        test_jacobian("d_r_d_param", Jparam,
-                      [&](const VecN &x) {
-                        Vec2 res;
+        test_jacobian(
+            "d_r_d_param", Jparam,
+            [&](const VecN &x) {
+              Vec2 res;
 
-                        CamT cam1 = cam;
-                        cam1 += x;
+              CamT cam1 = cam;
+              cam1 += x;
 
-                        cam1.project(p, res);
-                        return res;
-                      },
-                      VecN::Zero());
+              cam1.project(p, res);
+              return res;
+            },
+            VecN::Zero());
       }
     }
   }
@@ -134,24 +136,26 @@ void test_unproject_jacobians() {
         Vec4 res1;
         cam.unproject(p, res1, &Jp, &Jparam);
 
-        test_jacobian("d_r_d_p", Jp,
-                      [&](const Vec2 &x) {
-                        Vec4 res;
-                        cam.unproject(p + x, res);
-                        return res;
-                      },
-                      Vec2::Zero());
+        test_jacobian(
+            "d_r_d_p", Jp,
+            [&](const Vec2 &x) {
+              Vec4 res;
+              cam.unproject(p + x, res);
+              return res;
+            },
+            Vec2::Zero());
 
-        test_jacobian("d_r_d_param", Jparam,
-                      [&](const VecN &x) {
-                        Vec4 res;
-                        CamT cam1 = cam;
-                        cam1 += x;
+        test_jacobian(
+            "d_r_d_param", Jparam,
+            [&](const VecN &x) {
+              Vec4 res;
+              CamT cam1 = cam;
+              cam1 += x;
 
-                        cam1.unproject(p, res);
-                        return res;
-                      },
-                      VecN::Zero());
+              cam1.unproject(p, res);
+              return res;
+            },
+            VecN::Zero());
       }
     }
   }
@@ -268,9 +272,9 @@ TEST(CameraTestCase, StereographicParamProjectJacobians) {
       ASSERT_TRUE(res1.isApprox(res2))
           << "res1 " << res1.transpose() << " res2 " << res2.transpose();
 
-      test_jacobian("d_r_d_p", Jp,
-                    [&](const Vec4 &x) { return CamT::project(p + x); },
-                    Vec4::Zero());
+      test_jacobian(
+          "d_r_d_p", Jp, [&](const Vec4 &x) { return CamT::project(p + x); },
+          Vec4::Zero());
     }
   }
 }
@@ -318,9 +322,9 @@ TEST(CameraTestCase, StereographicParamUnprojectJacobians) {
       ASSERT_TRUE(res1.isApprox(res2))
           << "res1 " << res1.transpose() << " res2 " << res2.transpose();
 
-      test_jacobian("d_r_d_p", Jp,
-                    [&](const Vec2 &x) { return CamT::unproject(p + x); },
-                    Vec2::Zero());
+      test_jacobian(
+          "d_r_d_p", Jp, [&](const Vec2 &x) { return CamT::unproject(p + x); },
+          Vec2::Zero());
     }
   }
 }

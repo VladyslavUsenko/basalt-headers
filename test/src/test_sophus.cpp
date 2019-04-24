@@ -64,11 +64,12 @@ TEST(SophusUtilsCase, RightJacobianInvSO3) {
   Eigen::Vector3d x0;
   x0.setZero();
 
-  test_jacobian("rightJacobianInvSO3", Ja,
-                [&](const Eigen::Vector3d &x) {
-                  return (Sophus::SO3d::exp(phi) * Sophus::SO3d::exp(x)).log();
-                },
-                x0);
+  test_jacobian(
+      "rightJacobianInvSO3", Ja,
+      [&](const Eigen::Vector3d &x) {
+        return (Sophus::SO3d::exp(phi) * Sophus::SO3d::exp(x)).log();
+      },
+      x0);
 }
 
 TEST(SophusUtilsCase, LeftJacobianSO3) {
@@ -100,11 +101,12 @@ TEST(SophusUtilsCase, LeftJacobianInvSO3) {
   Eigen::Vector3d x0;
   x0.setZero();
 
-  test_jacobian("leftJacobianInvSO3", Ja,
-                [&](const Eigen::Vector3d &x) {
-                  return (Sophus::SO3d::exp(x) * Sophus::SO3d::exp(phi)).log();
-                },
-                x0);
+  test_jacobian(
+      "leftJacobianInvSO3", Ja,
+      [&](const Eigen::Vector3d &x) {
+        return (Sophus::SO3d::exp(x) * Sophus::SO3d::exp(phi)).log();
+      },
+      x0);
 }
 
 TEST(SophusUtilsCase, RightJacobianSE3Decoupled) {
@@ -117,12 +119,13 @@ TEST(SophusUtilsCase, RightJacobianSE3Decoupled) {
   Sophus::Vector6d x0;
   x0.setZero();
 
-  test_jacobian("rightJacobianSE3Decoupled", Ja,
-                [&](const Sophus::Vector6d &x) {
-                  return Sophus::logd(Sophus::expd(phi).inverse() *
-                                      Sophus::expd(phi + x));
-                },
-                x0);
+  test_jacobian(
+      "rightJacobianSE3Decoupled", Ja,
+      [&](const Sophus::Vector6d &x) {
+        return Sophus::logd(Sophus::expd(phi).inverse() *
+                            Sophus::expd(phi + x));
+      },
+      x0);
 }
 
 TEST(SophusUtilsCase, RightJacobianInvSE3Decoupled) {
@@ -135,11 +138,12 @@ TEST(SophusUtilsCase, RightJacobianInvSE3Decoupled) {
   Sophus::Vector6d x0;
   x0.setZero();
 
-  test_jacobian("rightJacobianInvSE3Decoupled", Ja,
-                [&](const Sophus::Vector6d &x) {
-                  return Sophus::logd(Sophus::expd(phi) * Sophus::expd(x));
-                },
-                x0);
+  test_jacobian(
+      "rightJacobianInvSE3Decoupled", Ja,
+      [&](const Sophus::Vector6d &x) {
+        return Sophus::logd(Sophus::expd(phi) * Sophus::expd(x));
+      },
+      x0);
 }
 
 TEST(SophusUtilsCase, Adjoint) {
@@ -153,11 +157,12 @@ TEST(SophusUtilsCase, Adjoint) {
   Sophus::Vector6d x0;
   x0.setZero();
 
-  test_jacobian("Adj", Ja,
-                [&](const Sophus::Vector6d &x) {
-                  return Sophus::logd(pose.inverse() * Sophus::expd(x) * pose);
-                },
-                x0);
+  test_jacobian(
+      "Adj", Ja,
+      [&](const Sophus::Vector6d &x) {
+        return Sophus::logd(pose.inverse() * Sophus::expd(x) * pose);
+      },
+      x0);
 }
 
 TEST(SophusUtilsCase, RotTestSO3) {
@@ -175,11 +180,12 @@ TEST(SophusUtilsCase, RotTestSO3) {
   Eigen::Vector3d x0;
   x0.setZero();
 
-  test_jacobian("Rot Test", J,
-                [&](const Eigen::Vector3d &x) {
-                  return Sophus::SO3d::exp(k * (t1 + x)) * t2;
-                },
-                x0);
+  test_jacobian(
+      "Rot Test", J,
+      [&](const Eigen::Vector3d &x) {
+        return Sophus::SO3d::exp(k * (t1 + x)) * t2;
+      },
+      x0);
 }
 
 TEST(SophusUtilsCase, incTest) {
@@ -198,15 +204,16 @@ TEST(SophusUtilsCase, incTest) {
   Sophus::Vector6d x0;
   x0.setZero();
 
-  test_jacobian("inc test", Ja,
-                [&](const Sophus::Vector6d &x) {
-                  Sophus::SE3d pose1;
-                  pose1.so3() = Sophus::SO3d::exp(x.tail<3>()) * pose.so3();
-                  pose1.translation() = pose.translation() + x.head<3>();
+  test_jacobian(
+      "inc test", Ja,
+      [&](const Sophus::Vector6d &x) {
+        Sophus::SE3d pose1;
+        pose1.so3() = Sophus::SO3d::exp(x.tail<3>()) * pose.so3();
+        pose1.translation() = pose.translation() + x.head<3>();
 
-                  return Sophus::logd(pose.inverse() * pose1);
-                },
-                x0);
+        return Sophus::logd(pose.inverse() * pose1);
+      },
+      x0);
 }
 
 TEST(SophusUtilsCase, SO2Test) {
@@ -222,11 +229,12 @@ TEST(SophusUtilsCase, SO2Test) {
   Eigen::Matrix<double, 1, 1> x0;
   x0.setZero();
 
-  test_jacobian("inc test", Ja,
-                [&](const Eigen::Matrix<double, 1, 1> &x) {
-                  return Sophus::SO2d::exp(x[0]) * phi;
-                },
-                x0);
+  test_jacobian(
+      "inc test", Ja,
+      [&](const Eigen::Matrix<double, 1, 1> &x) {
+        return Sophus::SO2d::exp(x[0]) * phi;
+      },
+      x0);
 }
 
 TEST(SophusUtilsCase, Se3Test) {
@@ -243,11 +251,12 @@ TEST(SophusUtilsCase, Se3Test) {
   Eigen::Matrix<double, 3, 1> x0;
   x0.setZero();
 
-  test_jacobian("inc test", Ja,
-                [&](const Eigen::Matrix<double, 3, 1> &x) {
-                  return Sophus::SE2d::exp(x) * phi;
-                },
-                x0);
+  test_jacobian(
+      "inc test", Ja,
+      [&](const Eigen::Matrix<double, 3, 1> &x) {
+        return Sophus::SE2d::exp(x) * phi;
+      },
+      x0);
 }
 
 TEST(SophusUtilsCase, Sim2Test) {
@@ -266,11 +275,12 @@ TEST(SophusUtilsCase, Sim2Test) {
   Eigen::Matrix<double, 4, 1> x0;
   x0.setZero();
 
-  test_jacobian("inc test", Ja,
-                [&](const Eigen::Matrix<double, 4, 1> &x) {
-                  return Sophus::Sim2d::exp(x) * phi;
-                },
-                x0);
+  test_jacobian(
+      "inc test", Ja,
+      [&](const Eigen::Matrix<double, 4, 1> &x) {
+        return Sophus::Sim2d::exp(x) * phi;
+      },
+      x0);
 }
 
 TEST(SophusUtilsCase, RxSO2Test) {
@@ -288,9 +298,10 @@ TEST(SophusUtilsCase, RxSO2Test) {
   Eigen::Matrix<double, 2, 1> x0;
   x0.setZero();
 
-  test_jacobian("inc test", Ja,
-                [&](const Eigen::Matrix<double, 2, 1> &x) {
-                  return Sophus::RxSO2d::exp(x) * phi;
-                },
-                x0);
+  test_jacobian(
+      "inc test", Ja,
+      [&](const Eigen::Matrix<double, 2, 1> &x) {
+        return Sophus::RxSO2d::exp(x) * phi;
+      },
+      x0);
 }

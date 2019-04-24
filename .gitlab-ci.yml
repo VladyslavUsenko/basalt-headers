@@ -31,6 +31,8 @@ variables:
 bionic-release-compile:
   <<: *prepare_docker_definition
   stage: build
+  cache:
+    key: bionic-release
   script:
     - mkdir build
     - cd build
@@ -54,12 +56,16 @@ bionic-release-compile:
 bionic-debug-compile:
   <<: *prepare_docker_definition
   <<: *compile_and_test_definition
+  cache:
+    key: bionic-debug
   variables:
     BUILD_TYPE: Debug
 
 bionic-relwithdebinfo-compile:
   <<: *prepare_docker_definition
   <<: *compile_and_test_definition
+  cache:
+    key: bionic-relwithdebinfo
   variables:
     BUILD_TYPE: RelWithDebInfo
 
@@ -68,8 +74,22 @@ xenial-release-compile:
   <<: *compile_and_test_definition
   image: vladyslavusenko/b_image_xenial:latest
   cache:
-    key: xenial
+    key: xenial-release
 
 elcapitan-release-compile:
   <<: *compile_and_test_definition
   tags: [macos, "10.11"]
+
+# check if clang-format would make any changes
+clang-format:
+  # TODO: add clang-format version >= 8 to "vladyslavusenko/b_image"
+  image: nikolausdemmel/ubuntu-dev-dbatk:16.04
+  tags:
+    - docker
+  stage: build
+  variables:
+    GIT_SUBMODULE_STRATEGY: none
+  script:
+    - ./scripts/clang-format-all.sh
+    # check if any files are now modified and error if yes
+    - (if git diff --name-only --diff-filter=M | grep '\..pp$'; then echo $'\n    Some files are not properly formatted. You can use "./scripts/clang-format-all.sh".\n'; git diff --diff-filter=M; false; fi)
