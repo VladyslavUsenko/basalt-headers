@@ -15,6 +15,7 @@ variables:
   cache:
     paths:
     - ccache/
+    key: ${CACHE_KEY}
 
 # template for secondary build & unit test configurations
 .compile_and_test_template: &compile_and_test_definition
@@ -30,8 +31,8 @@ variables:
 bionic-release-compile:
   <<: *prepare_docker_definition
   stage: build
-  cache:
-    key: bionic-release
+  variables:
+    CACHE_KEY: bionic-release
   script:
     - mkdir build
     - cd build
@@ -55,25 +56,23 @@ bionic-release-compile:
 bionic-debug-compile:
   <<: *prepare_docker_definition
   <<: *compile_and_test_definition
-  cache:
-    key: bionic-debug
   variables:
     BUILD_TYPE: Debug
+    CACHE_KEY:  bionic-debug
 
 bionic-relwithdebinfo-compile:
   <<: *prepare_docker_definition
   <<: *compile_and_test_definition
-  cache:
-    key: bionic-relwithdebinfo
   variables:
     BUILD_TYPE: RelWithDebInfo
+    CACHE_KEY:  bionic-relwithdebinfo
 
 xenial-release-compile:
   <<: *prepare_docker_definition
   <<: *compile_and_test_definition
   image: vladyslavusenko/b_image_xenial:latest
-  cache:
-    key: xenial-release
+  variables:
+    CACHE_KEY:  xenial-release
 
 elcapitan-relwithdebinfo-compile:
   <<: *compile_and_test_definition
@@ -83,8 +82,6 @@ elcapitan-relwithdebinfo-compile:
 
 # check if clang-format would make any changes
 clang-format:
-  # TODO: add clang-format version >= 8 to "vladyslavusenko/b_image"
-  image: nikolausdemmel/ubuntu-dev-dbatk:16.04
   tags:
     - docker
   stage: build
