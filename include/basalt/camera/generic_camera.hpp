@@ -98,6 +98,15 @@ class GenericCamera {
   }
 
   // SLOW!! functions. Every call requires vtable lookup.
+  inline bool project(const Vec4& p3d, Vec2& proj,
+                      Mat24* d_proj_d_p3d = nullptr) const {
+    bool res;
+    std::visit(
+        [&](const auto& cam) { res = cam.project(p3d, proj, d_proj_d_p3d); },
+        variant);
+    return res;
+  }
+
   inline bool unproject(const Vec2& proj, Vec4& p3d,
                         Mat42* d_p3d_d_proj = nullptr) const {
     bool res;
@@ -132,6 +141,29 @@ class GenericCamera {
           proj_success.resize(p3d.size());
           for (size_t i = 0; i < p3d.size(); i++) {
             proj_success[i] = cam.project(T_c_w * p3d[i], proj[i]);
+          }
+        },
+        variant);
+  }
+
+  inline void project(const Eigen::vector<Vec4>& p3d, const Mat4& T_c_w,
+                      Eigen::vector<Vec2>& proj,
+                      std::vector<bool>& proj_success,
+                      Eigen::vector<Vec2>& polar_azimuthal_angle) const {
+    std::visit(
+        [&](const auto& cam) {
+          proj.resize(p3d.size());
+          proj_success.resize(p3d.size());
+          polar_azimuthal_angle.resize(p3d.size());
+          for (size_t i = 0; i < p3d.size(); i++) {
+            Vec4 p3dt = T_c_w * p3d[i];
+
+            proj_success[i] = cam.project(p3dt, proj[i]);
+
+            Scalar r2 = p3dt[0] * p3dt[0] + p3dt[1] * p3dt[1];
+            Scalar r = std::sqrt(r2);
+            polar_azimuthal_angle[i][0] = std::atan2(r, p3dt[2]);
+            polar_azimuthal_angle[i][1] = std::atan2(p3dt[0], p3dt[1]);
           }
         },
         variant);
