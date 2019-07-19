@@ -136,15 +136,9 @@ struct ImuData {
   Eigen::Vector3d accel;
   Eigen::Vector3d gyro;
 
-  Eigen::Vector3d accel_cov;
-  Eigen::Vector3d gyro_cov;
-
   ImuData() {
     accel.setZero();
     gyro.setZero();
-
-    accel_cov.setZero();
-    gyro_cov.setZero();
   }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

@@ -45,6 +45,7 @@ class IntegratedImuMeasurement {
  public:
   using Ptr = std::shared_ptr<IntegratedImuMeasurement>;
 
+  using Vec3 = Eigen::Matrix<double, 3, 1>;
   using VecN = Eigen::Matrix<double, POSE_VEL_SIZE, 1>;
   using MatNN = Eigen::Matrix<double, POSE_VEL_SIZE, POSE_VEL_SIZE>;
   using MatN3 = Eigen::Matrix<double, POSE_VEL_SIZE, 3>;
@@ -131,7 +132,8 @@ class IntegratedImuMeasurement {
     d_state_d_bg.setZero();
   }
 
-  void integrate(const ImuData& data) {
+  void integrate(const ImuData& data, const Vec3& accel_cov,
+                 const Vec3& gyro_cov) {
     ImuData data_corrected = data;
     data_corrected.t_ns -= start_t_ns;
     data_corrected.accel -= bias_accel_lin;
@@ -145,9 +147,8 @@ class IntegratedImuMeasurement {
     propagateState(delta_state, data_corrected, new_state, &F, &A, &G);
 
     delta_state = new_state;
-    cov = F * cov * F.transpose() +
-          A * data.accel_cov.asDiagonal() * A.transpose() +
-          G * data.gyro_cov.asDiagonal() * G.transpose();
+    cov = F * cov * F.transpose() + A * accel_cov.asDiagonal() * A.transpose() +
+          G * gyro_cov.asDiagonal() * G.transpose();
     cov_inv_computed = false;
 
     d_state_d_ba = -A + F * d_state_d_ba;

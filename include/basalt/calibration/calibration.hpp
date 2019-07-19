@@ -47,17 +47,18 @@ template <class Scalar>
 struct Calibration {
   using Ptr = std::shared_ptr<Calibration>;
   using SE3 = Sophus::SE3<Scalar>;
+  using Vec3 = Eigen::Matrix<Scalar, 3, 1>;
 
   Calibration() {
     cam_time_offset_ns = 0;
 
-    imu_update_rate = 0;
+    imu_update_rate = 200;
 
     // reasonable defaults
-    gyro_noise_std = 0.000282;
-    accel_noise_std = 0.016;
-    accel_bias_std = 0.001;
-    gyro_bias_std = 0.0001;
+    gyro_noise_std.setConstant(0.000282);
+    accel_noise_std.setConstant(0.016);
+    accel_bias_std.setConstant(0.001);
+    gyro_bias_std.setConstant(0.0001);
   }
 
   template <class Scalar2>
@@ -79,10 +80,10 @@ struct Calibration {
     new_cam.calib_gyro_bias.getParam() =
         calib_gyro_bias.getParam().template cast<Scalar2>();
 
-    new_cam.gyro_noise_std = gyro_noise_std;
-    new_cam.accel_noise_std = accel_noise_std;
-    new_cam.gyro_bias_std = gyro_bias_std;
-    new_cam.accel_bias_std = accel_bias_std;
+    new_cam.gyro_noise_std = gyro_noise_std.template cast<Scalar2>();
+    new_cam.accel_noise_std = accel_noise_std.template cast<Scalar2>();
+    new_cam.gyro_bias_std = gyro_bias_std.template cast<Scalar2>();
+    new_cam.accel_bias_std = accel_bias_std.template cast<Scalar2>();
 
     return new_cam;
   }
@@ -108,17 +109,17 @@ struct Calibration {
   Scalar imu_update_rate;
 
   // All noise parameters are continous time
-  Scalar gyro_noise_std;
-  Scalar accel_noise_std;
+  Vec3 gyro_noise_std;
+  Vec3 accel_noise_std;
 
-  Scalar gyro_bias_std;
-  Scalar accel_bias_std;
+  Vec3 gyro_bias_std;
+  Vec3 accel_bias_std;
 
-  inline Scalar dicreete_time_gyro_noise_std() const {
+  inline Vec3 dicreete_time_gyro_noise_std() const {
     return gyro_noise_std * std::sqrt(imu_update_rate);
   }
 
-  inline Scalar dicreete_time_accel_noise_std() const {
+  inline Vec3 dicreete_time_accel_noise_std() const {
     return accel_noise_std * std::sqrt(imu_update_rate);
   }
 
