@@ -115,11 +115,11 @@ struct Calibration {
   Vec3 gyro_bias_std;
   Vec3 accel_bias_std;
 
-  inline Vec3 dicreete_time_gyro_noise_std() const {
+  inline Vec3 dicrete_time_gyro_noise_std() const {
     return gyro_noise_std * std::sqrt(imu_update_rate);
   }
 
-  inline Vec3 dicreete_time_accel_noise_std() const {
+  inline Vec3 dicrete_time_accel_noise_std() const {
     return accel_noise_std * std::sqrt(imu_update_rate);
   }
 
