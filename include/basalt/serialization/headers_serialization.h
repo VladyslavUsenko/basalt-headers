@@ -241,9 +241,16 @@ inline void serialize(Archive& ar, basalt::MocapCalibration<Scalar>& cam) {
      cereal::make_nvp("mocap_to_imu_offset_ns", cam.mocap_to_imu_offset_ns));
 }
 
+// NOTE: Serialization functions for non-basalt types are marked static to
+// ensure internal linkage, which allows different and incompatible definitions
+// in other libraries that also include basalt-headers (as long as they are not
+// included in the same translation unit). See
+// https://groups.google.com/d/msg/cerealcpp/WswQi_Sh-bw/Pw0GrfIqFQAJ for a more
+// detailed discussion.
+
 template <class Archive, class _Scalar, int _Rows, int _Cols, int _Options,
           int _MaxRows, int _MaxCols>
-inline
+static inline
     typename std::enable_if<_Rows != Eigen::Dynamic && _Cols != Eigen::Dynamic,
                             void>::type
     serialize(
@@ -261,7 +268,7 @@ inline
 }
 
 template <class Archive, class Scalar>
-inline void serialize(Archive& ar, Sophus::SE3<Scalar>& p) {
+static inline void serialize(Archive& ar, Sophus::SE3<Scalar>& p) {
   ar(cereal::make_nvp("px", p.translation()[0]),
      cereal::make_nvp("py", p.translation()[1]),
      cereal::make_nvp("pz", p.translation()[2]),
