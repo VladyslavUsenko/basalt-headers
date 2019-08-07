@@ -279,7 +279,7 @@ class KannalaBrandtCamera4 {
       c1(2) = d_res2_d_my / fy;
       c1(3) = 0;
 
-      if (d_p3d_d_param) {
+      if (d_p3d_d_proj) {
         d_p3d_d_proj->col(0) = c0;
         d_p3d_d_proj->col(1) = c1;
       }
