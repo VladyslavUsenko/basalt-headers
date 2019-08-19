@@ -87,6 +87,8 @@ class DoubleSphereCamera {
     const Scalar yy = y * y;
     const Scalar zz = z * z;
 
+    if (xx + yy + zz < Sophus::Constants<Scalar>::epsilon()) return false;
+
     const Scalar r2 = xx + yy;
 
     const Scalar d1_2 = r2 + zz;

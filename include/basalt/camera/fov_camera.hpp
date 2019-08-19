@@ -96,8 +96,8 @@ class FovCamera {
 
     Scalar tmp1 = 1.0 / std::cos(w / 2);
     Scalar d_tanwhalf_d_w = 0.5 * tmp1 * tmp1;
-    Scalar d_atan_wrd_d_arg = z2 / (z2 + 4 * tanwhalf * tanwhalf * r2);
-    Scalar d_atan_wrd_d_w = 2 * r * d_atan_wrd_d_arg * d_tanwhalf_d_w / z;
+    Scalar tmp = (z2 + 4 * tanwhalf * tanwhalf * r2);
+    Scalar d_atan_wrd_d_w = 2 * r * d_tanwhalf_d_w * z / tmp;
 
     if (w > 1e-8) {
       if (r2 < 1e-8) {
@@ -111,9 +111,9 @@ class FovCamera {
         Scalar d_r_d_x = x * norm_inv;
         Scalar d_r_d_y = y * norm_inv;
 
-        Scalar d_atan_wrd_d_x = 2 * tanwhalf * d_atan_wrd_d_arg * d_r_d_x / z;
-        Scalar d_atan_wrd_d_y = 2 * tanwhalf * d_atan_wrd_d_arg * d_r_d_y / z;
-        Scalar d_atan_wrd_d_z = -2 * tanwhalf * r * d_atan_wrd_d_arg / z2;
+        Scalar d_atan_wrd_d_x = 2 * tanwhalf * d_r_d_x * z / tmp;
+        Scalar d_atan_wrd_d_y = 2 * tanwhalf * d_r_d_y * z / tmp;
+        Scalar d_atan_wrd_d_z = -2 * tanwhalf * r / tmp;
 
         d_rd_d_x = (d_atan_wrd_d_x * r - d_r_d_x * atan_wrd) / (r * r * w);
         d_rd_d_y = (d_atan_wrd_d_y * r - d_r_d_y * atan_wrd) / (r * r * w);

@@ -85,76 +85,100 @@ class KannalaBrandtCamera4 {
     const Scalar r2 = x * x + y * y;
     const Scalar r = std::sqrt(r2);
 
-    const Scalar theta = std::atan2(r, z);
-    const Scalar theta2 = theta * theta;
-    const Scalar theta4 = theta2 * theta2;
-    const Scalar theta6 = theta4 * theta2;
-    const Scalar theta8 = theta6 * theta2;
+    if (r > Sophus::Constants<Scalar>::epsilon()) {
+      const Scalar theta = std::atan2(r, z);
+      const Scalar theta2 = theta * theta;
+      const Scalar theta4 = theta2 * theta2;
+      const Scalar theta6 = theta4 * theta2;
+      const Scalar theta8 = theta6 * theta2;
 
-    const Scalar r_theta =
-        theta * (1 + k1 * theta2 + k2 * theta4 + k3 * theta6 + k4 * theta8);
+      const Scalar r_theta =
+          theta * (1 + k1 * theta2 + k2 * theta4 + k3 * theta6 + k4 * theta8);
 
-    const Scalar norm_inv = r > 1e-8 ? Scalar(1.0) / r : 1;
+      const Scalar mx = x * r_theta / r;
+      const Scalar my = y * r_theta / r;
 
-    const Scalar mx = r_theta * x * norm_inv;
-    const Scalar my = r_theta * y * norm_inv;
+      proj[0] = fx * mx + cx;
+      proj[1] = fy * my + cy;
 
-    proj[0] = fx * mx + cx;
-    proj[1] = fy * my + cy;
+      if (d_proj_d_p3d) {
+        const Scalar d_r_d_x = x / r;
+        const Scalar d_r_d_y = y / r;
 
-    if (d_proj_d_p3d) {
-      const Scalar z2 = z * z;
+        const Scalar tmp = (z * z + r2);
+        const Scalar d_theta_d_x = d_r_d_x * z / tmp;
+        const Scalar d_theta_d_y = d_r_d_y * z / tmp;
+        const Scalar d_theta_d_z = -r / tmp;
 
-      const Scalar d_r_d_x = x * norm_inv;
-      const Scalar d_r_d_y = y * norm_inv;
+        const Scalar d_r_theta_d_theta = 1 + 3 * theta2 * k1 + 5 * theta4 * k2 +
+                                         7 * theta6 * k3 + 9 * theta8 * k4;
 
-      const Scalar d_theta_d_arg = z2 / (z2 + r2);
-      const Scalar d_theta_d_x = d_theta_d_arg * d_r_d_x / z;
-      const Scalar d_theta_d_y = d_theta_d_arg * d_r_d_y / z;
-      const Scalar d_theta_d_z = -r * d_theta_d_arg / z2;
+        (*d_proj_d_p3d)(0, 0) =
+            fx *
+            (r_theta * r + x * r * d_r_theta_d_theta * d_theta_d_x -
+             x * x * r_theta / r) /
+            r2;
+        (*d_proj_d_p3d)(1, 0) =
+            fy * y * (d_r_theta_d_theta * d_theta_d_x * r - x * r_theta / r) /
+            r2;
 
-      const Scalar d_r_theta_d_theta = 1 + 3 * theta2 * k1 + 5 * theta4 * k2 +
-                                       7 * theta6 * k3 + 9 * theta8 * k4;
+        (*d_proj_d_p3d)(0, 1) =
+            fx * x * (d_r_theta_d_theta * d_theta_d_y * r - y * r_theta / r) /
+            r2;
 
-      (*d_proj_d_p3d)(0, 0) =
-          fx * norm_inv * norm_inv *
-          (r_theta * r + x * r * d_r_theta_d_theta * d_theta_d_x -
-           x * x * r_theta * norm_inv);
-      (*d_proj_d_p3d)(1, 0) =
-          fy * y * norm_inv * norm_inv *
-          (d_r_theta_d_theta * d_theta_d_x * r - x * r_theta * norm_inv);
+        (*d_proj_d_p3d)(1, 1) =
+            fy *
+            (r_theta * r + y * r * d_r_theta_d_theta * d_theta_d_y -
+             y * y * r_theta / r) /
+            r2;
 
-      (*d_proj_d_p3d)(0, 1) =
-          fx * x * norm_inv * norm_inv *
-          (d_r_theta_d_theta * d_theta_d_y * r - y * r_theta * norm_inv);
+        (*d_proj_d_p3d)(0, 2) = fx * x * d_r_theta_d_theta * d_theta_d_z / r;
+        (*d_proj_d_p3d)(1, 2) = fy * y * d_r_theta_d_theta * d_theta_d_z / r;
 
-      (*d_proj_d_p3d)(1, 1) =
-          fy * norm_inv * norm_inv *
-          (r_theta * r + y * r * d_r_theta_d_theta * d_theta_d_y -
-           y * y * r_theta * norm_inv);
+        (*d_proj_d_p3d)(0, 3) = 0;
+        (*d_proj_d_p3d)(1, 3) = 0;
+      }
 
-      (*d_proj_d_p3d)(0, 2) =
-          fx * x * norm_inv * d_r_theta_d_theta * d_theta_d_z;
-      (*d_proj_d_p3d)(1, 2) =
-          fy * y * norm_inv * d_r_theta_d_theta * d_theta_d_z;
+      if (d_proj_d_param) {
+        (*d_proj_d_param).setZero();
+        (*d_proj_d_param)(0, 0) = mx;
+        (*d_proj_d_param)(0, 2) = 1;
+        (*d_proj_d_param)(1, 1) = my;
+        (*d_proj_d_param)(1, 3) = 1;
 
-      (*d_proj_d_p3d)(0, 3) = 0;
-      (*d_proj_d_p3d)(1, 3) = 0;
-    }
+        (*d_proj_d_param)(0, 4) = fx * x * theta * theta2 / r;
+        (*d_proj_d_param)(1, 4) = fy * y * theta * theta2 / r;
 
-    if (d_proj_d_param) {
-      (*d_proj_d_param).setZero();
-      (*d_proj_d_param)(0, 0) = mx;
-      (*d_proj_d_param)(0, 2) = 1;
-      (*d_proj_d_param)(1, 1) = my;
-      (*d_proj_d_param)(1, 3) = 1;
+        d_proj_d_param->col(5) = d_proj_d_param->col(4) * theta2;
+        d_proj_d_param->col(6) = d_proj_d_param->col(5) * theta2;
+        d_proj_d_param->col(7) = d_proj_d_param->col(6) * theta2;
+      }
 
-      (*d_proj_d_param)(0, 4) = fx * x * norm_inv * theta * theta2;
-      (*d_proj_d_param)(1, 4) = fy * y * norm_inv * theta * theta2;
+    } else {
+      // Check that the point is not cloze to zero norm
+      if (z < Sophus::Constants<Scalar>::epsilon()) return false;
 
-      d_proj_d_param->col(5) = d_proj_d_param->col(4) * theta2;
-      d_proj_d_param->col(6) = d_proj_d_param->col(5) * theta2;
-      d_proj_d_param->col(7) = d_proj_d_param->col(6) * theta2;
+      proj[0] = fx * x / z + cx;
+      proj[1] = fy * y / z + cy;
+
+      if (d_proj_d_p3d) {
+        d_proj_d_p3d->setZero();
+        const Scalar z2 = z * z;
+
+        (*d_proj_d_p3d)(0, 0) = fx / z;
+        (*d_proj_d_p3d)(0, 2) = -fx * x / z2;
+
+        (*d_proj_d_p3d)(1, 1) = fy / z;
+        (*d_proj_d_p3d)(1, 2) = -fy * y / z2;
+      }
+
+      if (d_proj_d_param) {
+        d_proj_d_param->setZero();
+        (*d_proj_d_param)(0, 0) = x / z;
+        (*d_proj_d_param)(0, 2) = 1;
+        (*d_proj_d_param)(1, 1) = y / z;
+        (*d_proj_d_param)(1, 3) = 1;
+      }
     }
 
     return true;
@@ -215,8 +239,8 @@ class KannalaBrandtCamera4 {
     scaling = 1.0;
     thetad = std::sqrt(mx * mx + my * my);
 
-    if (thetad > 1e-8) {
-      theta = solve_theta<3>(thetad, d_func_d_theta);
+    if (thetad > Sophus::Constants<Scalar>::epsilon()) {
+      theta = solve_theta<5>(thetad, d_func_d_theta);
 
       sin_theta = std::sin(theta);
       cos_theta = std::cos(theta);

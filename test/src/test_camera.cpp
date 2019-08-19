@@ -50,35 +50,43 @@ void test_project_jacobian() {
   for (const CamT &cam : test_cams) {
     for (int x = -10; x <= 10; x++) {
       for (int y = -10; y <= 10; y++) {
-        Vec4 p(x, y, 5, 1);
+        for (int z = -5; z <= 5; z++) {
+          Vec4 p(x, y, z, 1);
 
-        Mat24 Jp;
-        Mat2N Jparam;
+          Mat24 Jp;
+          Mat2N Jparam;
 
-        Vec2 res1;
-        cam.project(p, res1, &Jp, &Jparam);
+          Vec2 res1;
+          bool success = cam.project(p, res1, &Jp, &Jparam);
 
-        test_jacobian(
-            "d_r_d_p", Jp,
-            [&](const Vec4 &x) {
-              Vec2 res;
-              cam.project(p + x, res);
-              return res;
-            },
-            Vec4::Zero());
+          if (success) {
+            //            std::cout << "p " << p.transpose() << " model " <<
+            //            cam.getName()
+            //                      << std::endl;
 
-        test_jacobian(
-            "d_r_d_param", Jparam,
-            [&](const VecN &x) {
-              Vec2 res;
+            test_jacobian(
+                "d_r_d_p", Jp,
+                [&](const Vec4 &x) {
+                  Vec2 res;
+                  cam.project(p + x, res);
+                  return res;
+                },
+                Vec4::Zero());
 
-              CamT cam1 = cam;
-              cam1 += x;
+            test_jacobian(
+                "d_r_d_param", Jparam,
+                [&](const VecN &x) {
+                  Vec2 res;
 
-              cam1.project(p, res);
-              return res;
-            },
-            VecN::Zero());
+                  CamT cam1 = cam;
+                  cam1 += x;
+
+                  cam1.project(p, res);
+                  return res;
+                },
+                VecN::Zero());
+          }
+        }
       }
     }
   }
