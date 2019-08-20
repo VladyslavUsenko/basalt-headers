@@ -102,18 +102,22 @@ void test_project_unproject() {
   for (const CamT &cam : test_cams) {
     for (int x = -10; x <= 10; x++) {
       for (int y = -10; y <= 10; y++) {
-        Vec4 p(x, y, 5, 0);
+        for (int z = -5; z <= 5; z++) {
+          Vec4 p(x, y, z, 0);
 
-        Vec4 p_normalized = p.normalized();
-        Vec2 res;
-        cam.project(p, res);
+          Vec4 p_normalized = p.normalized();
+          Vec2 res;
+          bool success = cam.project(p, res);
 
-        Vec4 p_uproj;
-        cam.unproject(res, p_uproj);
+          if (success) {
+            Vec4 p_uproj;
+            cam.unproject(res, p_uproj);
 
-        ASSERT_TRUE(p_normalized.isApprox(p_uproj))
-            << "p_normalized " << p_normalized.transpose() << " p_uproj "
-            << p_uproj.transpose();
+            ASSERT_TRUE(p_normalized.isApprox(p_uproj))
+                << "p_normalized " << p_normalized.transpose() << " p_uproj "
+                << p_uproj.transpose();
+          }
+        }
       }
     }
   }

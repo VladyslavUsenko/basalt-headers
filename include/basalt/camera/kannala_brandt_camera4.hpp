@@ -85,7 +85,7 @@ class KannalaBrandtCamera4 {
     const Scalar r2 = x * x + y * y;
     const Scalar r = std::sqrt(r2);
 
-    if (r > Sophus::Constants<Scalar>::epsilon()) {
+    if (r > Sophus::Constants<Scalar>::epsilonSqrt()) {
       const Scalar theta = std::atan2(r, z);
       const Scalar theta2 = theta * theta;
       const Scalar theta4 = theta2 * theta2;
@@ -156,7 +156,7 @@ class KannalaBrandtCamera4 {
 
     } else {
       // Check that the point is not cloze to zero norm
-      if (z < Sophus::Constants<Scalar>::epsilon()) return false;
+      if (z < Sophus::Constants<Scalar>::epsilonSqrt()) return false;
 
       proj[0] = fx * x / z + cx;
       proj[1] = fy * y / z + cy;
@@ -239,8 +239,8 @@ class KannalaBrandtCamera4 {
     scaling = 1.0;
     thetad = std::sqrt(mx * mx + my * my);
 
-    if (thetad > Sophus::Constants<Scalar>::epsilon()) {
-      theta = solve_theta<5>(thetad, d_func_d_theta);
+    if (thetad > Sophus::Constants<Scalar>::epsilonSqrt()) {
+      theta = solve_theta<3>(thetad, d_func_d_theta);
 
       sin_theta = std::sin(theta);
       cos_theta = std::cos(theta);
@@ -263,7 +263,7 @@ class KannalaBrandtCamera4 {
 
       Scalar theta2 = 0;
 
-      if (thetad > 1e-8) {
+      if (thetad > Sophus::Constants<Scalar>::epsilonSqrt()) {
         d_thetad_d_mx = mx / thetad;
         d_thetad_d_my = my / thetad;
 

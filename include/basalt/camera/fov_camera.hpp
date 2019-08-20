@@ -99,21 +99,22 @@ class FovCamera {
     Scalar tmp = (z2 + 4 * tanwhalf * tanwhalf * r2);
     Scalar d_atan_wrd_d_w = 2 * r * d_tanwhalf_d_w * z / tmp;
 
-    if (w > 1e-8) {
-      if (r2 < 1e-8) {
+    if (w > Sophus::Constants<Scalar>::epsilonSqrt()) {
+      if (r2 < Sophus::Constants<Scalar>::epsilonSqrt()) {
+        if (z < Sophus::Constants<Scalar>::epsilonSqrt()) return false;
+
         rd = 2 * tanwhalf / w;
         d_rd_d_w = 2 * (d_tanwhalf_d_w * w - tanwhalf) / (w * w);
       } else {
         rd = atan_wrd / (r * w);
         d_rd_d_w = (d_atan_wrd_d_w * w - atan_wrd) / (r * w * w);
 
-        Scalar norm_inv = 1 / r;
-        Scalar d_r_d_x = x * norm_inv;
-        Scalar d_r_d_y = y * norm_inv;
+        const Scalar d_r_d_x = x / r;
+        const Scalar d_r_d_y = y / r;
 
-        Scalar d_atan_wrd_d_x = 2 * tanwhalf * d_r_d_x * z / tmp;
-        Scalar d_atan_wrd_d_y = 2 * tanwhalf * d_r_d_y * z / tmp;
-        Scalar d_atan_wrd_d_z = -2 * tanwhalf * r / tmp;
+        const Scalar d_atan_wrd_d_x = 2 * tanwhalf * d_r_d_x * z / tmp;
+        const Scalar d_atan_wrd_d_y = 2 * tanwhalf * d_r_d_y * z / tmp;
+        const Scalar d_atan_wrd_d_z = -2 * tanwhalf * r / tmp;
 
         d_rd_d_x = (d_atan_wrd_d_x * r - d_r_d_x * atan_wrd) / (r * r * w);
         d_rd_d_y = (d_atan_wrd_d_y * r - d_r_d_y * atan_wrd) / (r * r * w);
@@ -176,7 +177,8 @@ class FovCamera {
 
     Scalar rd_inv = 1.0;
 
-    if (mul2tanwby2 > 1e-8 && rd > 1e-8) {
+    if (mul2tanwby2 > Sophus::Constants<Scalar>::epsilonSqrt() &&
+        rd > Sophus::Constants<Scalar>::epsilonSqrt()) {
       sin_rd_w = std::sin(rd * w);
       cos_rd_w = std::cos(rd * w);
       ru = sin_rd_w / (rd * mul2tanwby2);

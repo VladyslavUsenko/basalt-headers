@@ -87,12 +87,14 @@ class DoubleSphereCamera {
     const Scalar yy = y * y;
     const Scalar zz = z * z;
 
-    if (xx + yy + zz < Sophus::Constants<Scalar>::epsilon()) return false;
-
     const Scalar r2 = xx + yy;
 
     const Scalar d1_2 = r2 + zz;
     const Scalar d1 = std::sqrt(d1_2);
+
+    const Scalar w1 = alpha > 0.5 ? (1 - alpha) / alpha : alpha / (1 - alpha);
+    const Scalar w2 = (w1 + xi) / std::sqrt(2 * w1 * xi + xi * xi + 1);
+    if (z <= -w2 * d1) return false;
 
     const Scalar k = xi * d1 + z;
     const Scalar kk = k * k;
@@ -174,6 +176,10 @@ class DoubleSphereCamera {
     const Scalar my = (proj[1] - cy) / fy;
 
     const Scalar r2 = mx * mx + my * my;
+
+    if (alpha > 0.5) {
+      if (r2 >= Scalar(1.0) / (2 * alpha - 1)) return false;
+    }
 
     const Scalar xi2_2 = alpha * alpha;
     const Scalar xi1_2 = xi * xi;
