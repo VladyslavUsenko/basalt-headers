@@ -74,29 +74,31 @@ class PinholeCamera {
     const Scalar& cx = param[2];
     const Scalar& cy = param[3];
 
-    if (p3d[2] <= 1e-8) return false;
+    const Scalar& x = p3d[0];
+    const Scalar& y = p3d[1];
+    const Scalar& z = p3d[2];
 
-    const Scalar z_inv = Scalar(1.0) / p3d[2];
+    if (z < Sophus::Constants<Scalar>::epsilonSqrt()) return false;
 
-    proj[0] = fx * p3d[0] * z_inv + cx;
-    proj[1] = fy * p3d[1] * z_inv + cy;
+    proj[0] = fx * x / z + cx;
+    proj[1] = fy * y / z + cy;
 
     if (d_proj_d_p3d) {
       d_proj_d_p3d->setZero();
-      const Scalar z_inv2 = z_inv * z_inv;
+      const Scalar z2 = z * z;
 
-      (*d_proj_d_p3d)(0, 0) = fx * z_inv;
-      (*d_proj_d_p3d)(0, 2) = -fx * p3d[0] * z_inv2;
+      (*d_proj_d_p3d)(0, 0) = fx / z;
+      (*d_proj_d_p3d)(0, 2) = -fx * x / z2;
 
-      (*d_proj_d_p3d)(1, 1) = fy * z_inv;
-      (*d_proj_d_p3d)(1, 2) = -fy * p3d[1] * z_inv2;
+      (*d_proj_d_p3d)(1, 1) = fy / z;
+      (*d_proj_d_p3d)(1, 2) = -fy * y / z2;
     }
 
     if (d_proj_d_param) {
       d_proj_d_param->setZero();
-      (*d_proj_d_param)(0, 0) = p3d[0] * z_inv;
+      (*d_proj_d_param)(0, 0) = x / z;
       (*d_proj_d_param)(0, 2) = 1;
-      (*d_proj_d_param)(1, 1) = p3d[1] * z_inv;
+      (*d_proj_d_param)(1, 1) = y / z;
       (*d_proj_d_param)(1, 3) = 1;
     }
 

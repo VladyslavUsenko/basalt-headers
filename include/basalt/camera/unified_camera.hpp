@@ -83,16 +83,16 @@ class UnifiedCamera {
     const Scalar rho2 = r2 + z * z;
     const Scalar rho = std::sqrt(rho2);
 
-    // Check if valid
-    const Scalar w = alpha > 0.5 ? (1 - alpha) / alpha : alpha / (1 - alpha);
-    if (z <= -w * rho) return false;
-
     const Scalar norm = alpha * rho + (1 - alpha) * z;
 
     const Scalar mx = x / norm;
     const Scalar my = y / norm;
 
     proj = Vec2(fx * mx + cx, fy * my + cy);
+
+    // Check if valid
+    const Scalar w = alpha > 0.5 ? (1 - alpha) / alpha : alpha / (1 - alpha);
+    if (z <= -w * rho) return false;
 
     if (d_proj_d_p3d) {
       const Scalar denom = norm * norm * rho;
