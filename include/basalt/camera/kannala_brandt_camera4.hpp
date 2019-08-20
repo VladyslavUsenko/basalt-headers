@@ -88,12 +88,16 @@ class KannalaBrandtCamera4 {
     if (r > Sophus::Constants<Scalar>::epsilonSqrt()) {
       const Scalar theta = std::atan2(r, z);
       const Scalar theta2 = theta * theta;
-      const Scalar theta4 = theta2 * theta2;
-      const Scalar theta6 = theta4 * theta2;
-      const Scalar theta8 = theta6 * theta2;
 
-      const Scalar r_theta =
-          theta * (1 + k1 * theta2 + k2 * theta4 + k3 * theta6 + k4 * theta8);
+      Scalar r_theta = k4 * theta2;
+      r_theta += k3;
+      r_theta *= theta2;
+      r_theta += k2;
+      r_theta *= theta2;
+      r_theta += k1;
+      r_theta *= theta2;
+      r_theta += 1;
+      r_theta *= theta;
 
       const Scalar mx = x * r_theta / r;
       const Scalar my = y * r_theta / r;
@@ -110,8 +114,14 @@ class KannalaBrandtCamera4 {
         const Scalar d_theta_d_y = d_r_d_y * z / tmp;
         const Scalar d_theta_d_z = -r / tmp;
 
-        const Scalar d_r_theta_d_theta = 1 + 3 * theta2 * k1 + 5 * theta4 * k2 +
-                                         7 * theta6 * k3 + 9 * theta8 * k4;
+        Scalar d_r_theta_d_theta = 9 * k4 * theta2;
+        d_r_theta_d_theta += 7 * k3;
+        d_r_theta_d_theta *= theta2;
+        d_r_theta_d_theta += 5 * k2;
+        d_r_theta_d_theta *= theta2;
+        d_r_theta_d_theta += 3 * k1;
+        d_r_theta_d_theta *= theta2;
+        d_r_theta_d_theta += 1;
 
         (*d_proj_d_p3d)(0, 0) =
             fx *

@@ -96,13 +96,14 @@ template <typename CamT>
 void test_project_unproject() {
   Eigen::vector<CamT> test_cams = CamT::getTestProjections();
 
+  using Scalar = typename CamT::Vec2::Scalar;
   using Vec2 = typename CamT::Vec2;
   using Vec4 = typename CamT::Vec4;
 
   for (const CamT &cam : test_cams) {
     for (int x = -10; x <= 10; x++) {
       for (int y = -10; y <= 10; y++) {
-        for (int z = -5; z <= 5; z++) {
+        for (int z = 0; z <= 5; z++) {
           Vec4 p(x, y, z, 0);
 
           Vec4 p_normalized = p.normalized();
@@ -113,7 +114,8 @@ void test_project_unproject() {
             Vec4 p_uproj;
             cam.unproject(res, p_uproj);
 
-            ASSERT_TRUE(p_normalized.isApprox(p_uproj))
+            ASSERT_TRUE(p_normalized.isApprox(
+                p_uproj, Sophus::Constants<Scalar>::epsilonSqrt()))
                 << "p_normalized " << p_normalized.transpose() << " p_uproj "
                 << p_uproj.transpose();
           }
@@ -137,37 +139,41 @@ void test_unproject_jacobians() {
   for (const CamT &cam : test_cams) {
     for (int x = -10; x <= 10; x++) {
       for (int y = -10; y <= 10; y++) {
-        Vec4 p_3d(x, y, 5, 0);
+        for (int z = 0; z <= 5; z++) {
+          Vec4 p_3d(x, y, z, 0);
 
-        Vec2 p;
-        cam.project(p_3d, p);
+          Vec2 p;
+          bool success = cam.project(p_3d, p);
 
-        Mat42 Jp;
-        Mat4N Jparam;
+          if (success) {
+            Mat42 Jp;
+            Mat4N Jparam;
 
-        Vec4 res1;
-        cam.unproject(p, res1, &Jp, &Jparam);
+            Vec4 res1;
+            cam.unproject(p, res1, &Jp, &Jparam);
 
-        test_jacobian(
-            "d_r_d_p", Jp,
-            [&](const Vec2 &x) {
-              Vec4 res;
-              cam.unproject(p + x, res);
-              return res;
-            },
-            Vec2::Zero());
+            test_jacobian(
+                "d_r_d_p", Jp,
+                [&](const Vec2 &x) {
+                  Vec4 res;
+                  cam.unproject(p + x, res);
+                  return res;
+                },
+                Vec2::Zero());
 
-        test_jacobian(
-            "d_r_d_param", Jparam,
-            [&](const VecN &x) {
-              Vec4 res;
-              CamT cam1 = cam;
-              cam1 += x;
+            test_jacobian(
+                "d_r_d_param", Jparam,
+                [&](const VecN &x) {
+                  Vec4 res;
+                  CamT cam1 = cam;
+                  cam1 += x;
 
-              cam1.unproject(p, res);
-              return res;
-            },
-            VecN::Zero());
+                  cam1.unproject(p, res);
+                  return res;
+                },
+                VecN::Zero());
+          }
+        }
       }
     }
   }
