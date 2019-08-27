@@ -246,7 +246,14 @@ class ExtendedUnifiedCamera {
     param[5] = 1;
   }
 
-  void operator+=(const VecN& inc) { param += inc; }
+  void operator+=(const VecN& inc) {
+    param += inc;
+
+    // alpha in [0, 1], beta > 0
+    param[4] = std::clamp(param[4], Scalar(0), Scalar(1));
+    if (param[5] < Sophus::Constants<Scalar>::epsilonSqrt())
+      param[5] = Sophus::Constants<Scalar>::epsilonSqrt();
+  }
 
   const VecN& getParam() const { return param; }
 

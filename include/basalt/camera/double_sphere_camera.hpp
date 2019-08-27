@@ -283,7 +283,11 @@ class DoubleSphereCamera {
     param[5] = 0.5;
   }
 
-  void operator+=(const VecN& inc) { param += inc; }
+  void operator+=(const VecN& inc) {
+    param += inc;
+    param[4] = std::clamp(param[4], Scalar(-1), Scalar(1));
+    param[5] = std::clamp(param[5], Scalar(0), Scalar(1));
+  }
 
   const VecN& getParam() const { return param; }
 

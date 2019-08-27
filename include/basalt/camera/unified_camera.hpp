@@ -231,7 +231,11 @@ class UnifiedCamera {
     param[4] = 0.5;
   }
 
-  void operator+=(const VecN& inc) { param += inc; }
+  void operator+=(const VecN& inc) {
+    param += inc;
+    // alpha in [0, 1]
+    param[4] = std::clamp(param[4], Scalar(0), Scalar(1));
+  }
 
   const VecN& getParam() const { return param; }
 
