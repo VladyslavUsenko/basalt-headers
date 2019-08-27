@@ -6,6 +6,9 @@ endif(NOT TARGET gtest_main)
 
 include_directories(include)
 
+add_executable(test_image src/test_image.cpp)
+target_link_libraries(test_image gtest gtest_main)
+
 add_executable(test_spline src/test_spline.cpp)
 target_link_libraries(test_spline gtest gtest_main)
 
@@ -38,6 +41,7 @@ include(GoogleTest)  # for gtest_discover_test
 
 enable_testing()
 
+gtest_discover_tests(test_image)
 gtest_discover_tests(test_spline)
 gtest_discover_tests(test_camera)
 gtest_discover_tests(test_sophus)

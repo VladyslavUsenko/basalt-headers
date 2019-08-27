@@ -6,9 +6,12 @@ This repository contains reusable components of Basalt project as header-only li
 
 This library includes:
 * Camera models.
+* Standalone image datatype with support for views, interpolation, gradients, and image pyramids.
 * Uniform B-Splines for Rd (d-dimentional vectors), SO(3) and SE(3).
 * Preintegration of inertial measurement unit (IMU) data.
 * Data types to store IMU-camera calibration.
+* Cereal serialization for basalt types as well as some Eigen and Sophus types.
+
 
 
 ## Related Publications
@@ -24,3 +27,5 @@ Implemented IMU preintegration:
 
 The code is provided under a BSD 3-clause license. See the LICENSE file for details.
 Note also the different licenses of thirdparty submodules.
+
+`image.h` is adapted from [Pangolin](https://github.com/stevenlovegrove/Pangolin) by Steven Lovegrove (MIT license).
