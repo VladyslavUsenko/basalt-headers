@@ -35,14 +35,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
+#include <basalt/serialization/eigen_io.h>
 #include <basalt/calibration/calibration.hpp>
 
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/json.hpp>
+#include <cereal/types/deque.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
-#include <cereal/types/deque.hpp>
 
 namespace cereal {
 
@@ -239,43 +240,6 @@ inline void serialize(Archive& ar, basalt::MocapCalibration<Scalar>& cam) {
      cereal::make_nvp("T_imu_marker", cam.T_i_mark),
      cereal::make_nvp("mocap_time_offset_ns", cam.mocap_time_offset_ns),
      cereal::make_nvp("mocap_to_imu_offset_ns", cam.mocap_to_imu_offset_ns));
-}
-
-// NOTE: Serialization functions for non-basalt types are marked static to
-// ensure internal linkage, which allows different and incompatible definitions
-// in other libraries that also include basalt-headers (as long as they are not
-// included in the same translation unit). See
-// https://groups.google.com/d/msg/cerealcpp/WswQi_Sh-bw/Pw0GrfIqFQAJ for a more
-// detailed discussion.
-
-template <class Archive, class _Scalar, int _Rows, int _Cols, int _Options,
-          int _MaxRows, int _MaxCols>
-static inline
-    typename std::enable_if<_Rows != Eigen::Dynamic && _Cols != Eigen::Dynamic,
-                            void>::type
-    serialize(
-        Archive& archive,
-        Eigen::Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>& m) {
-  static_assert(_Rows > 0, "matrix should be static size");
-  static_assert(_Cols > 0, "matrix should be static size");
-  cereal::size_type s = _Rows * _Cols;
-  archive(cereal::make_size_tag(s));
-  if (s != _Rows * _Cols) {
-    throw std::runtime_error("matrix has incorrect length");
-  }
-  for (size_t i = 0; i < _Rows; i++)
-    for (size_t j = 0; j < _Cols; j++) archive(m(i, j));
-}
-
-template <class Archive, class Scalar>
-static inline void serialize(Archive& ar, Sophus::SE3<Scalar>& p) {
-  ar(cereal::make_nvp("px", p.translation()[0]),
-     cereal::make_nvp("py", p.translation()[1]),
-     cereal::make_nvp("pz", p.translation()[2]),
-     cereal::make_nvp("qx", p.so3().data()[0]),
-     cereal::make_nvp("qy", p.so3().data()[1]),
-     cereal::make_nvp("qz", p.so3().data()[2]),
-     cereal::make_nvp("qw", p.so3().data()[3]));
 }
 
 }  // namespace cereal
