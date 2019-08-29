@@ -1,7 +1,7 @@
 
 #include <Eigen/Dense>
 
-#include <basalt/utils/image.h>
+#include <basalt/image/image.h>
 
 #include "gtest/gtest.h"
 #include "test_utils.h"
