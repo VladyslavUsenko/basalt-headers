@@ -465,7 +465,7 @@ using DefaultImageAllocator = std::allocator<T>;
 template <typename T, class Allocator = DefaultImageAllocator<T>>
 class ManagedImage : public Image<T> {
  public:
-  typedef std::shared_ptr<ManagedImage<T>> Ptr;
+  using Ptr = std::shared_ptr<ManagedImage<T, Allocator>>;
 
   // Destructor
   inline ~ManagedImage() { Deallocate(); }

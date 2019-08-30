@@ -42,6 +42,8 @@ namespace basalt {
 template <typename T, class Allocator = DefaultImageAllocator<T>>
 class ManagedImagePyr {
  public:
+  using Ptr = std::shared_ptr<ManagedImagePyr<T, Allocator>>;
+
   inline ManagedImagePyr() {}
 
   inline ManagedImagePyr(ManagedImage<T>& other, size_t num_levels) {
