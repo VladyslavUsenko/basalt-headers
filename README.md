@@ -2,7 +2,7 @@
 [![coverage report](https://gitlab.com/VladyslavUsenko/basalt-headers/badges/master/coverage.svg)](https://gitlab.com/VladyslavUsenko/basalt-headers/commits/master)
 
 ## Basalt Headers
-This repository contains reusable components of Basalt project as header-only library. For more information see https://vision.in.tum.de/research/vslam/basalt.
+This repository contains reusable components of Basalt project as header-only library ([Documentation](https://vladyslavusenko.gitlab.io/basalt-headers/)). For more information see https://vision.in.tum.de/research/vslam/basalt.
 
 This library includes:
 * Camera models.
