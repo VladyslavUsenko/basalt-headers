@@ -109,7 +109,7 @@ void rightJacobianSO3(const Eigen::MatrixBase<Derived1> &phi,
 /// For \f$ \exp(x) \in SO(3) \f$ provides an inverse Jacobian that approximates
 /// the logmap of the right multiplication of expmap of the arguments with a sum
 /// for small \f$ \epsilon \f$.  Can be used to compute:  \f$ \log
-/// (\exp(\phi) exp(\epsilon)) \approx \phi + J_{\phi} \epsilon\f$
+/// (\exp(\phi) \exp(\epsilon)) \approx \phi + J_{\phi} \epsilon\f$
 /// @param[in] phi (3x1 vector)
 /// @param[out] J_phi (3x3 matrix)
 template <typename Derived1, typename Derived2>
@@ -139,8 +139,6 @@ void rightJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
                                          (2 * phi_norm * std::sin(phi_norm)));
   }
 }
-
-// exp(phi+e) ~= exp(J*e)*exp(phi)
 
 /// @brief Left Jacobian for SO(3)
 ///
@@ -183,7 +181,7 @@ void leftJacobianSO3(const Eigen::MatrixBase<Derived1> &phi,
 /// For \f$ \exp(x) \in SO(3) \f$ provides an inverse Jacobian that approximates
 /// the logmap of the left multiplication of expmap of the arguments with a sum
 /// for small \f$ \epsilon \f$.  Can be used to compute:  \f$ \log
-/// (exp(\epsilon) \exp(\phi)) \approx \phi + J_{\phi} \epsilon\f$
+/// (\exp(\epsilon) \exp(\phi)) \approx \phi + J_{\phi} \epsilon\f$
 /// @param[in] phi (3x1 vector)
 /// @param[out] J_phi (3x3 matrix)
 template <typename Derived1, typename Derived2>
@@ -249,7 +247,7 @@ void rightJacobianSE3Decoupled(const Eigen::MatrixBase<Derived1> &phi,
 /// the decoupled logmap of the right multiplication of the decoupled expmap of
 /// the arguments with a sum for small \f$ \epsilon \f$.  Can be used to
 /// compute:  \f$ \log
-/// (\exp(\phi) exp(\epsilon)) \approx \phi + J_{\phi} \epsilon\f$
+/// (\exp(\phi) \exp(\epsilon)) \approx \phi + J_{\phi} \epsilon\f$
 /// @param[in] phi (6x1 vector)
 /// @param[out] J_phi (6x6 matrix)
 template <typename Derived1, typename Derived2>
