@@ -31,41 +31,21 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+@file
+@brief Useful utilities to work with SO(3) and SE(3) groups from Sophus.
 */
 
 #pragma once
 
-#include <sophus/se2.hpp>
 #include <sophus/se3.hpp>
 
-#include <sophus/sim2.hpp>
-
-#include <deque>
-#include <map>
-#include <unordered_map>
-#include <vector>
-
-namespace Eigen {
-
-template <typename T>
-using vector = std::vector<T, Eigen::aligned_allocator<T>>;
-
-template <typename T>
-using deque = std::deque<T, Eigen::aligned_allocator<T>>;
-
-template <typename K, typename V>
-using map = std::map<K, V, std::less<K>,
-                     Eigen::aligned_allocator<std::pair<K const, V>>>;
-
-template <typename K, typename V>
-using unordered_map =
-    std::unordered_map<K, V, std::hash<K>, std::equal_to<K>,
-                       Eigen::aligned_allocator<std::pair<K const, V>>>;
-
-}  // namespace Eigen
+#include <basalt/utils/eigen_utils.hpp>
 
 namespace Sophus {
 
+/// @brief Decoupled version of logmap for SE(3)
 template <typename Scalar>
 inline static typename SE3<Scalar>::Tangent logd(const SE3<Scalar> &se3) {
   typename SE3<Scalar>::Tangent upsilon_omega;
@@ -75,6 +55,7 @@ inline static typename SE3<Scalar>::Tangent logd(const SE3<Scalar> &se3) {
   return upsilon_omega;
 }
 
+/// @brief Decoupled version of expmap for SE(3)
 template <typename Derived>
 inline static SE3<typename Derived::Scalar> expd(
     const Eigen::MatrixBase<Derived> &upsilon_omega) {
@@ -87,10 +68,17 @@ inline static SE3<typename Derived::Scalar> expd(
                      upsilon_omega.template head<3>());
 }
 
-// exp(phi+e) ~= exp(phi)*exp(J*e)
+/// @brief Right Jacobian for SO(3)
+///
+/// For \f$ \exp(x) \in SO(3) \f$ provides a Jacobian that approximates the sum
+/// under expmap with a right multiplication of expmap for small \f$ \epsilon
+/// \f$.  Can be used to compute:  \f$ \exp(\phi + \epsilon) \approx \exp(\phi)
+/// \exp(J_{\phi} \epsilon)\f$
+/// @param[in] phi (3x1 vector)
+/// @param[out] J_phi (3x3 matrix)
 template <typename Derived1, typename Derived2>
 void rightJacobianSO3(const Eigen::MatrixBase<Derived1> &phi,
-                      const Eigen::MatrixBase<Derived2> &J_const) {
+                      const Eigen::MatrixBase<Derived2> &J_phi) {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived1);
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived2);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived1, 3);
@@ -99,7 +87,7 @@ void rightJacobianSO3(const Eigen::MatrixBase<Derived1> &phi,
   using Scalar = typename Derived1::Scalar;
 
   Eigen::MatrixBase<Derived2> &J =
-      const_cast<Eigen::MatrixBase<Derived2> &>(J_const);
+      const_cast<Eigen::MatrixBase<Derived2> &>(J_phi);
 
   Scalar phi_norm2 = phi.squaredNorm();
   Scalar phi_norm = std::sqrt(phi_norm2);
@@ -116,10 +104,17 @@ void rightJacobianSO3(const Eigen::MatrixBase<Derived1> &phi,
   }
 }
 
-// log(exp(phi)exp(e)) ~= phi + J*e
+/// @brief Right Inverse Jacobian for SO(3)
+///
+/// For \f$ \exp(x) \in SO(3) \f$ provides an inverse Jacobian that approximates
+/// the logmap of the right multiplication of expmap of the arguments with a sum
+/// for small \f$ \epsilon \f$.  Can be used to compute:  \f$ \log
+/// (\exp(\phi) exp(\epsilon)) \approx \phi + J_{\phi} \epsilon\f$
+/// @param[in] phi (3x1 vector)
+/// @param[out] J_phi (3x3 matrix)
 template <typename Derived1, typename Derived2>
 void rightJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
-                         const Eigen::MatrixBase<Derived2> &J_const) {
+                         const Eigen::MatrixBase<Derived2> &J_phi) {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived1);
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived2);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived1, 3);
@@ -128,7 +123,7 @@ void rightJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
   using Scalar = typename Derived1::Scalar;
 
   Eigen::MatrixBase<Derived2> &J =
-      const_cast<Eigen::MatrixBase<Derived2> &>(J_const);
+      const_cast<Eigen::MatrixBase<Derived2> &>(J_phi);
 
   Scalar phi_norm2 = phi.squaredNorm();
   Scalar phi_norm = std::sqrt(phi_norm2);
@@ -146,9 +141,18 @@ void rightJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
 }
 
 // exp(phi+e) ~= exp(J*e)*exp(phi)
+
+/// @brief Left Jacobian for SO(3)
+///
+/// For \f$ \exp(x) \in SO(3) \f$ provides a Jacobian that approximates the sum
+/// under expmap with a left multiplication of expmap for small \f$ \epsilon
+/// \f$.  Can be used to compute:  \f$ \exp(\phi + \epsilon) \approx
+/// \exp(J_{\phi} \epsilon) \exp(\phi) \f$
+/// @param[in] phi (3x1 vector)
+/// @param[out] J_phi (3x3 matrix)
 template <typename Derived1, typename Derived2>
 void leftJacobianSO3(const Eigen::MatrixBase<Derived1> &phi,
-                     const Eigen::MatrixBase<Derived2> &J_const) {
+                     const Eigen::MatrixBase<Derived2> &J_phi) {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived1);
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived2);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived1, 3);
@@ -157,7 +161,7 @@ void leftJacobianSO3(const Eigen::MatrixBase<Derived1> &phi,
   using Scalar = typename Derived1::Scalar;
 
   Eigen::MatrixBase<Derived2> &J =
-      const_cast<Eigen::MatrixBase<Derived2> &>(J_const);
+      const_cast<Eigen::MatrixBase<Derived2> &>(J_phi);
 
   Scalar phi_norm2 = phi.squaredNorm();
   Scalar phi_norm = std::sqrt(phi_norm2);
@@ -174,10 +178,17 @@ void leftJacobianSO3(const Eigen::MatrixBase<Derived1> &phi,
   }
 }
 
-// log(exp(e)*exp(phi)) ~= phi + J*e
+/// @brief Left Inverse Jacobian for SO(3)
+///
+/// For \f$ \exp(x) \in SO(3) \f$ provides an inverse Jacobian that approximates
+/// the logmap of the left multiplication of expmap of the arguments with a sum
+/// for small \f$ \epsilon \f$.  Can be used to compute:  \f$ \log
+/// (exp(\epsilon) \exp(\phi)) \approx \phi + J_{\phi} \epsilon\f$
+/// @param[in] phi (3x1 vector)
+/// @param[out] J_phi (3x3 matrix)
 template <typename Derived1, typename Derived2>
 void leftJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
-                        const Eigen::MatrixBase<Derived2> &J_const) {
+                        const Eigen::MatrixBase<Derived2> &J_phi) {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived1);
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived2);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived1, 3);
@@ -186,7 +197,7 @@ void leftJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
   using Scalar = typename Derived1::Scalar;
 
   Eigen::MatrixBase<Derived2> &J =
-      const_cast<Eigen::MatrixBase<Derived2> &>(J_const);
+      const_cast<Eigen::MatrixBase<Derived2> &>(J_phi);
 
   Scalar phi_norm2 = phi.squaredNorm();
   Scalar phi_norm = std::sqrt(phi_norm2);
@@ -203,10 +214,17 @@ void leftJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
   }
 }
 
-// expd(phi+e) ~= expd(phi)*expd(J*e)
+/// @brief Right Jacobian for decoupled SE(3)
+///
+/// For \f$ \exp(x) \in SE(3) \f$ provides a Jacobian that approximates the sum
+/// under decoupled expmap with a right multiplication of decoupled expmap for
+/// small \f$ \epsilon \f$.  Can be used to compute:  \f$ \exp(\phi + \epsilon)
+/// \approx \exp(\phi) \exp(J_{\phi} \epsilon)\f$
+/// @param[in] phi (6x1 vector)
+/// @param[out] J_phi (6x6 matrix)
 template <typename Derived1, typename Derived2>
 void rightJacobianSE3Decoupled(const Eigen::MatrixBase<Derived1> &phi,
-                               const Eigen::MatrixBase<Derived2> &J_const) {
+                               const Eigen::MatrixBase<Derived2> &J_phi) {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived1);
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived2);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived1, 6);
@@ -215,7 +233,7 @@ void rightJacobianSE3Decoupled(const Eigen::MatrixBase<Derived1> &phi,
   using Scalar = typename Derived1::Scalar;
 
   Eigen::MatrixBase<Derived2> &J =
-      const_cast<Eigen::MatrixBase<Derived2> &>(J_const);
+      const_cast<Eigen::MatrixBase<Derived2> &>(J_phi);
 
   J.setZero();
 
@@ -225,10 +243,18 @@ void rightJacobianSE3Decoupled(const Eigen::MatrixBase<Derived1> &phi,
       Sophus::SO3<Scalar>::exp(omega).inverse().matrix();
 }
 
-// logd(expd(phi)expd(e)) ~= phi + J*e
+/// @brief Right Inverse Jacobian for decoupled SE(3)
+///
+/// For \f$ \exp(x) \in SO(3) \f$ provides an inverse Jacobian that approximates
+/// the decoupled logmap of the right multiplication of the decoupled expmap of
+/// the arguments with a sum for small \f$ \epsilon \f$.  Can be used to
+/// compute:  \f$ \log
+/// (\exp(\phi) exp(\epsilon)) \approx \phi + J_{\phi} \epsilon\f$
+/// @param[in] phi (6x1 vector)
+/// @param[out] J_phi (6x6 matrix)
 template <typename Derived1, typename Derived2>
 void rightJacobianInvSE3Decoupled(const Eigen::MatrixBase<Derived1> &phi,
-                                  const Eigen::MatrixBase<Derived2> &J_const) {
+                                  const Eigen::MatrixBase<Derived2> &J_phi) {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived1);
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived2);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived1, 6);
@@ -237,7 +263,7 @@ void rightJacobianInvSE3Decoupled(const Eigen::MatrixBase<Derived1> &phi,
   using Scalar = typename Derived1::Scalar;
 
   Eigen::MatrixBase<Derived2> &J =
-      const_cast<Eigen::MatrixBase<Derived2> &>(J_const);
+      const_cast<Eigen::MatrixBase<Derived2> &>(J_phi);
 
   J.setZero();
 

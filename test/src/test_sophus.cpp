@@ -32,6 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <basalt/utils/sophus_utils.hpp>
 
+#include <sophus/se2.hpp>
+#include <sophus/sim2.hpp>
+
 #include "gtest/gtest.h"
 #include "test_utils.h"
 
