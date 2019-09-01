@@ -31,6 +31,9 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+@file
+@brief Uniform cumulative b-spline for SO(3)
 */
 
 #pragma once
@@ -293,7 +296,7 @@ class So3Spline {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
- private:
+ protected:
   template <int Derivative, class Derived>
   static void baseCoeffsWithTime(const Eigen::MatrixBase<Derived>& res_const,
                                  _Scalar t) {

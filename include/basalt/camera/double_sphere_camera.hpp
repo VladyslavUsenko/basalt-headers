@@ -31,6 +31,9 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+@file
+@brief Implementation of double sphere camera model
 */
 
 #pragma once
@@ -41,10 +44,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
+/// @brief Double Sphere camera model
+///
+/// \image html ds.png
+/// This model has N=6 parameters \f$ \mathbf{i} = \left[f_x, f_y, c_x, c_y,
+/// \xi, \alpha \right]^T \f$ with \f$ \xi \in [-1,1], \alpha \in [0,1] \f$. See
+/// \ref project and \ref unproject functions for more details.
 template <typename Scalar = double>
 class DoubleSphereCamera {
  public:
-  static constexpr int N = 6;
+  static constexpr int N = 6;  ///< Number of intrinsic parameters.
 
   using Vec2 = Eigen::Matrix<Scalar, 2, 1>;
   using Vec4 = Eigen::Matrix<Scalar, 4, 1>;
@@ -57,17 +66,58 @@ class DoubleSphereCamera {
   using Mat42 = Eigen::Matrix<Scalar, 4, 2>;
   using Mat4N = Eigen::Matrix<Scalar, 4, N>;
 
+  /// @brief Default constructor with zero intrinsics
   DoubleSphereCamera() { param.setZero(); }
 
+  /// @brief Construct camera model with given vector of intrinsics
+  ///
+  /// @param[in] p vector of intrinsic parameters [fx, fy, cx, cy, xi, alpha]
   explicit DoubleSphereCamera(const VecN& p) { param = p; }
 
+  /// @brief Cast to different scalar type
   template <class Scalar2>
   DoubleSphereCamera<Scalar2> cast() const {
     return DoubleSphereCamera<Scalar2>(param.template cast<Scalar2>());
   }
 
+  /// @brief Camera model name
+  ///
+  /// @return "ds"
   static std::string getName() { return "ds"; }
 
+  /// @brief Project the point and optionally compute Jacobians
+  ///
+  /// Projection function is defined as follows:
+  /// \f{align}{
+  ///    \pi(\mathbf{x}, \mathbf{i}) &=
+  ///    \begin{bmatrix}
+  ///    f_x{\frac{x}{\alpha d_2 + (1-\alpha) (\xi d_1 + z)}}
+  ///    \\ f_y{\frac{y}{\alpha d_2 + (1-\alpha) (\xi d_1 + z)}}
+  ///    \\ \end{bmatrix}
+  ///    +
+  ///    \begin{bmatrix}
+  ///    c_x
+  ///    \\ c_y
+  ///    \\ \end{bmatrix},
+  ///    \\ d_1 &= \sqrt{x^2 + y^2 + z^2},
+  ///    \\ d_2 &= \sqrt{x^2 + y^2 + (\xi  d_1 + z)^2}.
+  /// \f}
+  /// A set of 3D points that results in valid projection is expressed as
+  /// follows: \f{align}{
+  ///    \Omega &= \{\mathbf{x} \in \mathbb{R}^3 ~|~ z > -w_2 d_1 \}
+  ///    \\ w_2 &= \frac{w_1+\xi}{\sqrt{2w_1\xi + \xi^2 + 1}}
+  ///    \\ w_1 &= \begin{cases} \frac{\alpha}{1-\alpha}, & \mbox{if } \alpha
+  ///    \le 0.5 \\ \frac{1-\alpha}{\alpha} & \mbox{if } \alpha > 0.5
+  ///    \end{cases}
+  /// \f}
+  ///
+  /// @param[in] p3d point to project
+  /// @param[out] proj result of projection
+  /// @param[out] d_proj_d_p3d if not nullptr computed Jacobian of projection
+  /// with respect to p3d
+  /// @param[out] d_proj_d_param point if not nullptr computed Jacobian of
+  /// projection with respect to intrinsic parameters
+  /// @return if projection is valid
   inline bool project(const Vec4& p3d, Vec2& proj,
                       Mat24* d_proj_d_p3d = nullptr,
                       Mat2N* d_proj_d_param = nullptr) const {
@@ -161,6 +211,38 @@ class DoubleSphereCamera {
     return true;
   }
 
+  /// @brief Unproject the point and optionally compute Jacobians
+  ///
+  /// The unprojection function is computed as follows: \f{align}{
+  ///    \pi^{-1}(\mathbf{u}, \mathbf{i}) &=
+  ///    \frac{m_z \xi + \sqrt{m_z^2 + (1 - \xi^2) r^2}}{m_z^2 + r^2}
+  ///    \begin{bmatrix}
+  ///    m_x \\ m_y \\m_z
+  ///    \\ \end{bmatrix}-\begin{bmatrix}
+  ///    0 \\ 0 \\ \xi
+  ///    \\ \end{bmatrix},
+  ///    \\ m_x &= \frac{u - c_x}{f_x},
+  ///    \\ m_y &= \frac{v - c_y}{f_y},
+  ///    \\ r^2 &= m_x^2 + m_y^2,
+  ///    \\ m_z &= \frac{1 - \alpha^2  r^2}{\alpha  \sqrt{1 - (2 \alpha - 1)
+  ///    r^2}
+  ///    + 1 - \alpha},
+  /// \f}
+  ///
+  /// The valid range of unprojections is \f{align}{
+  ///    \Theta &= \begin{cases}
+  ///    \mathbb{R}^2 & \mbox{if } \alpha \le 0.5
+  ///    \\ \{ \mathbf{u} \in \mathbb{R}^2 ~|~ r^2 \le \frac{1}{2\alpha-1} \}  &
+  ///    \mbox{if} \alpha > 0.5 \end{cases}
+  /// \f}
+  ///
+  /// @param[in] proj point to unproject
+  /// @param[out] p3d result of unprojection
+  /// @param[out] d_p3d_d_proj if not nullptr computed Jacobian of unprojection
+  /// with respect to proj
+  /// @param[out] d_p3d_d_param point if not nullptr computed Jacobian of
+  /// unprojection with respect to intrinsic parameters
+  /// @return if unprojection is valid
   inline bool unproject(const Vec2& proj, Vec4& p3d,
                         Mat42* d_p3d_d_proj = nullptr,
                         Mat4N* d_p3d_d_param = nullptr) const {
@@ -274,6 +356,12 @@ class DoubleSphereCamera {
     return true;
   }
 
+  /// @brief Set parameters from initialization
+  ///
+  /// Initializes the camera model to  \f$ \left[f_x, f_y, c_x, c_y, 0, 0.5
+  /// \right]^T \f$
+  ///
+  /// @param[in] init vector [fx, fy, cx, cy]
   inline void setFromInit(const Vec4& init) {
     param[0] = init[0];
     param[1] = init[1];
@@ -283,14 +371,24 @@ class DoubleSphereCamera {
     param[5] = 0.5;
   }
 
+  /// @brief Increment intrinsic parameters by inc and clamp the values to the
+  /// valid range
+  ///
+  /// @param[in] inc increment vector
   void operator+=(const VecN& inc) {
     param += inc;
     param[4] = std::clamp(param[4], Scalar(-1), Scalar(1));
     param[5] = std::clamp(param[5], Scalar(0), Scalar(1));
   }
 
+  /// @brief Returns a const reference to the intrinsic parameters vector
+  ///
+  /// The order is following: \f$ \left[f_x, f_y, c_x, c_y, \xi, \alpha
+  /// \right]^T \f$
+  /// @return const reference to the intrinsic parameters vector
   const VecN& getParam() const { return param; }
 
+  /// @brief Projections used for unit-tests
   static Eigen::vector<DoubleSphereCamera> getTestProjections() {
     Eigen::vector<DoubleSphereCamera> res;
 
