@@ -243,7 +243,7 @@ void rightJacobianSE3Decoupled(const Eigen::MatrixBase<Derived1> &phi,
 
 /// @brief Right Inverse Jacobian for decoupled SE(3)
 ///
-/// For \f$ \exp(x) \in SO(3) \f$ provides an inverse Jacobian that approximates
+/// For \f$ \exp(x) \in SE(3) \f$ provides an inverse Jacobian that approximates
 /// the decoupled logmap of the right multiplication of the decoupled expmap of
 /// the arguments with a sum for small \f$ \epsilon \f$.  Can be used to
 /// compute:  \f$ \log
