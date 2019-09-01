@@ -43,10 +43,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
+/// @brief Kannala-Brandt camera model
+///
+/// \image html kb.png
+///  The displacement of the projection from the optical center is proportional
+///  to \f$d(\theta)\f$, which is a polynomial function of the angle between the
+///  point and optical axis \f$\theta\f$.
+/// This model has N=8 parameters \f$ \mathbf{i} = \left[f_x, f_y, c_x, c_y,
+/// k_1, k_2, k_3, k_4 \right]^T \f$. See \ref project and \ref unproject
+/// functions for more details. This model corresponds to fisheye camera model
+/// in OpenCV.
 template <typename Scalar = double>
 class KannalaBrandtCamera4 {
  public:
-  static constexpr int N = 8;
+  static constexpr int N = 8;  ///< Number of intrinsic parameters.
 
   using Vec2 = Eigen::Matrix<Scalar, 2, 1>;
   using Vec4 = Eigen::Matrix<Scalar, 4, 1>;
@@ -59,17 +69,54 @@ class KannalaBrandtCamera4 {
   using Mat42 = Eigen::Matrix<Scalar, 4, 2>;
   using Mat4N = Eigen::Matrix<Scalar, 4, N>;
 
+  /// @brief Default constructor with zero intrinsics
   KannalaBrandtCamera4() { param.setZero(); }
 
+  /// @brief Construct camera model with given vector of intrinsics
+  ///
+  /// @param[in] p vector of intrinsic parameters [fx, fy, cx, cy, k1, k2, k3,
+  /// k4]
   explicit KannalaBrandtCamera4(const VecN& p) { param = p; }
 
+  /// @brief Camera model name
+  ///
+  /// @return "kb4"
   static std::string getName() { return "kb4"; }
 
+  /// @brief Cast to different scalar type
   template <class Scalar2>
   KannalaBrandtCamera4<Scalar2> cast() const {
     return KannalaBrandtCamera4<Scalar2>(param.template cast<Scalar2>());
   }
 
+  /// @brief Project the point and optionally compute Jacobians
+  ///
+  /// Projection function is defined as follows:
+  /// \f{align}{
+  ///  \DeclareMathOperator{\atantwo}{atan2}
+  ///  \pi(\mathbf{x}, \mathbf{i}) &=
+  ///  \begin{bmatrix}
+  ///  f_x ~ d(\theta) ~ \frac{x}{r}
+  ///  \\ f_y ~ d(\theta) ~ \frac{y}{r}
+  ///  \\ \end{bmatrix}
+  ///  +
+  ///  \begin{bmatrix}
+  ///   c_x
+  ///   \\ c_y
+  /// \\ \end{bmatrix},
+  ///  \\ r &= \sqrt{x^2 + y^2},
+  ///  \\ \theta &= \atantwo(r, z),
+  ///  \\ d(\theta) &= \theta + k_1 \theta^3 + k_2 \theta^5 + k_3 \theta^7 + k_4
+  ///  \theta^9.
+  /// \f}
+  ///
+  /// @param[in] p3d point to project
+  /// @param[out] proj result of projection
+  /// @param[out] d_proj_d_p3d if not nullptr computed Jacobian of projection
+  /// with respect to p3d
+  /// @param[out] d_proj_d_param point if not nullptr computed Jacobian of
+  /// projection with respect to intrinsic parameters
+  /// @return if projection is valid
   inline bool project(const Vec4& p3d, Vec2& proj,
                       Mat24* d_proj_d_p3d = nullptr,
                       Mat2N* d_proj_d_param = nullptr) const {
@@ -198,6 +245,17 @@ class KannalaBrandtCamera4 {
     return true;
   }
 
+  /// @brief solve for theta using Newton's method.
+  ///
+  /// Find root of the polynomisl \f$ d(\theta) - r_{\theta} = 0 \f$ using
+  /// Newton's method (https://en.wikipedia.org/wiki/Newton%27s_method). Used in
+  /// \ref unproject function.
+  ///
+  /// @param ITER number of iterations
+  /// @param[in] r_theta number of iterations
+  /// @param[out] d_func_d_theta derivative of the function with respect to
+  /// theta at the solution
+  /// @returns theta - root of the polynomial
   template <int ITER>
   inline Scalar solve_theta(const Scalar& r_theta,
                             Scalar& d_func_d_theta) const {
@@ -236,6 +294,31 @@ class KannalaBrandtCamera4 {
     return theta;
   }
 
+  /// @brief Unproject the point and optionally compute Jacobians
+  ///
+  /// The unprojection function is computed as follows: \f{align}{
+  ///     \pi^{-1}(\mathbf{u}, \mathbf{i}) &=
+  ///  \begin{bmatrix}
+  ///  \sin(\theta^{*}) ~ \frac{m_x}{r_{\theta}}
+  ///  \\ \sin(\theta^{*}) ~ \frac{m_y}{r_{\theta}}
+  ///  \\ \cos(\theta^{*})
+  ///  \\ \end{bmatrix},
+  ///  \\ m_x &= \frac{u - c_x}{f_x},
+  ///  \\ m_y &= \frac{v - c_y}{f_y},
+  ///  \\ r_{\theta} &= \sqrt{m_x^2 + m_y^2},
+  ///  \\ \theta^{*} &= d^{-1}(r_{\theta}).
+  /// \f}
+  ///
+  /// \f$\theta^{*}\f$ is the solution of \f$d(\theta)=r_{\theta}\f$. See \ref
+  /// solve_theta for details.
+  ///
+  /// @param[in] proj point to unproject
+  /// @param[out] p3d result of unprojection
+  /// @param[out] d_p3d_d_proj if not nullptr computed Jacobian of unprojection
+  /// with respect to proj
+  /// @param[out] d_p3d_d_param point if not nullptr computed Jacobian of
+  /// unprojection with respect to intrinsic parameters
+  /// @return if unprojection is valid
   inline bool unproject(const Vec2& proj, Vec4& p3d,
                         Mat42* d_p3d_d_proj = nullptr,
                         Mat4N* d_p3d_d_param = nullptr) const {
@@ -344,10 +427,24 @@ class KannalaBrandtCamera4 {
     return true;
   }
 
+  /// @brief Increment intrinsic parameters by inc
+  ///
+  /// @param[in] inc increment vector
   void operator+=(const VecN& inc) { param += inc; }
 
+  /// @brief Returns a const reference to the intrinsic parameters vector
+  ///
+  /// The order is following: \f$ \left[f_x, f_y, c_x, c_y, k1, k2, k3, k4
+  /// \right]^T \f$
+  /// @return const reference to the intrinsic parameters vector
   const VecN& getParam() const { return param; }
 
+  /// @brief Set parameters from initialization
+  ///
+  /// Initializes the camera model to  \f$ \left[f_x, f_y, c_x, c_y, 0, 0, 0, 0
+  /// \right]^T \f$
+  ///
+  /// @param[in] init vector [fx, fy, cx, cy]
   inline void setFromInit(const Vec4& init) {
     param[0] = init[0];
     param[1] = init[1];
@@ -359,6 +456,7 @@ class KannalaBrandtCamera4 {
     param[7] = 0;
   }
 
+  /// @brief Projections used for unit-tests
   static Eigen::vector<KannalaBrandtCamera4> getTestProjections() {
     Eigen::vector<KannalaBrandtCamera4> res;
 
