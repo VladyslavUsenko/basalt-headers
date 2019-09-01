@@ -49,6 +49,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
+/// @brief Generic camera model that can store different camera models
+///
+/// Particular class of camera model is stored as \ref variant and can be casted
+/// to specific type using std::visit.
 template <typename Scalar>
 class GenericCamera {
   using Vec2 = Eigen::Matrix<Scalar, 2, 1>;
@@ -63,9 +67,11 @@ class GenericCamera {
   using VariantT =
       std::variant<ExtendedUnifiedCamera<Scalar>, DoubleSphereCamera<Scalar>,
                    KannalaBrandtCamera4<Scalar>, UnifiedCamera<Scalar>,
-                   PinholeCamera<Scalar>>;
+                   PinholeCamera<Scalar>>;  ///< Possible variants of camera
+                                            ///< models.
 
  public:
+  /// @brief Cast to different scalar type
   template <typename Scalar2>
   inline GenericCamera<Scalar2> cast() const {
     GenericCamera<Scalar2> res;
@@ -74,33 +80,52 @@ class GenericCamera {
     return res;
   }
 
+  /// @brief Number of intrinsic parameters
   inline int getN() const {
     int res;
     std::visit([&](const auto& v) { res = v.N; }, variant);
     return res;
   }
 
+  /// @brief Camera model name
   inline std::string getName() const {
     std::string res;
     std::visit([&](const auto& v) { res = v.getName(); }, variant);
     return res;
   }
 
+  /// @brief Set parameters from initialization
+  ///
+  /// @param[in] init vector [fx, fy, cx, cy]
   inline void setFromInit(const Vec4& init) {
     std::visit([&](auto& v) { return v.setFromInit(init); }, variant);
   }
 
+  /// @brief Increment intrinsic parameters by inc and if necessary clamp the
+  /// values to the valid range
   inline void applyInc(const VecX& inc) {
     std::visit([&](auto& v) { return v += inc; }, variant);
   }
 
+  /// @brief Returns a vector of intrinsic parameters
+  ///
+  /// The order of parameters depends on the stored model.
+  /// @return vector of intrinsic parameters vector
   inline VecX getParam() const {
     VecX res;
     std::visit([&](const auto& cam) { res = cam.getParam(); }, variant);
     return res;
   }
 
-  // SLOW!! functions. Every call requires vtable lookup.
+  /// @brief Project a single point and optionally compute Jacobian
+  ///
+  /// **SLOW** function, as it requires vtable lookup for every projection.
+  ///
+  /// @param[in] p3d point to project
+  /// @param[out] proj result of projection
+  /// @param[out] d_proj_d_p3d if not nullptr computed Jacobian of projection
+  /// with respect to p3d
+  /// @return if projection is valid
   inline bool project(const Vec4& p3d, Vec2& proj,
                       Mat24* d_proj_d_p3d = nullptr) const {
     bool res;
@@ -110,6 +135,15 @@ class GenericCamera {
     return res;
   }
 
+  /// @brief Unproject a single point and optionally compute Jacobian
+  ///
+  /// **SLOW** function, as it requires vtable lookup for every unprojection.
+  ///
+  /// @param[in] proj point to unproject
+  /// @param[out] p3d result of unprojection
+  /// @param[out] d_p3d_d_proj if not nullptr computed Jacobian of unprojection
+  /// with respect to proj
+  /// @return if unprojection is valid
   inline bool unproject(const Vec2& proj, Vec4& p3d,
                         Mat42* d_p3d_d_proj = nullptr) const {
     bool res;
@@ -118,8 +152,14 @@ class GenericCamera {
         variant);
     return res;
   }
-  // SLOW!! functions. Every call requires vtable lookup.
 
+  /// @brief Project a vector of points
+  ///
+  /// @param[in] p3d points to project
+  /// @param[in] T_c_w transformation from world to camera frame that should be
+  /// applied to points before projection
+  /// @param[out] proj results of projection
+  /// @param[out] proj_success if projection is valid
   inline void project(const Eigen::vector<Vec3>& p3d, const Mat4& T_c_w,
                       Eigen::vector<Vec2>& proj,
                       std::vector<bool>& proj_success) const {
@@ -135,6 +175,13 @@ class GenericCamera {
         variant);
   }
 
+  /// @brief Project a vector of points
+  ///
+  /// @param[in] p3d points to project
+  /// @param[in] T_c_w transformation from world to camera frame that should be
+  /// applied to points before projection
+  /// @param[out] proj results of projection
+  /// @param[out] proj_success if projection is valid
   inline void project(const Eigen::vector<Vec4>& p3d, const Mat4& T_c_w,
                       Eigen::vector<Vec2>& proj,
                       std::vector<bool>& proj_success) const {
@@ -149,6 +196,31 @@ class GenericCamera {
         variant);
   }
 
+  /// @brief Project a vector of points
+  ///
+  /// @param[in] p3d points to project
+  /// @param[out] proj results of projection
+  /// @param[out] proj_success if projection is valid
+  inline void project(const Eigen::vector<Vec4>& p3d, Eigen::vector<Vec2>& proj,
+                      std::vector<bool>& proj_success) const {
+    std::visit(
+        [&](const auto& cam) {
+          proj.resize(p3d.size());
+          proj_success.resize(p3d.size());
+          for (size_t i = 0; i < p3d.size(); i++) {
+            proj_success[i] = cam.project(p3d[i], proj[i]);
+          }
+        },
+        variant);
+  }
+
+  /// @brief Project a vector of points, compute polar and azimuthal angles
+  ///
+  /// @param[in] p3d points to project
+  /// @param[in] T_c_w transformation from world to camera frame that should be
+  /// applied to points before projection
+  /// @param[out] proj results of projection
+  /// @param[out] proj_success if projection is valid
   inline void project(const Eigen::vector<Vec4>& p3d, const Mat4& T_c_w,
                       Eigen::vector<Vec2>& proj,
                       std::vector<bool>& proj_success,
@@ -172,6 +244,11 @@ class GenericCamera {
         variant);
   }
 
+  /// @brief Unproject a vector of points
+  ///
+  /// @param[in] proj points to unproject
+  /// @param[out] p3d results of unprojection
+  /// @param[out] unproj_success if unprojection is valid
   inline void unproject(const Eigen::vector<Vec2>& proj,
                         Eigen::vector<Vec4>& p3d,
                         std::vector<bool>& unproj_success) const {
@@ -186,6 +263,7 @@ class GenericCamera {
         variant);
   }
 
+  /// @brief Construct a particular type of camera model from name
   static GenericCamera<Scalar> fromString(const std::string& name) {
     GenericCamera<Scalar> res;
 
@@ -198,6 +276,8 @@ class GenericCamera {
   VariantT variant;
 
  private:
+  /// @brief Iterate over all possible types of the variant and construct that
+  /// type that has a matching name
   template <int I>
   static void visitAllTypes(GenericCamera<Scalar>& res,
                             const std::string& name) {

@@ -199,7 +199,7 @@ inline void load(Archive& ar, basalt::FovCamera<Scalar>& cam) {
 template <class Archive, class Scalar, int DIM, int ORDER>
 inline void save(Archive& ar,
                  const basalt::RdSpline<DIM, ORDER, Scalar>& spline) {
-  ar(spline.getStartTimeNs());
+  ar(spline.minTimeNs());
   ar(spline.getTimeIntervalNs());
   ar(spline.getKnots());
 }

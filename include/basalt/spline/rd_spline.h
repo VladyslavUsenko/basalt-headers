@@ -48,17 +48,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
-// Uniform b-spline for vectors with dimention _DIM of order _N
+/// @brief Uniform b-spline for euclidean vectors with dimention DIM of order
+/// N
 template <int _DIM, int _N, typename _Scalar = double>
 class RdSpline {
  public:
-  static constexpr int N = _N;
-  static constexpr int DEG = _N - 1;
+  static constexpr int N = _N;        ///< Order of the spline.
+  static constexpr int DEG = _N - 1;  ///< Degree of the spline.
 
-  static constexpr int DIM = _DIM;
+  static constexpr int DIM = _DIM;  ///< Dimension of euclidean vector space.
 
-  static constexpr _Scalar ns_to_s = 1e-9;
-  static constexpr _Scalar s_to_ns = 1e9;
+  static constexpr _Scalar ns_to_s = 1e-9;  ///< Nanosecond to second conversion
+  static constexpr _Scalar s_to_ns = 1e9;   ///< Second to nanosecond conversion
 
   using MatN = Eigen::Matrix<_Scalar, _N, _N>;
   using VecN = Eigen::Matrix<_Scalar, _N, 1>;
@@ -66,13 +67,24 @@ class RdSpline {
   using VecD = Eigen::Matrix<_Scalar, _DIM, 1>;
   using MatD = Eigen::Matrix<_Scalar, _DIM, _DIM>;
 
+  /// @brief Struct to store the Jacobian of the spline
+  ///
+  /// Since b-spline of order N have local support (only N knots infuence the
+  /// value) the Jacobian is zero for all knots except maximum N for value and
+  /// all derivatives.
   struct JacobianStruct {
-    size_t start_idx;
-    std::array<_Scalar, N> d_val_d_knot;
+    size_t
+        start_idx;  ///< Start index of the non-zero elements of the Jacobian.
+    std::array<_Scalar, N> d_val_d_knot;  ///< Value of nonzero Jacobians.
   };
 
+  /// @brief Default constructor
   RdSpline() : dt_ns(0), start_t_ns(0) {}
 
+  /// @brief Constructor with knot interval and start time
+  ///
+  /// @param[in] time_interval_ns knot time interval in nanoseconds
+  /// @param[in] start_time_ns start time of the spline in nanoseconds
   RdSpline(int64_t time_interval_ns, int64_t start_time_ns = 0)
       : dt_ns(time_interval_ns), start_t_ns(start_time_ns) {
     pow_inv_dt[0] = 1.0;
@@ -83,6 +95,7 @@ class RdSpline {
     }
   }
 
+  /// @brief Cast to different scalar type
   template <typename Scalar2>
   inline RdSpline<_DIM, _N, Scalar2> cast() const {
     RdSpline<_DIM, _N, Scalar2> res;
@@ -98,14 +111,30 @@ class RdSpline {
     return res;
   }
 
-  inline void setStartTimeNs(int64_t s) { start_t_ns = s; }
+  /// @brief Set start time for spline
+  ///
+  /// @param[in] start_time_ns start time of the spline in nanoseconds
+  inline void setStartTimeNs(int64_t start_time_ns) {
+    start_t_ns = start_time_ns;
+  }
 
+  /// @brief Maximum time represented by spline
+  ///
+  /// @return maximum time represented by spline in nanoseconds
   int64_t maxTimeNs() const {
     return start_t_ns + (knots.size() - N + 1) * dt_ns - 1;
   }
 
+  /// @brief Minimum time represented by spline
+  ///
+  /// @return minimum time represented by spline in nanoseconds
   int64_t minTimeNs() const { return start_t_ns; }
 
+  /// @brief Gererate random trajectory
+  ///
+  /// @param[in] n number of knots to generate
+  /// @param[in] static_init if true the first N knots will be the same
+  /// resulting in static initial condition
   void genRandomTrajectory(int n, bool static_init = false) {
     if (static_init) {
       VecD rnd = VecD::Random() * 5;
@@ -117,24 +146,60 @@ class RdSpline {
     }
   }
 
+  /// @brief Add knot to the end of the spline
+  ///
+  /// @param[in] knot knot to add
   inline void knots_push_back(const VecD& knot) { knots.push_back(knot); }
+
+  /// @brief Remove knot from the back of the spline
   inline void knots_pop_back() { knots.pop_back(); }
+
+  /// @brief Return the first knot of the spline
+  ///
+  /// @return first knot of the spline
   inline const VecD& knots_front() const { return knots.front(); }
+
+  /// @brief Remove first knot of the spline and increase the start time
   inline void knots_pop_front() {
     start_t_ns += dt_ns;
     knots.pop_front();
   }
 
+  /// @brief Resize the containter with knots
+  ///
+  /// @param[in] n number of knots
   inline void resize(size_t n) { knots.resize(n); }
 
+  /// @brief Return reference to the knot with index i
+  ///
+  /// @param i index of the knot
+  /// @return reference to the knot
   inline VecD& getKnot(int i) { return knots[i]; }
+
+  /// @brief Return const reference to the knot with index i
+  ///
+  /// @param i index of the knot
+  /// @return const reference to the knot
   inline const VecD& getKnot(int i) const { return knots[i]; }
 
+  /// @brief Return const reference to deque with knots
+  ///
+  /// @return const reference to deque with knots
   const Eigen::deque<VecD>& getKnots() const { return knots; }
 
+  /// @brief Return time interval in nanoseconds
+  ///
+  /// @return time interval in nanoseconds
   int64_t getTimeIntervalNs() const { return dt_ns; }
-  int64_t getStartTimeNs() const { return start_t_ns; }
 
+  /// @brief Evaluate value or derivative of the spline
+  ///
+  /// @param Derivative derivative to evaluate (0 for value)
+  /// @param[in] time_ns time for evaluating of the spline in nanoseconds
+  /// @param[out] J if not nullptr, return the Jacobian of the value with
+  /// respect to knots
+  /// @return value of the spline or derivative. Euclidean vector of dimention
+  /// DIM.
   template <int Derivative = 0>
   VecD evaluate(int64_t time_ns, JacobianStruct* J = nullptr) const {
     int64_t st_ns = (time_ns - start_t_ns);
@@ -172,10 +237,12 @@ class RdSpline {
     return res;
   }
 
+  /// @brief Alias for first derivative of spline. See \ref evaluate.
   inline VecD velocity(int64_t time_ns, JacobianStruct* J = nullptr) const {
     return evaluate<1>(time_ns, J);
   }
 
+  /// @brief Alias for second derivative of spline. See \ref evaluate.
   inline VecD acceleration(int64_t time_ns, JacobianStruct* J = nullptr) const {
     return evaluate<2>(time_ns, J);
   }
@@ -183,6 +250,15 @@ class RdSpline {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  protected:
+  /// @brief Vector of derivatives of time polynomial.
+  ///
+  /// Computes a derivative of \f$ \begin{bmatrix}1 & t & t^2 & \dots &
+  /// t^{N-1}\end{bmatrix} \f$ with repect to time. For example, the first
+  /// derivative would be \f$ \begin{bmatrix}0 & 1 & 2 t & \dots & (N-1)
+  /// t^{N-2}\end{bmatrix} \f$.
+  /// @param Derivative derivative to evaluate
+  /// @param[out] res_const vector to store the result
+  /// @param[in] t
   template <int Derivative, class Derived>
   static void baseCoeffsWithTime(const Eigen::MatrixBase<Derived>& res_const,
                                  _Scalar t) {
@@ -206,14 +282,16 @@ class RdSpline {
   template <int, int, typename>
   friend class RdSpline;
 
-  static const MatN blending_matrix_;
-  static const MatN base_coefficients_;
+  static const MatN
+      blending_matrix_;  ///< Blending matrix. See \ref computeBlendingMatrix.
 
-  int64_t dt_ns;
+  static const MatN base_coefficients_;  ///< Base coefficients matrix.
+                                         ///< See \ref computeBaseCoefficients.
 
-  Eigen::deque<VecD> knots;
-  int64_t start_t_ns;
-  std::array<_Scalar, _N> pow_inv_dt;
+  Eigen::deque<VecD> knots;            ///< Knots
+  int64_t dt_ns;                       ///< Knot interval in nanoseconds
+  int64_t start_t_ns;                  ///< Start time in nanoseconds
+  std::array<_Scalar, _N> pow_inv_dt;  ///< Array with inverse powers of dt
 };
 
 template <int _DIM, int _N, typename _Scalar>

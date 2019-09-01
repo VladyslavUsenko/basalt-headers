@@ -42,10 +42,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
+/// @brief Pinhole camera model
+///
+/// This model has N=4 parameters \f$ \mathbf{i} = \left[f_x, f_y, c_x, c_y
+/// \right]^T \f$ with. See \ref
+/// project and \ref unproject functions for more details.
 template <typename Scalar = double>
 class PinholeCamera {
  public:
-  static constexpr int N = 4;
+  static constexpr int N = 4;  ///< Number of intrinsic parameters.
 
   using Vec2 = Eigen::Matrix<Scalar, 2, 1>;
   using Vec4 = Eigen::Matrix<Scalar, 4, 1>;
@@ -58,17 +63,52 @@ class PinholeCamera {
   using Mat42 = Eigen::Matrix<Scalar, 4, 2>;
   using Mat4N = Eigen::Matrix<Scalar, 4, N>;
 
+  /// @brief Default constructor with zero intrinsics
   PinholeCamera() { param.setZero(); }
 
+  /// @brief Construct camera model with given vector of intrinsics
+  ///
+  /// @param[in] p vector of intrinsic parameters [fx, fy, cx, cy]
   explicit PinholeCamera(const VecN& p) { param = p; }
 
+  /// @brief Cast to different scalar type
   template <class Scalar2>
   PinholeCamera<Scalar2> cast() const {
     return PinholeCamera<Scalar2>(param.template cast<Scalar2>());
   }
 
+  /// @brief Camera model name
+  ///
+  /// @return "pinhole"
   static const std::string getName() { return "pinhole"; }
 
+  /// @brief Project the point and optionally compute Jacobians
+  ///
+  /// Projection function is defined as follows:
+  /// \f{align}{
+  ///    \pi(\mathbf{x}, \mathbf{i}) &=
+  ///    \begin{bmatrix}
+  ///    f_x{\frac{x}{z}}
+  ///    \\ f_y{\frac{y}{z}}
+  ///    \\ \end{bmatrix}
+  ///    +
+  ///    \begin{bmatrix}
+  ///    c_x
+  ///    \\ c_y
+  ///    \\ \end{bmatrix}.
+  /// \f}
+  /// A set of 3D points that results in valid projection is expressed as
+  /// follows: \f{align}{
+  ///    \Omega &= \{\mathbf{x} \in \mathbb{R}^3 ~|~ z > 0 \}
+  /// \f}
+  ///
+  /// @param[in] p3d point to project
+  /// @param[out] proj result of projection
+  /// @param[out] d_proj_d_p3d if not nullptr computed Jacobian of projection
+  /// with respect to p3d
+  /// @param[out] d_proj_d_param point if not nullptr computed Jacobian of
+  /// projection with respect to intrinsic parameters
+  /// @return if projection is valid
   inline bool project(const Vec4& p3d, Vec2& proj,
                       Mat24* d_proj_d_p3d = nullptr,
                       Mat2N* d_proj_d_param = nullptr) const {
@@ -108,6 +148,26 @@ class PinholeCamera {
     return true;
   }
 
+  /// @brief Unproject the point and optionally compute Jacobians
+  ///
+  /// The unprojection function is computed as follows: \f{align}{
+  ///    \pi^{-1}(\mathbf{u}, \mathbf{i}) &=
+  ///    \frac{1}{m_x^2 + m_y^2 + 1}
+  ///    \begin{bmatrix}
+  ///    m_x \\ m_y \\ 1
+  ///    \\ \end{bmatrix}
+  ///    \\ m_x &= \frac{u - c_x}{f_x},
+  ///    \\ m_y &= \frac{v - c_y}{f_y}.
+  /// \f}
+  ///
+  ///
+  /// @param[in] proj point to unproject
+  /// @param[out] p3d result of unprojection
+  /// @param[out] d_p3d_d_proj if not nullptr computed Jacobian of unprojection
+  /// with respect to proj
+  /// @param[out] d_p3d_d_param point if not nullptr computed Jacobian of
+  /// unprojection with respect to intrinsic parameters
+  /// @return if unprojection is valid
   inline bool unproject(const Vec2& proj, Vec4& p3d,
                         Mat42* d_p3d_d_proj = nullptr,
                         Mat4N* d_p3d_d_param = nullptr) const {
@@ -160,6 +220,12 @@ class PinholeCamera {
     return true;
   }
 
+  /// @brief Set parameters from initialization
+  ///
+  /// Initializes the camera model to  \f$ \left[f_x, f_y, c_x, c_y, \right]^T
+  /// \f$
+  ///
+  /// @param[in] init vector [fx, fy, cx, cy]
   inline void setFromInit(const Vec4& init) {
     param[0] = init[0];
     param[1] = init[1];
@@ -169,10 +235,18 @@ class PinholeCamera {
     param[5] = 1;
   }
 
+  /// @brief Increment intrinsic parameters by inc
+  ///
+  /// @param[in] inc increment vector
   void operator+=(const VecN& inc) { param += inc; }
 
+  /// @brief Returns a const reference to the intrinsic parameters vector
+  ///
+  /// The order is following: \f$ \left[f_x, f_y, c_x, c_y, \right]^T \f$
+  /// @return const reference to the intrinsic parameters vector
   const VecN& getParam() const { return param; }
 
+  /// @brief Projections used for unit-tests
   static Eigen::vector<PinholeCamera> getTestProjections() {
     Eigen::vector<PinholeCamera> res;
 
@@ -191,6 +265,7 @@ class PinholeCamera {
     return res;
   }
 
+  /// @brief Resolutions used for unit-tests
   static Eigen::vector<Eigen::Vector2i> getTestResolutions() {
     Eigen::vector<Eigen::Vector2i> res;
 
