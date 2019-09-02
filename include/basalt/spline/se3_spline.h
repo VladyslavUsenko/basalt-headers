@@ -33,7 +33,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 @file
-@brief Uniform b-spline for SE(3)
+@brief Uniform B-spline for SE(3)
 */
 
 #pragma once
@@ -48,7 +48,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
-// SE(3) uniform b-spline of order _N
+// SE(3) uniform B-spline of order _N
 template <int _N, typename _Scalar = double>
 class Se3Spline {
  public:

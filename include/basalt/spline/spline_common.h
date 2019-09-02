@@ -33,7 +33,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 @file
-@brief Common functions for b-spline evaluation
+@brief Common functions for B-spline evaluation
 */
 
 #pragma once
@@ -61,7 +61,7 @@ constexpr inline uint64_t C_n_k(uint64_t n, uint64_t k) {
   return r;
 }
 
-/// @brief Compute blending matrix for uniform b-spline evaluation.
+/// @brief Compute blending matrix for uniform B-spline evaluation.
 ///
 /// @param _N order of the spline
 /// @param _Scalar scalar type to use

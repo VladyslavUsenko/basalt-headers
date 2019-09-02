@@ -33,7 +33,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 @file
-@brief Uniform cumulative b-spline for SO(3)
+@brief Uniform cumulative B-spline for SO(3)
 */
 
 #pragma once
@@ -49,15 +49,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
-// SO(3) cumulative uniform b-spline of order _N
+/// @brief Uniform cummulative B-spline for SO(3) of order N
 template <int _N, typename _Scalar = double>
 class So3Spline {
  public:
-  static constexpr int N = _N;
-  static constexpr int DEG = _N - 1;
+  static constexpr int N = _N;        ///< Order of the spline.
+  static constexpr int DEG = _N - 1;  ///< Degree of the spline.
 
-  static constexpr _Scalar ns_to_s = 1e-9;
-  static constexpr _Scalar s_to_ns = 1e9;
+  static constexpr _Scalar ns_to_s = 1e-9;  ///< Nanosecond to second conversion
+  static constexpr _Scalar s_to_ns = 1e9;   ///< Second to nanosecond conversion
 
   using MatN = Eigen::Matrix<_Scalar, _N, _N>;
   using VecN = Eigen::Matrix<_Scalar, _N, 1>;
@@ -67,23 +67,43 @@ class So3Spline {
 
   using SO3 = Sophus::SO3<_Scalar>;
 
+  /// @brief Struct to store the Jacobian of the spline
+  ///
+  /// Since B-spline of order N has local support (only N knots infuence the
+  /// value) the Jacobian is zero for all knots except maximum N for value and
+  /// all derivatives.
   struct JacobianStruct {
     size_t start_idx;
     std::array<MatD, _N> d_val_d_knot;
   };
 
+  /// @brief Constructor with knot interval and start time
+  ///
+  /// @param[in] time_interval_ns knot time interval in nanoseconds
+  /// @param[in] start_time_ns start time of the spline in nanoseconds
   So3Spline(int64_t time_interval_ns, int64_t start_time_ns = 0)
       : dt_ns(time_interval_ns), start_t_ns(start_time_ns) {
     pow_inv_dt[0] = 1.0;
     pow_inv_dt[1] = s_to_ns / dt_ns;
   }
 
+  /// @brief Maximum time represented by spline
+  ///
+  /// @return maximum time represented by spline in nanoseconds
   int64_t maxTimeNs() const {
     return start_t_ns + (knots.size() - N + 1) * dt_ns - 1;
   }
 
+  /// @brief Minimum time represented by spline
+  ///
+  /// @return minimum time represented by spline in nanoseconds
   int64_t minTimeNs() const { return start_t_ns; }
 
+  /// @brief Gererate random trajectory
+  ///
+  /// @param[in] n number of knots to generate
+  /// @param[in] static_init if true the first N knots will be the same
+  /// resulting in static initial condition
   void genRandomTrajectory(int n, bool static_init = false) {
     if (static_init) {
       VecD rnd = VecD::Random() * M_PI;
@@ -99,26 +119,63 @@ class So3Spline {
     }
   }
 
+  /// @brief Set start time for spline
+  ///
+  /// @param[in] start_time_ns start time of the spline in nanoseconds
   inline void setStartTimeNs(int64_t s) { start_t_ns = s; }
 
+  /// @brief Add knot to the end of the spline
+  ///
+  /// @param[in] knot knot to add
   inline void knots_push_back(const SO3& knot) { knots.push_back(knot); }
+
+  /// @brief Remove knot from the back of the spline
   inline void knots_pop_back() { knots.pop_back(); }
+
+  /// @brief Return the first knot of the spline
+  ///
+  /// @return first knot of the spline
   inline const SO3& knots_front() const { return knots.front(); }
+
+  /// @brief Remove first knot of the spline and increase the start time
   inline void knots_pop_front() {
     start_t_ns += dt_ns;
     knots.pop_front();
   }
 
+  /// @brief Resize containter with knots
+  ///
+  /// @param[in] n number of knots
   inline void resize(size_t n) { knots.resize(n); }
 
+  /// @brief Return reference to the knot with index i
+  ///
+  /// @param i index of the knot
+  /// @return reference to the knot
   inline SO3& getKnot(int i) { return knots[i]; }
 
+  /// @brief Return const reference to the knot with index i
+  ///
+  /// @param i index of the knot
+  /// @return const reference to the knot
   inline const SO3& getKnot(int i) const { return knots[i]; }
 
+  /// @brief Return const reference to deque with knots
+  ///
+  /// @return const reference to deque with knots
   const Eigen::deque<SO3>& getKnots() const { return knots; }
 
+  /// @brief Return time interval in nanoseconds
+  ///
+  /// @return time interval in nanoseconds
   int64_t getTimeIntervalNs() const { return dt_ns; }
 
+  /// @brief Evaluate SO(3) B-spline
+  ///
+  /// @param[in] time_ns time for evaluating of the spline in nanoseconds
+  /// @param[out] J if not nullptr, return the Jacobian of the value with
+  /// respect to knots
+  /// @return SO(3) value of the spline
   SO3 evaluate(int64_t time_ns, JacobianStruct* J = nullptr) const {
     int64_t st_ns = (time_ns - start_t_ns);
 
@@ -174,6 +231,11 @@ class So3Spline {
     return res;
   }
 
+  /// @brief Evaluate rotational velocity (first time derivative) of SO(3)
+  /// B-spline in the body frame
+  ///
+  /// @param[in] time_ns time for evaluating of the spline in nanoseconds
+  /// @return rotational velocity (3x1 vector)
   VecD velocityBody(int64_t time_ns) const {
     int64_t st_ns = (time_ns - start_t_ns);
 
@@ -214,6 +276,13 @@ class So3Spline {
     return res;
   }
 
+  /// @brief Evaluate rotational velocity (first time derivative) of SO(3)
+  /// B-spline in the body frame
+  ///
+  /// @param[in] time_ns time for evaluating of the spline in nanoseconds
+  /// @param[out] J if not nullptr, return the Jacobian of the rotational
+  /// velocity in body frame with respect to knots
+  /// @return rotational velocity (3x1 vector)
   VecD velocityBody(int64_t time_ns, JacobianStruct* J) const {
     BASALT_ASSERT(J);
 
@@ -297,6 +366,15 @@ class So3Spline {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  protected:
+  /// @brief Vector of derivatives of time polynomial.
+  ///
+  /// Computes a derivative of \f$ \begin{bmatrix}1 & t & t^2 & \dots &
+  /// t^{N-1}\end{bmatrix} \f$ with repect to time. For example, the first
+  /// derivative would be \f$ \begin{bmatrix}0 & 1 & 2 t & \dots & (N-1)
+  /// t^{N-2}\end{bmatrix} \f$.
+  /// @param Derivative derivative to evaluate
+  /// @param[out] res_const vector to store the result
+  /// @param[in] t
   template <int Derivative, class Derived>
   static void baseCoeffsWithTime(const Eigen::MatrixBase<Derived>& res_const,
                                  _Scalar t) {
@@ -317,14 +395,16 @@ class So3Spline {
     }
   }
 
-  static const MatN blending_matrix_;
-  static const MatN base_coefficients_;
+  static const MatN
+      blending_matrix_;  ///< Blending matrix. See \ref computeBlendingMatrix.
 
-  int64_t dt_ns;
+  static const MatN base_coefficients_;  ///< Base coefficients matrix.
+  ///< See \ref computeBaseCoefficients.
 
-  Eigen::deque<SO3> knots;
-  int64_t start_t_ns;
-  std::array<_Scalar, 2> pow_inv_dt;
+  Eigen::deque<SO3> knots;            ///< Knots
+  int64_t dt_ns;                      ///< Knot interval in nanoseconds
+  int64_t start_t_ns;                 ///< Start time in nanoseconds
+  std::array<_Scalar, 2> pow_inv_dt;  ///< Array with inverse powers of dt
 };
 
 template <int _N, typename _Scalar>

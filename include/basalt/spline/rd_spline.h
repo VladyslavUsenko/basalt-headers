@@ -33,7 +33,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 @file
-@brief Uniform b-spline for euclidean vectors
+@brief Uniform B-spline for euclidean vectors
 */
 
 #pragma once
@@ -48,7 +48,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
-/// @brief Uniform b-spline for euclidean vectors with dimention DIM of order
+/// @brief Uniform B-spline for euclidean vectors with dimention DIM of order
 /// N
 template <int _DIM, int _N, typename _Scalar = double>
 class RdSpline {
@@ -69,7 +69,7 @@ class RdSpline {
 
   /// @brief Struct to store the Jacobian of the spline
   ///
-  /// Since b-spline of order N have local support (only N knots infuence the
+  /// Since B-spline of order N has local support (only N knots infuence the
   /// value) the Jacobian is zero for all knots except maximum N for value and
   /// all derivatives.
   struct JacobianStruct {
@@ -165,7 +165,7 @@ class RdSpline {
     knots.pop_front();
   }
 
-  /// @brief Resize the containter with knots
+  /// @brief Resize containter with knots
   ///
   /// @param[in] n number of knots
   inline void resize(size_t n) { knots.resize(n); }
