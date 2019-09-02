@@ -44,6 +44,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
+/// @brief Integrated pseudo-measurement that combines several consecutive IMU
+/// measurements.
 class IntegratedImuMeasurement {
  public:
   using Ptr = std::shared_ptr<IntegratedImuMeasurement>;
@@ -54,7 +56,18 @@ class IntegratedImuMeasurement {
   using MatN3 = Eigen::Matrix<double, POSE_VEL_SIZE, 3>;
   using MatN6 = Eigen::Matrix<double, POSE_VEL_SIZE, 6>;
 
-  // propagates the state using IMUData
+  /// @brief Propagate current state given ImuData and optionally compute
+  /// Jacobians.
+  ///
+  /// @param[in] curr_state current state
+  /// @param[in] data IMU data
+  /// @param[out] next_state predicted state
+  /// @param[out] d_next_d_curr Jacobian of the predicted state with respect
+  /// to current state
+  /// @param[out] d_next_d_accel Jacobian of the predicted state with respect
+  /// accelerometer measurement
+  /// @param[out] d_next_d_gyro Jacobian of the predicted state with respect
+  /// gyroscope measurement
   inline static void propagateState(const PoseVelState& curr_state,
                                     const ImuData& data,
                                     PoseVelState& next_state,
@@ -115,6 +128,7 @@ class IntegratedImuMeasurement {
     }
   }
 
+  /// @brief Default constructor.
   IntegratedImuMeasurement() : start_t_ns(0), cov_inv_computed(false) {
     cov.setZero();
     d_state_d_ba.setZero();
@@ -123,6 +137,7 @@ class IntegratedImuMeasurement {
     bias_accel_lin.setZero();
   }
 
+  /// @brief Constructor with start time and bias estimates.
   IntegratedImuMeasurement(int64_t start_t_ns,
                            const Eigen::Vector3d& bias_gyro_lin,
                            const Eigen::Vector3d& bias_accel_lin)
@@ -135,6 +150,11 @@ class IntegratedImuMeasurement {
     d_state_d_bg.setZero();
   }
 
+  /// @brief Integrate IMU data
+  ///
+  /// @param[in] data IMU data
+  /// @param[in] accel_cov diagonal of accelerometer noise covariance matrix
+  /// @param[in] gyro_cov diagonal of gyroscope noise covariance matrix
   void integrate(const ImuData& data, const Vec3& accel_cov,
                  const Vec3& gyro_cov) {
     ImuData data_corrected = data;
@@ -158,6 +178,11 @@ class IntegratedImuMeasurement {
     d_state_d_bg = -G + F * d_state_d_bg;
   }
 
+  /// @brief Predict state given this pseudo-measurement
+  ///
+  /// @param[in] state0 current state
+  /// @param[in] g gravity vector
+  /// @param[out] state1 predicted state
   void predictState(const PoseVelState& state0, const Eigen::Vector3d& g,
                     PoseVelState& state1) const {
     double dt = delta_state.t_ns * 1e-9;
@@ -170,6 +195,23 @@ class IntegratedImuMeasurement {
         state0.T_w_i.so3() * delta_state.T_w_i.translation();
   }
 
+  /// @brief Compute residual between two states given this pseudo-measurement
+  /// and optionally compute Jacobians.
+  ///
+  /// @param[in] state0 initial state
+  /// @param[in] g gravity vector
+  /// @param[in] state1 next state
+  /// @param[in] curr_bg current estimate of gyroscope bias
+  /// @param[in] curr_ba current estimate of accelerometer bias
+  /// @param[out] d_res_d_state0 if not nullptr, Jacobian of the residual with
+  /// respect to state0
+  /// @param[out] d_res_d_state1 if not nullptr, Jacobian of the residual with
+  /// respect to state1
+  /// @param[out] d_res_d_bg if not nullptr, Jacobian of the residual with
+  /// respect to gyroscope bias
+  /// @param[out] d_res_d_ba if not nullptr, Jacobian of the residual with
+  /// respect to accelerometer bias
+  /// @return residual
   VecN residual(const PoseVelState& state0, const Eigen::Vector3d& g,
                 const PoseVelState& state1, const Eigen::Vector3d& curr_bg,
                 const Eigen::Vector3d& curr_ba, MatNN* d_res_d_state0 = nullptr,
@@ -240,9 +282,13 @@ class IntegratedImuMeasurement {
     return res;
   }
 
+  /// @brief Time duretion of preintegrated measurement in nanoseconds.
   int64_t get_dt_ns() const { return delta_state.t_ns; }
+
+  /// @brief Start time of preintegrated measurement in nanoseconds.
   int64_t get_start_t_ns() const { return start_t_ns; }
 
+  /// @brief Inverse of the measurement covariance matrix
   inline const MatNN& get_cov_inv() const {
     if (!cov_inv_computed) {
       cov_inv.setIdentity();
@@ -253,22 +299,29 @@ class IntegratedImuMeasurement {
     return cov_inv;
   }
 
+  /// @brief Measurement covariance matrix
   const MatNN& get_cov() const { return cov; }
 
   // Just for testing...
+  /// @brief Delta state
   const PoseVelState& getDeltaState() const { return delta_state; }
+
+  /// @brief Jacobian of delta state with respect to accelerometer bias
   const MatN3& get_d_state_d_ba() const { return d_state_d_ba; }
+
+  /// @brief Jacobian of delta state with respect to gyroscope bias
   const MatN3& get_d_state_d_bg() const { return d_state_d_bg; }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
  private:
-  int64_t start_t_ns;
+  int64_t start_t_ns;  ///< Integration start time in nanoseconds
 
-  PoseVelState delta_state;
+  PoseVelState delta_state;  ///< Delta state
 
-  MatNN cov;
-  mutable MatNN cov_inv;
-  mutable bool cov_inv_computed;
+  MatNN cov;              ///< Measurement covariance
+  mutable MatNN cov_inv;  ///< Cached inverse of measurement covariance
+  mutable bool
+      cov_inv_computed;  ///< If the cached inverse covariance is computed
 
   MatN3 d_state_d_ba, d_state_d_bg;
 
