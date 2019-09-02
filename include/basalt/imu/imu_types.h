@@ -43,18 +43,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
-constexpr size_t POSE_SIZE = 6;
-constexpr size_t POSE_VEL_SIZE = 9;
-constexpr size_t POSE_VEL_BIAS_SIZE = 15;
+constexpr size_t POSE_SIZE = 6;  ///< Dimentionality of the pose state
+constexpr size_t POSE_VEL_SIZE =
+    9;  ///< Dimentionality of the pose-velocity state
+constexpr size_t POSE_VEL_BIAS_SIZE =
+    15;  ///< Dimentionality of the pose-velocity-bias state
 
+/// @brief State that consists of SE(3) pose at a certain time.
 struct PoseState {
   using VecN = Eigen::Matrix<double, POSE_SIZE, 1>;
 
+  /// @brief Default constructor with Identity pose and zero timestamp.
   PoseState() { t_ns = 0; }
 
+  /// @brief Constructor with timestamp and pose.
+  ///
+  /// @param t_ns timestamp of the state in nanoseconds
+  /// @param T_w_i transformation from the body frame to the world frame
   PoseState(int64_t t_ns, const Sophus::SE3d& T_w_i)
       : t_ns(t_ns), T_w_i(T_w_i) {}
 
+  /// @brief Apply increment to the pose
+  ///
+  /// For details see \ref incPose
+  /// @param[in] inc 6x1 increment vector
   void applyInc(const VecN& inc) { incPose(inc, T_w_i); }
 
   /// @brief Apply increment to the pose
@@ -70,7 +82,6 @@ struct PoseState {
   ///
   /// @param[in] inc 6x1 increment vector
   /// @param[in,out] T the pose to update
-
   inline static void incPose(const Sophus::Vector6d& inc, Sophus::SE3d& T) {
     T.translation() += inc.head<3>();
     T.so3() = Sophus::SO3d::exp(inc.tail<3>()) * T.so3();
@@ -78,24 +89,47 @@ struct PoseState {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  int64_t t_ns;
-  Sophus::SE3d T_w_i;
+  int64_t t_ns;        ///< timestamp of the state in nanoseconds
+  Sophus::SE3d T_w_i;  ///< pose of the state
 };
 
+/// @brief State that consists of SE(3) pose and linear velocity at a certain
+/// time.
 struct PoseVelState : public PoseState {
   using VecN = Eigen::Matrix<double, POSE_VEL_SIZE, 1>;
 
+  /// @brief Default constructor with Identity pose and zero other values.
   PoseVelState() { vel_w_i.setZero(); };
 
+  /// @brief Constructor with timestamp, pose and linear velocity.
+  ///
+  /// @param t_ns timestamp of the state in nanoseconds
+  /// @param T_w_i transformation from the body frame to the world frame
+  /// @param vel_w_i linear velocity in world coordinate frame
   PoseVelState(int64_t t_ns, const Sophus::SE3d& T_w_i,
                const Eigen::Vector3d& vel_w_i)
       : PoseState(t_ns, T_w_i), vel_w_i(vel_w_i) {}
 
+  /// @brief Apply increment to the state.
+  ///
+  /// For pose see \ref incPose. For velocity simple addition.
+  /// @param[in] inc 9x1 increment vector [trans, rot, vel]
   void applyInc(const VecN& inc) {
     PoseState::applyInc(inc.head<6>());
     vel_w_i += inc.tail<3>();
   }
 
+  /// @brief Compute difference to other state.
+  ///
+  /// ```
+  ///      PoseVelState::VecN inc;
+  ///      PoseVelState p0, p1;
+  ///      // Initialize p0 and inc
+  ///      p1 = p0;
+  ///      p1.applyInc(inc);
+  ///      p0.diff(p1) == inc; // Should be true.
+  /// ```
+  /// @param other state to compute difference.
   VecN diff(const PoseVelState& other) const {
     VecN res;
     res.segment<3>(0) = other.T_w_i.translation() - T_w_i.translation();
@@ -106,18 +140,29 @@ struct PoseVelState : public PoseState {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  Eigen::Vector3d vel_w_i;
+  Eigen::Vector3d vel_w_i;  ///< Linear velocity of the state
 };
 
+/// @brief State that consists of SE(3) pose, linear velocity, gyroscope and
+/// accelerometer biases at a certain time.
 struct PoseVelBiasState : public PoseVelState {
   using Ptr = std::shared_ptr<PoseVelBiasState>;
   using VecN = Eigen::Matrix<double, POSE_VEL_BIAS_SIZE, 1>;
 
+  /// @brief Default constructor with Identity pose and zero other values.
   PoseVelBiasState() {
     bias_gyro.setZero();
     bias_accel.setZero();
   };
 
+  /// @brief Constructor with timestamp, pose, linear velocity, gyroscope and
+  /// accelerometer biases.
+  ///
+  /// @param t_ns timestamp of the state in nanoseconds
+  /// @param T_w_i transformation from the body frame to the world frame
+  /// @param vel_w_i linear velocity in world coordinate frame
+  /// @param bias_gyro gyroscope bias
+  /// @param bias_accel accelerometer bias
   PoseVelBiasState(int64_t t_ns, const Sophus::SE3d& T_w_i,
                    const Eigen::Vector3d& vel_w_i,
                    const Eigen::Vector3d& bias_gyro,
@@ -126,12 +171,28 @@ struct PoseVelBiasState : public PoseVelState {
         bias_gyro(bias_gyro),
         bias_accel(bias_accel) {}
 
+  /// @brief Apply increment to the state.
+  ///
+  /// For pose see \ref incPose. For velocity and biases simple addition.
+  /// @param[in] inc 15x1 increment vector [trans, rot, vel, bias_gyro,
+  /// bias_accel]
   void applyInc(const VecN& inc) {
     PoseVelState::applyInc(inc.head<9>());
     bias_gyro += inc.segment<3>(9);
     bias_accel += inc.segment<3>(12);
   }
 
+  /// @brief Compute difference to other state.
+  ///
+  /// ```
+  ///      PoseVelBiasState::VecN inc;
+  ///      PoseVelBiasState p0, p1;
+  ///      // Initialize p0 and inc
+  ///      p1 = p0;
+  ///      p1.applyInc(inc);
+  ///      p0.diff(p1) == inc; // Should be true.
+  /// ```
+  /// @param other state to compute difference.
   VecN diff(const PoseVelBiasState& other) const {
     VecN res;
     res.segment<9>(0) = PoseVelState::diff(other);
@@ -142,17 +203,19 @@ struct PoseVelBiasState : public PoseVelState {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  Eigen::Vector3d bias_gyro;
-  Eigen::Vector3d bias_accel;
+  Eigen::Vector3d bias_gyro;   ///< Gyroscope bias
+  Eigen::Vector3d bias_accel;  ///< Accelerometer bias
 };
 
+/// @brief Timestamped gyroscope and accelerometer measurements.
 struct ImuData {
   using Ptr = std::shared_ptr<ImuData>;
 
-  int64_t t_ns;
-  Eigen::Vector3d accel;
-  Eigen::Vector3d gyro;
+  int64_t t_ns;           ///< timestamp in nanoseconds
+  Eigen::Vector3d accel;  ///< Accelerometer measurement
+  Eigen::Vector3d gyro;   ///< Gyroscope measurement
 
+  /// @brief Default constructor with zero measurements.
   ImuData() {
     accel.setZero();
     gyro.setZero();
