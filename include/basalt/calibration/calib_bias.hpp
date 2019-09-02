@@ -137,8 +137,8 @@ class CalibAccelBias {
 /// Calibrates rotation, axis scaling and misalignment and has 12 parameters \f$
 /// [b_x, b_y, b_z, s_1, s_2, s_3, s_4, s_5, s_6, s_7, s_8, s_9]^T \f$. \f[
 /// \omega_c = \begin{bmatrix} s_1 + 1 & s_4 & s_7 \\ s_2 & s_5 + 1 & s_8 \\ s_3
-/// & s_6 & s_9 +1 \\  \end{bmatrix} \omega_r -  \begin{bmatrix} b_x \\ b_y \\
-/// b_z \end{bmatrix} \f] where  \f$ \omega_c \f$ is a calibrated measurement
+/// & s_6 & s_9 +1 \\  \end{bmatrix} \omega_r -  \begin{bmatrix} b_x \\ b_y
+/// \\ b_z \end{bmatrix} \f] where  \f$ \omega_c \f$ is a calibrated measurement
 /// and \f$ \omega_r \f$ is a raw measurement. When all elements are zero
 /// applying calibration results in Identity mapping.
 template <typename Scalar>
