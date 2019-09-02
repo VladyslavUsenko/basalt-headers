@@ -57,6 +57,20 @@ struct PoseState {
 
   void applyInc(const VecN& inc) { incPose(inc, T_w_i); }
 
+  /// @brief Apply increment to the pose
+  ///
+  /// The incremernt vector consists of translational and rotational parts \f$
+  /// [\upsilon, \omega]^T \f$. Given the current pose \f$ R \in
+  /// SO(3), p \in \mathbb{R}^3\f$ the updated pose is: \f{align}{ R' &=
+  /// \exp(\omega) R
+  /// \\ p' &= p + \upsilon
+  /// \f}
+  ///  The increment is consistent with \ref
+  /// Se3Spline::applyInc.
+  ///
+  /// @param[in] inc 6x1 increment vector
+  /// @param[in,out] T the pose to update
+
   inline static void incPose(const Sophus::Vector6d& inc, Sophus::SE3d& T) {
     T.translation() += inc.head<3>();
     T.so3() = Sophus::SO3d::exp(inc.tail<3>()) * T.so3();
