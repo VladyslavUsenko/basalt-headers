@@ -33,7 +33,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 @file
-@brief Uniform b-spline for euclidean vectors
+@brief Uniform B-spline for euclidean vectors
 */
 
 #pragma once
@@ -48,8 +48,49 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
-/// @brief Uniform b-spline for euclidean vectors with dimention DIM of order
+/// @brief Uniform B-spline for euclidean vectors with dimention DIM of order
 /// N
+///
+/// For example, in the particular case scalar values and order N=5, for a time
+/// \f$t \in [t_i, t_{i+1})\f$ the value of \f$p(t)\f$ depends only on 5 control
+/// points at \f$[t_i, t_{i+1}, t_{i+2}, t_{i+3}, t_{i+4}]\f$. To
+/// simplify calculations we transform time to uniform representation \f$s(t) =
+/// (t - t_0)/\Delta t \f$, such that control points transform into \f$ s_i \in
+/// [0,..,N] \f$. We define function \f$ u(t) = s(t)-s_i \f$ to be a time since
+/// the start of the segment. Following the matrix representation of De Boor -
+/// Cox formula, the value of the function can be
+/// evaluated as follows: \f{align}{
+///    p(u(t)) &=
+///    \begin{pmatrix} p_{i}\\ p_{i+1}\\ p_{i+2}\\ p_{i+3}\\ p_{i+4}
+///    \end{pmatrix}^T M_5 \begin{pmatrix} 1 \\ u \\ u^2 \\ u^3 \\ u^4
+///    \end{pmatrix},
+/// \f}
+/// where \f$ p_{i} \f$ are knots and  \f$ M_5 \f$ is a blending matrix computed
+/// using \ref computeBlendingMatrix \f{align}{
+///    M_5 = \frac{1}{4!}
+///    \begin{pmatrix} 1 & -4 & 6 & -4 & 1 \\ 11 & -12  & -6 & 12  & -4 \\11 &
+///    12 &  -6 &  -12  &  6 \\ 1  &  4  &  6  &  4  & -4 \\ 0  &  0  &  0  &  0
+///    &  1 \end{pmatrix}.
+/// \f}
+/// Given this formula, we can evaluate derivatives with respect to time
+/// (velocity, acceleration) in the following way:
+/// \f{align}{
+///    p'(u(t)) &= \frac{1}{\Delta t}
+///    \begin{pmatrix} p_{i}\\ p_{i+1}\\ p_{i+2}\\ p_{i+3}\\ p_{i+4}
+///    \end{pmatrix}^T
+///    M_5
+///    \begin{pmatrix} 0 \\ 1 \\ 2u \\ 3u^2 \\ 4u^3 \end{pmatrix},
+/// \f}
+/// \f{align}{
+///    p''(u(t)) &= \frac{1}{\Delta t^2}
+///    \begin{pmatrix} p_{i}\\ p_{i+1}\\ p_{i+2}\\ p_{i+3}\\ p_{i+4}
+///    \end{pmatrix}^T
+///    M_5
+///    \begin{pmatrix} 0 \\ 0 \\ 2 \\ 6u \\ 12u^2 \end{pmatrix}.
+/// \f}
+/// Higher time derivatives are evaluated similarly. This class supports
+/// vector values for knots \f$ p_{i} \f$. The corresponding derivative vector
+/// on the right is computed using \ref baseCoeffsWithTime.
 template <int _DIM, int _N, typename _Scalar = double>
 class RdSpline {
  public:
@@ -69,7 +110,7 @@ class RdSpline {
 
   /// @brief Struct to store the Jacobian of the spline
   ///
-  /// Since b-spline of order N have local support (only N knots infuence the
+  /// Since B-spline of order N has local support (only N knots infuence the
   /// value) the Jacobian is zero for all knots except maximum N for value and
   /// all derivatives.
   struct JacobianStruct {
@@ -165,7 +206,7 @@ class RdSpline {
     knots.pop_front();
   }
 
-  /// @brief Resize the containter with knots
+  /// @brief Resize containter with knots
   ///
   /// @param[in] n number of knots
   inline void resize(size_t n) { knots.resize(n); }

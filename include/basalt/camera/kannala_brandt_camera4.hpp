@@ -434,7 +434,7 @@ class KannalaBrandtCamera4 {
 
   /// @brief Returns a const reference to the intrinsic parameters vector
   ///
-  /// The order is following: \f$ \left[f_x, f_y, c_x, c_y, k1, k2, k3, k4
+  /// The order is following: \f$ \left[f_x, f_y, c_x, c_y, k_1, k_2, k_3, k_4
   /// \right]^T \f$
   /// @return const reference to the intrinsic parameters vector
   const VecN& getParam() const { return param; }

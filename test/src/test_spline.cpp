@@ -132,14 +132,9 @@ void test_evaluate_so3(const basalt::So3Spline<N> &spline, int64_t t_ns) {
 }
 
 template <int N>
-void test_time_deriv_so3(const basalt::So3Spline<N> &spline, int64_t t_ns) {
+void test_vel_so3(const basalt::So3Spline<N> &spline, int64_t t_ns) {
   using VectorD = typename basalt::So3Spline<5>::VecD;
   using SO3 = typename basalt::So3Spline<5>::SO3;
-
-  using VectorD = typename basalt::So3Spline<5>::VecD;
-  using SO3 = typename basalt::So3Spline<5>::SO3;
-
-  typename basalt::So3Spline<N>::JacobianStruct J;
 
   SO3 res = spline.evaluate(t_ns);
 
@@ -262,14 +257,14 @@ TEST(SplineTest, SO3CUBSplineEvaluateKnots) {
     test_evaluate_so3<N>(spline, t_ns);
 }
 
-TEST(SplineTest, SO3CUBSplineEvaluateTimeDeriv) {
+TEST(SplineTest, SO3CUBSplineVelocity) {
   static const int N = 5;
 
   basalt::So3Spline<N> spline(int64_t(2e9));
   spline.genRandomTrajectory(3 * N);
 
   for (int64_t t_ns = 1e8; t_ns < spline.maxTimeNs() - 1e8; t_ns += 1e8)
-    test_time_deriv_so3<5>(spline, t_ns);
+    test_vel_so3<5>(spline, t_ns);
 }
 
 TEST(SplineTest, SO3CUBSplineVelocityKnots) {
