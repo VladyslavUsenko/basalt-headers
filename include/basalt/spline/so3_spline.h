@@ -528,7 +528,7 @@ class So3Spline {
   Eigen::deque<SO3> knots;            ///< Knots
   int64_t dt_ns;                      ///< Knot interval in nanoseconds
   int64_t start_t_ns;                 ///< Start time in nanoseconds
-  std::array<_Scalar, 2> pow_inv_dt;  ///< Array with inverse powers of dt
+  std::array<_Scalar, 3> pow_inv_dt;  ///< Array with inverse powers of dt
 };
 
 template <int _N, typename _Scalar>
