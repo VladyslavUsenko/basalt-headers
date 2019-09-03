@@ -46,12 +46,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
+/// @brief Struct to store camera-IMU calibration
 template <class Scalar>
 struct Calibration {
   using Ptr = std::shared_ptr<Calibration>;
   using SE3 = Sophus::SE3<Scalar>;
   using Vec3 = Eigen::Matrix<Scalar, 3, 1>;
 
+  /// @brief Default constructor.
   Calibration() {
     cam_time_offset_ns = 0;
 
@@ -64,6 +66,7 @@ struct Calibration {
     gyro_bias_std.setConstant(0.0001);
   }
 
+  /// @brief Cast to other scalar type
   template <class Scalar2>
   Calibration<Scalar2> cast() const {
     Calibration<Scalar2> new_cam;
@@ -91,37 +94,66 @@ struct Calibration {
     return new_cam;
   }
 
-  // transfomrations from cameras to IMU
+  /// @brief Vector of transformations from camera to IMU
+  ///
+  /// Point in camera coordinate frame \f$ p_c \f$ can be transformed to the
+  /// point in IMU coordinate frame as \f$ p_i = T_{ic} p_c, T_{ic} \in
+  /// SE(3)\f$
   Eigen::vector<SE3> T_i_c;
 
-  // Camera intrinsics
+  /// @brief Vector of camera intrinsics. Can store different camera models. See
+  /// \ref GenericCamera.
   Eigen::vector<GenericCamera<Scalar>> intrinsics;
 
-  // Camera resolutions
+  /// @brief Camera resolutions.
   Eigen::vector<Eigen::Vector2i> resolution;
 
-  // Spline representing radially symmetric vignetting
+  /// @brief Vector of splines representing radially symmetric vignetting for
+  /// each of the camera.
+  ///
+  /// Splines use time in nanoseconds for evaluation, but in this case we use
+  /// distance from the optical center in pixels multiplied by 1e9 as a "time"
+  /// parameter.
   std::vector<basalt::RdSpline<1, 4, Scalar>> vignette;
 
+  /// @brief Time offset between cameras and IMU in nanoseconds.
+  ///
+  /// With raw image timestamp \f$ t_r \f$ and this offset \f$ o \f$ we cam get
+  /// a timestamp aligned with IMU clock as \f$ t_c = t_r + o \f$.
   int64_t cam_time_offset_ns;
 
-  // Constant pre-calibrated bias for accel and gyro
+  /// @brief Static accelerometer bias from calibration.
   CalibAccelBias<Scalar> calib_accel_bias;
+
+  /// @brief Static gyroscope bias from calibration.
   CalibGyroBias<Scalar> calib_gyro_bias;
 
+  /// @brief IMU update rate.
   Scalar imu_update_rate;
 
-  // All noise parameters are continous time
+  /// @brief Continuous time gyroscope noise standard deviation.
   Vec3 gyro_noise_std;
+  /// @brief Continuous time accelerometer noise standard deviation.
   Vec3 accel_noise_std;
 
+  /// @brief Continuous time bias random walk standard deviation for gyroscope.
   Vec3 gyro_bias_std;
+  /// @brief Continuous time bias random walk standard deviation for
+  /// accelerometer.
   Vec3 accel_bias_std;
 
+  /// @brief Dicrete time gyroscope noise standard deviation.
+  ///
+  /// \f$ \sigma_d = \sigma_c \sqrt{r} \f$, where \f$ r \f$ is IMU update
+  /// rate.
   inline Vec3 dicrete_time_gyro_noise_std() const {
     return gyro_noise_std * std::sqrt(imu_update_rate);
   }
 
+  /// @brief Dicrete time accelerometer noise standard deviation.
+  ///
+  /// \f$ \sigma_d = \sigma_c \sqrt{r} \f$, where \f$ r \f$ is IMU update
+  /// rate.
   inline Vec3 dicrete_time_accel_noise_std() const {
     return accel_noise_std * std::sqrt(imu_update_rate);
   }
@@ -129,20 +161,31 @@ struct Calibration {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
+/// @brief Struct to store motion capture to IMU calibration
 template <class Scalar>
 struct MocapCalibration {
   using Ptr = std::shared_ptr<MocapCalibration>;
   using SE3 = Sophus::SE3<Scalar>;
 
+  /// @brief Default constructor.
   MocapCalibration() {
     mocap_time_offset_ns = 0;
     mocap_to_imu_offset_ns = 0;
   }
 
-  SE3 T_moc_w, T_i_mark;
+  /// @brief Transformation from motion capture origin to the world (calibration
+  /// pattern).
+  SE3 T_moc_w;
+
+  /// @brief Transformation from the coordinate frame of the markers attached to
+  /// the object to the IMU.
+  SE3 T_i_mark;
+
+  /// @brief Initial time alignment between IMU and MoCap clocks based on
+  /// message arrival time.
   int64_t mocap_time_offset_ns;
 
-  // Offset from initial alignment
+  /// @brief Time offset between IMU and motion capture clock.
   int64_t mocap_to_imu_offset_ns;
 };
 

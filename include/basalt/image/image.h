@@ -84,6 +84,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
+/// @brief Helper class for copying objects.
 template <typename T>
 struct CopyObject {
   CopyObject(const T& obj) : obj(obj) {}
@@ -104,6 +105,7 @@ inline void PitchedCopy(char* dst, unsigned int dst_pitch_bytes,
   }
 }
 
+/// @brief Image class that supports sub-images, interpolation, element access.
 template <typename T>
 struct Image {
   inline Image() : pitch(0), ptr(0), w(0), h(0) {}
@@ -464,7 +466,8 @@ struct Image {
 template <class T>
 using DefaultImageAllocator = std::allocator<T>;
 
-// Image that manages it's own memory, storing a strong pointer to it's memory
+/// @brief Image that manages it's own memory, storing a strong pointer to it's
+/// memory
 template <typename T, class Allocator = DefaultImageAllocator<T>>
 class ManagedImage : public Image<T> {
  public:

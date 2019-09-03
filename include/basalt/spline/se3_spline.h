@@ -33,7 +33,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 @file
-@brief Uniform b-spline for SE(3)
+@brief Uniform B-spline for SE(3)
 */
 
 #pragma once
@@ -48,12 +48,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
-// SE(3) uniform b-spline of order _N
+/// @brief Uniform B-spline for SE(3) of order N. Internally uses an SO(3) (\ref
+/// So3Spline) spline for rotation and 3D Euclidean spline (\ref RdSpline) for
+/// translation.
 template <int _N, typename _Scalar = double>
 class Se3Spline {
  public:
-  static constexpr int N = _N;
-  static constexpr int DEG = _N - 1;
+  static constexpr int N = _N;        ///< Order of the spline.
+  static constexpr int DEG = _N - 1;  ///< Degree of the spline.
 
   using MatN = Eigen::Matrix<_Scalar, _N, _N>;
   using VecN = Eigen::Matrix<_Scalar, _N, 1>;
@@ -81,33 +83,51 @@ class Se3Spline {
   using PosJacobianStruct = typename RdSpline<3, N, _Scalar>::JacobianStruct;
   using SO3JacobianStruct = typename So3Spline<N, _Scalar>::JacobianStruct;
 
+  /// @brief Struct to store the accelerometer residual Jacobian with
+  /// respect to knots
   struct AccelPosSO3JacobianStruct {
     size_t start_idx;
     std::array<Mat36, N> d_val_d_knot;
   };
 
+  /// @brief Struct to store the pose Jacobian with respect to knots
   struct PosePosSO3JacobianStruct {
     size_t start_idx;
     std::array<Mat6, N> d_val_d_knot;
   };
 
+  /// @brief Constructor with knot interval and start time
+  ///
+  /// @param[in] time_interval_ns knot time interval in nanoseconds
+  /// @param[in] start_time_ns start time of the spline in nanoseconds
   Se3Spline(int64_t time_interval_ns, int64_t start_time_ns = 0)
       : pos_spline(time_interval_ns, start_time_ns),
         so3_spline(time_interval_ns, start_time_ns),
         dt_ns(time_interval_ns) {}
 
-  Se3Spline(_Scalar time_interval, _Scalar start_time = 0) = delete;
-
+  /// @brief Gererate random trajectory
+  ///
+  /// @param[in] n number of knots to generate
+  /// @param[in] static_init if true the first N knots will be the same
+  /// resulting in static initial condition
   void genRandomTrajectory(int n, bool static_init = false) {
     so3_spline.genRandomTrajectory(n, static_init);
     pos_spline.genRandomTrajectory(n, static_init);
   }
 
+  /// @brief Set the knot to particular SE(3) pose
+  ///
+  /// @param[in] pose SE(3) pose
+  /// @param[in] i index of the knot
   void setKnot(const Sophus::SE3d &pose, int i) {
     so3_spline.getKnot(i) = pose.so3();
     pos_spline.getKnot(i) = pose.translation();
   }
 
+  /// @brief Reset spline to have num_knots initialized at pose
+  ///
+  /// @param[in] pose SE(3) pose
+  /// @param[in] num_knots number of knots to initialize
   void setKnots(const Sophus::SE3d &pose, int num_knots) {
     so3_spline.resize(num_knots);
     pos_spline.resize(num_knots);
@@ -118,6 +138,9 @@ class Se3Spline {
     }
   }
 
+  /// @brief Reset spline to the knots from other spline
+  ///
+  /// @param[in] other spline to copy knots from
   void setKnots(const Se3Spline<N, _Scalar> &other) {
     BASALT_ASSERT(other.dt_ns == dt_ns);
     BASALT_ASSERT(other.pos_spline.getKnots().size() ==
@@ -134,21 +157,30 @@ class Se3Spline {
     }
   }
 
+  /// @brief Add knot to the end of the spline
+  ///
+  /// @param[in] knot knot to add
   inline void knots_push_back(const SE3 &knot) {
     so3_spline.knots_push_back(knot.so3());
     pos_spline.knots_push_back(knot.translation());
   }
 
+  /// @brief Remove knot from the back of the spline
   inline void knots_pop_back() {
     so3_spline.knots_pop_back();
     pos_spline.knots_pop_back();
   }
 
+  /// @brief Return the first knot of the spline
+  ///
+  /// @return first knot of the spline
   inline SE3 knots_front() const {
     SE3 res(so3_spline.knots_front(), pos_spline.knots_front());
 
     return res;
   }
+
+  /// @brief Remove first knot of the spline and increase the start time
   inline void knots_pop_front() {
     so3_spline.knots_pop_front();
     pos_spline.knots_pop_front();
@@ -157,6 +189,9 @@ class Se3Spline {
     BASALT_ASSERT(so3_spline.getKnots().size() == pos_spline.getKnots().size());
   }
 
+  /// @brief Return the last knot of the spline
+  ///
+  /// @return last knot of the spline
   SE3 getLastKnot() {
     BASALT_ASSERT(so3_spline.getKnots().size() == pos_spline.getKnots().size());
 
@@ -165,26 +200,62 @@ class Se3Spline {
     return res;
   }
 
+  /// @brief Return knot with index i
+  ///
+  /// @param i index of the knot
+  /// @return knot
   SE3 getKnot(size_t i) const {
     SE3 res(getKnotSO3(i), getKnotPos(i));
     return res;
   }
 
+  /// @brief Return reference to the SO(3) knot with index i
+  ///
+  /// @param i index of the knot
+  /// @return reference to the SO(3) knot
   inline SO3 &getKnotSO3(size_t i) { return so3_spline.getKnot(i); }
 
+  /// @brief Return const reference to the SO(3) knot with index i
+  ///
+  /// @param i index of the knot
+  /// @return const reference to the SO(3) knot
   inline const SO3 &getKnotSO3(size_t i) const { return so3_spline.getKnot(i); }
 
+  /// @brief Return reference to the position knot with index i
+  ///
+  /// @param i index of the knot
+  /// @return reference to the position knot
   inline Vec3 &getKnotPos(size_t i) { return pos_spline.getKnot(i); }
 
+  /// @brief Return const reference to the position knot with index i
+  ///
+  /// @param i index of the knot
+  /// @return const reference to the position knot
   inline const Vec3 &getKnotPos(size_t i) const {
     return pos_spline.getKnot(i);
   }
 
+  /// @brief Set start time for spline
+  ///
+  /// @param[in] start_time_ns start time of the spline in nanoseconds
   inline void setStartTimeNs(int64_t s) {
     so3_spline.setStartTimeNs(s);
     pos_spline.setStartTimeNs(s);
   }
 
+  /// @brief Apply increment to the knot
+  ///
+  /// The incremernt vector consists of translational and rotational parts \f$
+  /// [\upsilon, \omega]^T \f$. Given the current pose of the knot \f$ R \in
+  /// SO(3), p \in \mathbb{R}^3\f$ the updated pose is: \f{align}{ R' &=
+  /// \exp(\omega) R
+  /// \\ p' &= p + \upsilon
+  /// \f}
+  ///  The increment is consistent with \ref
+  /// PoseState::applyInc.
+  ///
+  /// @param[in] i index of the knot
+  /// @param[in] inc 6x1 increment vector
   template <typename Derived>
   void applyInc(int i, const Eigen::MatrixBase<Derived> &inc) {
     EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived, 6);
@@ -194,6 +265,9 @@ class Se3Spline {
         SO3::exp(inc.template tail<3>()) * so3_spline.getKnot(i);
   }
 
+  /// @brief Maximum time represented by spline
+  ///
+  /// @return maximum time represented by spline in nanoseconds
   int64_t maxTimeNs() const {
     BASALT_ASSERT_STREAM(so3_spline.maxTimeNs() == pos_spline.maxTimeNs(),
                          "so3_spline.maxTimeNs() " << so3_spline.maxTimeNs()
@@ -202,6 +276,9 @@ class Se3Spline {
     return pos_spline.maxTimeNs();
   }
 
+  /// @brief Minimum time represented by spline
+  ///
+  /// @return minimum time represented by spline in nanoseconds
   int64_t minTimeNs() const {
     BASALT_ASSERT_STREAM(so3_spline.minTimeNs() == pos_spline.minTimeNs(),
                          "so3_spline.minTimeNs() " << so3_spline.minTimeNs()
@@ -210,20 +287,34 @@ class Se3Spline {
     return pos_spline.minTimeNs();
   }
 
+  /// @brief Number of knots in the spline
   size_t numKnots() const { return pos_spline.getKnots().size(); }
 
+  /// @brief Linear acceleration in the world frame.
+  ///
+  /// @param[in] time_ns time to evaluate linear acceleration in nanoseconds
   inline Vec3 transAccelWorld(int64_t time_ns) const {
     return pos_spline.acceleration(time_ns);
   }
 
+  /// @brief Linear velocity in the world frame.
+  ///
+  /// @param[in] time_ns time to evaluate linear velocity in nanoseconds
   inline Vec3 transVelWorld(int64_t time_ns) const {
     return pos_spline.velocity(time_ns);
   }
 
+  /// @brief Rotational velocity in the body frame.
+  ///
+  /// @param[in] time_ns time to evaluate rotational velocity in nanoseconds
   inline Vec3 rotVelBody(int64_t time_ns) const {
     return so3_spline.velocityBody(time_ns);
   }
 
+  /// @brief Evaluate pose.
+  ///
+  /// @param[in] time_ns time to evaluate pose in nanoseconds
+  /// @return SE(3) pose at time_ns
   SE3 pose(int64_t time_ns) const {
     SE3 res;
 
@@ -233,6 +324,11 @@ class Se3Spline {
     return res;
   }
 
+  /// @brief Evaluate pose and compute Jacobian.
+  ///
+  /// @param[in] time_ns time to evaluate pose in nanoseconds
+  /// @param[out] J Jacobian of the pose with respect to knots
+  /// @return SE(3) pose at time_ns
   Sophus::SE3d pose(int64_t time_ns, PosePosSO3JacobianStruct *J) const {
     Sophus::SE3d res;
 
@@ -258,18 +354,36 @@ class Se3Spline {
     return res;
   }
 
+  /// @brief Evaluate pose and compute time Jacobian.
+  ///
+  /// @param[in] time_ns time to evaluate pose in nanoseconds
+  /// @param[out] J Jacobian of the pose with time
   void d_pose_d_t(int64_t time_ns, Vec6 &J) const {
     J.template head<3>() =
         so3_spline.evaluate(time_ns).inverse() * transVelWorld(time_ns);
     J.template tail<3>() = rotVelBody(time_ns);
   }
 
+  /// @brief Evaluate gyroscope residual.
+  ///
+  /// @param[in] time_ns time of the measurement
+  /// @param[in] measurement gyroscope measurement
+  /// @param[in] gyro_bias_full gyroscope calibration
+  /// @return gyroscope residual
   Vec3 gyroResidual(int64_t time_ns, const Vec3 &measurement,
                     const CalibGyroBias<_Scalar> &gyro_bias_full) const {
     return so3_spline.velocityBody(time_ns) -
            gyro_bias_full.getCalibrated(measurement);
   }
 
+  /// @brief Evaluate gyroscope residual and compute Jacobians.
+  ///
+  /// @param[in] time_ns time of the measurement
+  /// @param[in] measurement gyroscope measurement
+  /// @param[in] gyro_bias_full gyroscope calibration
+  /// @param[out] J_knots Jacobian with respect to SO(3) spline knots
+  /// @param[out] J_bias Jacobian with respect to gyroscope calibration
+  /// @return gyroscope residual
   Vec3 gyroResidual(int64_t time_ns, const Vec3 &measurement,
                     const CalibGyroBias<_Scalar> &gyro_bias_full,
                     SO3JacobianStruct *J_knots,
@@ -286,6 +400,13 @@ class Se3Spline {
            gyro_bias_full.getCalibrated(measurement);
   }
 
+  /// @brief Evaluate accelerometer residual.
+  ///
+  /// @param[in] time_ns time of the measurement
+  /// @param[in] measurement accelerometer measurement
+  /// @param[in] accel_bias_full accelerometer calibration
+  /// @param[in] g gravity
+  /// @return accelerometer residual
   Vec3 accelResidual(int64_t time_ns, const Eigen::Vector3d &measurement,
                      const CalibAccelBias<_Scalar> &accel_bias_full,
                      const Eigen::Vector3d &g) const {
@@ -296,6 +417,16 @@ class Se3Spline {
            accel_bias_full.getCalibrated(measurement);
   }
 
+  /// @brief Evaluate accelerometer residual and Jacobians.
+  ///
+  /// @param[in] time_ns time of the measurement
+  /// @param[in] measurement accelerometer measurement
+  /// @param[in] accel_bias_full accelerometer calibration
+  /// @param[in] g gravity
+  /// @param[out] J_knots Jacobian with respect to spline knots
+  /// @param[out] J_bias Jacobian with respect to accelerometer calibration
+  /// @param[out] J_g Jacobian with respect to gravity
+  /// @return accelerometer residual
   Vec3 accelResidual(int64_t time_ns, const Vec3 &measurement,
                      const CalibAccelBias<_Scalar> &accel_bias_full,
                      const Vec3 &g, AccelPosSO3JacobianStruct *J_knots,
@@ -343,12 +474,26 @@ class Se3Spline {
     return res;
   }
 
+  /// @brief Evaluate position residual.
+  ///
+  /// @param[in] time_ns time of the measurement
+  /// @param[in] measured_position position measurement
+  /// @param[out] Jp if not nullptr, Jacobian with respect to knos of the
+  /// position spline
+  /// @return position residual
   Sophus::Vector3d positionResidual(int64_t time_ns,
                                     const Vec3 &measured_position,
                                     PosJacobianStruct *Jp = nullptr) const {
     return pos_spline.evaluate(time_ns, Jp) - measured_position;
   }
 
+  /// @brief Evaluate orientation residual.
+  ///
+  /// @param[in] time_ns time of the measurement
+  /// @param[in] measured_orientation orientation measurement
+  /// @param[out] Jr if not nullptr, Jacobian with respect to knos of the
+  /// SO(3) spline
+  /// @return orientation residual
   Sophus::Vector3d orientationResidual(int64_t time_ns,
                                        const SO3 &measured_orientation,
                                        SO3JacobianStruct *Jr = nullptr) const {
@@ -368,29 +513,32 @@ class Se3Spline {
     return res;
   }
 
+  /// @brief Print knots for debugging.
   inline void print_knots() const {
     for (size_t i = 0; i < pos_spline.getKnots().size(); i++) {
-      std::cerr << i << ": p:" << pos_spline.getKnot(i).transpose() << " q: "
+      std::cout << i << ": p:" << pos_spline.getKnot(i).transpose() << " q: "
                 << so3_spline.getKnot(i).unit_quaternion().coeffs().transpose()
                 << std::endl;
     }
   }
 
+  /// @brief Print position knots for debugging.
   inline void print_pos_knots() const {
     for (size_t i = 0; i < pos_spline.getKnots().size(); i++) {
-      std::cerr << pos_spline.getKnot(i).transpose() << std::endl;
+      std::cout << pos_spline.getKnot(i).transpose() << std::endl;
     }
   }
 
+  /// @brief Knot time interval in nanoseconds.
   inline int64_t getDtNs() const { return dt_ns; }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
-  RdSpline<3, _N, _Scalar> pos_spline;
-  So3Spline<_N, _Scalar> so3_spline;
+  RdSpline<3, _N, _Scalar> pos_spline;  ///< Position spline
+  So3Spline<_N, _Scalar> so3_spline;    ///< Orientation spline
 
-  int64_t dt_ns;
+  int64_t dt_ns;  ///< Knot interval in nanoseconds
 };
 
 }  // namespace basalt

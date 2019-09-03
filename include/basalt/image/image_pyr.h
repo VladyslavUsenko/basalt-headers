@@ -42,17 +42,31 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
+/// @brief Image pyramid that stores levels as mipmap
+///
+/// \image html mipmap.jpeg
+/// Computes image pyramid (see \ref subsample) and stores it as a mipmap
+/// (https://en.wikipedia.org/wiki/Mipmap).
 template <typename T, class Allocator = DefaultImageAllocator<T>>
 class ManagedImagePyr {
  public:
   using Ptr = std::shared_ptr<ManagedImagePyr<T, Allocator>>;
 
+  /// @brief Default constructor.
   inline ManagedImagePyr() {}
 
+  /// @brief Construct image pyramid from other image.
+  ///
+  /// @param other image to use for the pyramid level 0
+  /// @param num_level number of levels for the pyramid
   inline ManagedImagePyr(ManagedImage<T>& other, size_t num_levels) {
     setFromImage(other, num_levels);
   }
 
+  /// @brief Set image pyramid from other image.
+  ///
+  /// @param other image to use for the pyramid level 0
+  /// @param num_level number of levels for the pyramid
   inline void setFromImage(const ManagedImage<T>& other, size_t num_levels) {
     orig_w = other.w;
     image.Reinitialise(other.w + other.w / 2, other.h);
@@ -66,10 +80,25 @@ class ManagedImagePyr {
     }
   }
 
+  /// @brief Extrapolate image after border with reflection.
   static inline int border101(int x, int h) {
     return h - 1 - std::abs(h - 1 - x);
   }
 
+  /// @brief Subsample the image twice in each direction.
+  ///
+  /// Subsampling is done by convolution with Gaussian kernel
+  /// \f[
+  /// \frac{1}{256}
+  /// \begin{bmatrix}
+  ///   1 & 4 & 6 & 4 & 1
+  /// \\4 & 16 & 24 & 16 & 4
+  /// \\6 & 24 & 36 & 24 & 6
+  /// \\4 & 16 & 24 & 16 & 4
+  /// \\1 & 4 & 6 & 4 & 1
+  /// \\ \end{bmatrix}
+  /// \f]
+  /// and removing every even-numbered row and column.
   static void subsample(const Image<const T>& img, Image<T>& img_sub) {
     static_assert(std::is_same<T, uint16_t>::value ||
                   std::is_same<T, uint8_t>::value);
@@ -116,6 +145,10 @@ class ManagedImagePyr {
     }
   }
 
+  /// @brief Return const image of the certain level
+  ///
+  /// @param lvl level to return
+  /// @return const image of with the pyramid level
   inline const Image<const T> lvl(size_t lvl) const {
     size_t x = (lvl == 0) ? 0 : orig_w;
     size_t y = (lvl <= 1) ? 0 : (image.h - (image.h >> (lvl - 1)));
@@ -125,6 +158,10 @@ class ManagedImagePyr {
     return image.SubImage(x, y, width, height);
   }
 
+  /// @brief Return coordinate offset of the image in the mipmap image.
+  ///
+  /// @param lvl level to return
+  /// @return offset coordinates (2x1 vector)
   template <typename S>
   inline Eigen::Matrix<S, 2, 1> lvl_offset(size_t lvl) {
     size_t x = (lvl == 0) ? 0 : orig_w;
@@ -133,7 +170,11 @@ class ManagedImagePyr {
     return Eigen::Matrix<S, 2, 1>(x, y);
   }
 
- private:
+ protected:
+  /// @brief Return image of the certain level
+  ///
+  /// @param lvl level to return
+  /// @return image of with the pyramid level
   inline Image<T> lvl_internal(size_t lvl) {
     size_t x = (lvl == 0) ? 0 : orig_w;
     size_t y = (lvl <= 1) ? 0 : (image.h - (image.h >> (lvl - 1)));
@@ -143,8 +184,8 @@ class ManagedImagePyr {
     return image.SubImage(x, y, width, height);
   }
 
-  size_t orig_w;
-  ManagedImage<T> image;
+  size_t orig_w;          ///< Width of the original image (level 0)
+  ManagedImage<T> image;  ///< Pyramid image stored as a mipmap
 };
 
 }  // namespace basalt
