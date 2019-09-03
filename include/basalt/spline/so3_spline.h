@@ -70,7 +70,7 @@ namespace basalt {
 /// blending matrix computed using \ref computeBlendingMatrix \f{align}{
 ///    M_{c5} = \frac{1}{4!}
 ///    \begin{pmatrix} 24 & 0 & 0 & 0 & 0 \\ 23 & 4 & -6 & 4 & -1 \\ 12 & 16 & 0
-///    -8 & 3 \\ 1 & 4 & 6 & 4 & -3 \\ 0 & 0 & 0 & 0 & 1 \end{pmatrix}.
+///    & -8 & 3 \\ 1 & 4 & 6 & 4 & -3 \\ 0 & 0 & 0 & 0 & 1 \end{pmatrix}.
 /// \f}
 template <int _N, typename _Scalar = double>
 class So3Spline {
@@ -256,6 +256,45 @@ class So3Spline {
 
   /// @brief Evaluate rotational velocity (first time derivative) of SO(3)
   /// B-spline in the body frame
+
+  /// First, let's note that for scalars \f$ k, \Delta k \f$ the following holds
+  /// \f$ \exp((k+\Delta k)\phi) = \exp(k\phi)\exp(\Delta k\phi), \phi \in
+  /// \mathbb{R}^3\f$. This is due to the fact that rotations around the same
+  /// axis are commutative.
+  ///
+  /// Let's take SO(3) B-spline with N=3 as an example. The evolution in time of
+  /// rotation from the body frame to the world frame is described with \f[
+  ///  R_{wb}(t) = R(t) = R_i \exp(k_1(t) \log(R_{i}^{-1}R_{i+1})) \exp(k_2(t)
+  ///  \log(R_{i+1}^{-1}R_{i+2}), \f] where \f$ k_1, k_2 \f$ are spline
+  ///  coefficients (see detailed description of \ref So3Spline). Since the
+  ///  expressions under logmap do not depend on time we can rename then to
+  ///  constants.
+  /// \f[ R(t) = R_i \exp(k_1(t) ~ d_1) \exp(k_2(t) ~ d_2). \f]
+  ///
+  /// With linear approximation of the spline coefitien evolution over time \f$
+  /// k_1(t) = k_1(t_0) + k_1'(t_0)\Delta t \f$ we can write \f{align}
+  ///  R(t_0 + \Delta t) &= R_i \exp( (k_1(t_0) + k_1'(t_0) \Delta t) ~ d_1)
+  ///  \exp((k_2(t_0) + k_2'(t_0) \Delta t) ~ d_2)
+  ///  \\ &= R_i \exp(k_1(t_0) ~ d_1) \exp(k_1'(t_0)~ d_1 \Delta t )
+  ///  \exp(k_2(t_0) ~ d_2) \exp(k_2'(t_0) ~ d_2 \Delta t )
+  ///  \\ &= R_i \exp(k_1(t_0) ~ d_1)
+  ///  \exp(k_2(t_0) ~ d_2) \exp(R_{a}^T k_1'(t_0)~ d_1 \Delta t )
+  ///  \exp(k_2'(t_0) ~ d_2 \Delta t )
+  ///  \\ &= R_i \exp(k_1(t_0) ~ d_1)
+  ///  \exp(k_2(t_0) ~ d_2) \exp((R_{a}^T k_1'(t_0)~ d_1 +
+  ///  k_2'(t_0) ~ d_2) \Delta t )
+  ///  \\ &= R(t_0) \exp((R_{a}^T k_1'(t_0)~ d_1 +
+  ///  k_2'(t_0) ~ d_2) \Delta t )
+  ///  \\ &= R(t_0) \exp( \omega \Delta t ),
+  /// \f} where \f$ R_{a} \in SO(3) = \exp(k_2(t_0) ~ d_2) \f$ and \f$ \omega
+  /// \f$ is the rotational velocity in the body frame. More explicitely we have
+  /// the formula for rotation velocity in the body frame \f[
+  /// \omega = R_{a}^T k_1'(t_0)~ d_1 +  k_2'(t_0) ~ d_2.
+  /// \f]
+  /// Derivatives of spline coefficients can be computed with \ref
+  /// baseCoeffsWithTime similar to \ref RdSpline (detailed description). With
+  /// the recursive formula computations generalize to different orders of
+  /// spline N.
   ///
   /// @param[in] time_ns time for evaluating of the spline in nanoseconds
   /// @return rotational velocity (3x1 vector)
