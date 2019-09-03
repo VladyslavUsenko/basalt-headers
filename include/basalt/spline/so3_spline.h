@@ -61,8 +61,8 @@ namespace basalt {
 /// De Boor - Cox formula, the value of the function can be evaluated as
 /// follows: \f{align}{
 ///    R(u(t)) &= R_i
-///    \prod_{k=i}^{i+3}{\exp(\Omega_{i+1}\log{(R_{k}^{-1}R_{k+1})})},
-///    \\ \Omega &=
+///    \prod_{j=1}^{4}{\exp(k_{j}\log{(R_{i+j-1}^{-1}R_{i+j})})},
+///    \\ \begin{pmatrix} k_0 \\ k_1 \\ k_2 \\ k_3 \\ k_4 \end{pmatrix}^T &=
 ///    M_{c5} \begin{pmatrix} 1 \\ u \\ u^2 \\ u^3 \\ u^4
 ///    \end{pmatrix},
 /// \f}
