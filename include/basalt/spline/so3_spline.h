@@ -427,6 +427,66 @@ class So3Spline {
     return res;
   }
 
+  /// @brief Evaluate rotational acceleration (second time derivative) of SO(3)
+  /// B-spline in the body frame
+  ///
+  /// @param[in] time_ns time for evaluating velocity of the spline in
+  /// nanoseconds
+  /// @param[out] vel_body if not nullptr, return the rotation velocity in the
+  /// body frame (3x1 vector) (side computation)
+  /// @return rotational acceleration (3x1 vector)
+  VecD accelerationBody(int64_t time_ns, VecD* vel_body = nullptr) const {
+    int64_t st_ns = (time_ns - start_t_ns);
+
+    BASALT_ASSERT_STREAM(st_ns >= 0, "st_ns " << st_ns << " time_ns " << time_ns
+                                              << " start_t_ns " << start_t_ns);
+
+    int64_t s = st_ns / dt_ns;
+    double u = double(st_ns % dt_ns) / double(dt_ns);
+
+    BASALT_ASSERT_STREAM(s >= 0, "s " << s);
+    BASALT_ASSERT_STREAM(size_t(s + N) <= knots.size(), "s " << s << " N " << N
+                                                             << " knots.size() "
+                                                             << knots.size());
+
+    VecN p;
+    baseCoeffsWithTime<0>(p, u);
+    VecN coeff = blending_matrix_ * p;
+
+    baseCoeffsWithTime<1>(p, u);
+    VecN dcoeff = pow_inv_dt[1] * blending_matrix_ * p;
+
+    baseCoeffsWithTime<2>(p, u);
+    VecN ddcoeff = pow_inv_dt[2] * blending_matrix_ * p;
+
+    SO3 r_accum;
+
+    VecD rot_vel;
+    rot_vel.setZero();
+
+    VecD rot_accel;
+    rot_accel.setZero();
+
+    for (int i = DEG - 1; i >= 0; i--) {
+      const SO3& p0 = knots[s + i];
+      const SO3& p1 = knots[s + i + 1];
+
+      SO3 r01 = p0.inverse() * p1;
+      VecD delta = r01.log();
+
+      MatD r_accum_inv_mat = r_accum.inverse().matrix();
+
+      VecD rot_vel_current = r_accum_inv_mat * delta * dcoeff[i + 1];
+      rot_accel += r_accum_inv_mat * delta * ddcoeff[i + 1] +
+                   rot_vel_current.cross(rot_vel);
+      rot_vel += rot_vel_current;
+      r_accum = SO3::exp(delta * coeff[i + 1]) * r_accum;
+    }
+
+    if (vel_body) *vel_body = rot_vel;
+    return rot_accel;
+  }
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  protected:
