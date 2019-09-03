@@ -65,8 +65,8 @@ namespace basalt {
 ///    \end{pmatrix}^T M_5 \begin{pmatrix} 1 \\ u \\ u^2 \\ u^3 \\ u^4
 ///    \end{pmatrix},
 /// \f}
-/// where \f$ p_{i} \f$ are knots and  \f$ M_5 \f$ is computed using \ref
-/// computeBlendingMatrix \f{align}{
+/// where \f$ p_{i} \f$ are knots and  \f$ M_5 \f$ is a blending matrix computed
+/// using \ref computeBlendingMatrix \f{align}{
 ///    M_5 = \frac{1}{4!}
 ///    \begin{pmatrix} 1 & -4 & 6 & -4 & 1 \\ 11 & -12  & -6 & 12  & -4 \\11 &
 ///    12 &  -6 &  -12  &  6 \\ 1  &  4  &  6  &  4  & -4 \\ 0  &  0  &  0  &  0
