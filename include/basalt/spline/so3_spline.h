@@ -195,7 +195,8 @@ class So3Spline {
 
   /// @brief Evaluate SO(3) B-spline
   ///
-  /// @param[in] time_ns time for evaluating of the spline in nanoseconds
+  /// @param[in] time_ns time for evaluating the value of the spline in
+  /// nanoseconds
   /// @param[out] J if not nullptr, return the Jacobian of the value with
   /// respect to knots
   /// @return SO(3) value of the spline
@@ -267,12 +268,12 @@ class So3Spline {
   ///  R_{wb}(t) = R(t) = R_i \exp(k_1(t) \log(R_{i}^{-1}R_{i+1})) \exp(k_2(t)
   ///  \log(R_{i+1}^{-1}R_{i+2}), \f] where \f$ k_1, k_2 \f$ are spline
   ///  coefficients (see detailed description of \ref So3Spline). Since the
-  ///  expressions under logmap do not depend on time we can rename then to
+  ///  expressions under logmap do not depend on time we can rename them to
   ///  constants.
   /// \f[ R(t) = R_i \exp(k_1(t) ~ d_1) \exp(k_2(t) ~ d_2). \f]
   ///
-  /// With linear approximation of the spline coefitien evolution over time \f$
-  /// k_1(t) = k_1(t_0) + k_1'(t_0)\Delta t \f$ we can write \f{align}
+  /// With linear approximation of the spline coefficient evolution over time
+  /// \f$ k_1(t) = k_1(t_0) + k_1'(t_0)\Delta t \f$ we can write \f{align}
   ///  R(t_0 + \Delta t) &= R_i \exp( (k_1(t_0) + k_1'(t_0) \Delta t) ~ d_1)
   ///  \exp((k_2(t_0) + k_2'(t_0) \Delta t) ~ d_2)
   ///  \\ &= R_i \exp(k_1(t_0) ~ d_1) \exp(k_1'(t_0)~ d_1 \Delta t )
@@ -286,17 +287,17 @@ class So3Spline {
   ///  \\ &= R(t_0) \exp((R_{a}^T k_1'(t_0)~ d_1 +
   ///  k_2'(t_0) ~ d_2) \Delta t )
   ///  \\ &= R(t_0) \exp( \omega \Delta t ),
-  /// \f} where \f$ R_{a} \in SO(3) = \exp(k_2(t_0) ~ d_2) \f$ and \f$ \omega
-  /// \f$ is the rotational velocity in the body frame. More explicitely we have
-  /// the formula for rotation velocity in the body frame \f[
-  /// \omega = R_{a}^T k_1'(t_0)~ d_1 +  k_2'(t_0) ~ d_2.
-  /// \f]
+  /// \f} where \f$ \Delta t \f$ is small, \f$ R_{a} \in SO(3) = \exp(k_2(t_0) ~
+  /// d_2) \f$ and \f$ \omega \f$ is the rotational velocity in the body frame.
+  /// More explicitely we have the formula for rotation velocity in the body
+  /// frame \f[ \omega = R_{a}^T k_1'(t_0)~ d_1 +  k_2'(t_0) ~ d_2. \f]
   /// Derivatives of spline coefficients can be computed with \ref
   /// baseCoeffsWithTime similar to \ref RdSpline (detailed description). With
   /// the recursive formula computations generalize to different orders of
   /// spline N.
   ///
-  /// @param[in] time_ns time for evaluating of the spline in nanoseconds
+  /// @param[in] time_ns time for evaluating velocity of the spline in
+  /// nanoseconds
   /// @return rotational velocity (3x1 vector)
   VecD velocityBody(int64_t time_ns) const {
     int64_t st_ns = (time_ns - start_t_ns);
@@ -341,7 +342,8 @@ class So3Spline {
   /// @brief Evaluate rotational velocity (first time derivative) of SO(3)
   /// B-spline in the body frame
   ///
-  /// @param[in] time_ns time for evaluating of the spline in nanoseconds
+  /// @param[in] time_ns time for evaluating velocity of the spline in
+  /// nanoseconds
   /// @param[out] J if not nullptr, return the Jacobian of the rotational
   /// velocity in body frame with respect to knots
   /// @return rotational velocity (3x1 vector)
