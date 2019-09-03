@@ -156,7 +156,11 @@ template <int N>
 void test_accel_so3(const basalt::So3Spline<N> &spline, int64_t t_ns) {
   using VectorD = typename basalt::So3Spline<5>::VecD;
 
-  VectorD d_res_d_t = spline.accelerationBody(t_ns);
+  VectorD vel1;
+  VectorD d_res_d_t = spline.accelerationBody(t_ns, &vel1);
+
+  VectorD vel2 = spline.velocityBody(t_ns);
+  EXPECT_TRUE(vel1.isApprox(vel2));
 
   Eigen::Matrix<double, 1, 1> x0;
   x0.setZero();
