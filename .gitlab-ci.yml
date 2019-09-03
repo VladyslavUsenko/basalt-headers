@@ -64,6 +64,16 @@ bionic-relwithdebinfo-compile:
   variables:
     BUILD_TYPE: RelWithDebInfo
 
+bionic-asan-build:
+  <<: *prepare_docker_definition
+  <<: *compile_and_test_definition
+  variables:
+    CC: clang-8
+    CXX: clang++-8
+    BUILD_TYPE: SanitizerRelWithDebInfo
+    # LeakSanitizer doesn't work in (non-priviliged) container
+    ASAN_OPTIONS: "detect_leaks=0"
+
 xenial-release-compile:
   <<: *prepare_docker_definition
   <<: *compile_and_test_definition
@@ -80,6 +90,14 @@ mojave-relwithdebinfo-compile:
   tags: [macos, "10.14"]
   variables:
     BUILD_TYPE: RelWithDebInfo
+
+mojave-brewedclang-asan-build:
+  <<: *compile_and_test_definition
+  tags: [macos, "10.14"]
+  variables:
+    CC: /usr/local/opt/llvm/bin/clang
+    CXX: /usr/local/opt/llvm/bin/clang++
+    BUILD_TYPE: SanitizerRelWithDebInfo
 
 # check if clang-format would make any changes
 clang-format:
