@@ -85,6 +85,7 @@ class So3Spline {
       : dt_ns(time_interval_ns), start_t_ns(start_time_ns) {
     pow_inv_dt[0] = 1.0;
     pow_inv_dt[1] = s_to_ns / dt_ns;
+    pow_inv_dt[2] = pow_inv_dt[1] * pow_inv_dt[1];
   }
 
   /// @brief Maximum time represented by spline
