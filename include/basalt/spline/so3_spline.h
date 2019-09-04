@@ -258,22 +258,23 @@ class So3Spline {
   /// @brief Evaluate rotational velocity (first time derivative) of SO(3)
   /// B-spline in the body frame
 
-  /// First, let's note that for scalars \f$ k, \Delta k \f$ the following holds
-  /// \f$ \exp((k+\Delta k)\phi) = \exp(k\phi)\exp(\Delta k\phi), \phi \in
-  /// \mathbb{R}^3\f$. This is due to the fact that rotations around the same
-  /// axis are commutative.
+  /// First, let's note that for scalars \f$ k, \Delta k \f$ the following
+  /// holds: \f$ \exp((k+\Delta k)\phi) = \exp(k\phi)\exp(\Delta k\phi), \phi
+  /// \in \mathbb{R}^3\f$. This is due to the fact that rotations around the
+  /// same axis are commutative.
   ///
   /// Let's take SO(3) B-spline with N=3 as an example. The evolution in time of
   /// rotation from the body frame to the world frame is described with \f[
   ///  R_{wb}(t) = R(t) = R_i \exp(k_1(t) \log(R_{i}^{-1}R_{i+1})) \exp(k_2(t)
-  ///  \log(R_{i+1}^{-1}R_{i+2}), \f] where \f$ k_1, k_2 \f$ are spline
-  ///  coefficients (see detailed description of \ref So3Spline). Since the
+  ///  \log(R_{i+1}^{-1}R_{i+2})), \f] where \f$ k_1, k_2 \f$ are spline
+  ///  coefficients (see detailed description of \ref So3Spline). Since
   ///  expressions under logmap do not depend on time we can rename them to
   ///  constants.
   /// \f[ R(t) = R_i \exp(k_1(t) ~ d_1) \exp(k_2(t) ~ d_2). \f]
   ///
   /// With linear approximation of the spline coefficient evolution over time
-  /// \f$ k_1(t) = k_1(t_0) + k_1'(t_0)\Delta t \f$ we can write \f{align}
+  /// \f$ k_1(t_0 + \Delta t) = k_1(t_0) + k_1'(t_0)\Delta t \f$ we can write
+  /// \f{align}
   ///  R(t_0 + \Delta t) &= R_i \exp( (k_1(t_0) + k_1'(t_0) \Delta t) ~ d_1)
   ///  \exp((k_2(t_0) + k_2'(t_0) \Delta t) ~ d_2)
   ///  \\ &= R_i \exp(k_1(t_0) ~ d_1) \exp(k_1'(t_0)~ d_1 \Delta t )
@@ -289,7 +290,7 @@ class So3Spline {
   ///  \\ &= R(t_0) \exp( \omega \Delta t ),
   /// \f} where \f$ \Delta t \f$ is small, \f$ R_{a} \in SO(3) = \exp(k_2(t_0) ~
   /// d_2) \f$ and \f$ \omega \f$ is the rotational velocity in the body frame.
-  /// More explicitely we have the formula for rotation velocity in the body
+  /// More explicitly we have the formula for rotational velocity in the body
   /// frame \f[ \omega = R_{a}^T k_1'(t_0)~ d_1 +  k_2'(t_0) ~ d_2. \f]
   /// Derivatives of spline coefficients can be computed with \ref
   /// baseCoeffsWithTime similar to \ref RdSpline (detailed description). With
