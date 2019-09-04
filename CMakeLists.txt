@@ -42,8 +42,8 @@ SET(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -march=${CXX_MARCH} ${CMAKE_CXX_FLAGS
 SET(CMAKE_CXX_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS_DEBUG} --coverage -fno-inline -fno-inline-small-functions -fno-default-inline")
 SET(CMAKE_EXE_LINKER_FLAGS_COVERAGE "${CMAKE_EXE_LINKER_FLAGS_DEBUG} --coverage")
 SET(CMAKE_SHARED_LINKER_FLAGS_COVERAGE "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} --coverage")
-set(CMAKE_CXX_FLAGS_SANITIZERDEBUG "-O0 -g0 -DEIGEN_INITIALIZE_MATRICES_BY_NAN -fno-omit-frame-pointer -fsanitize=address")
-set(CMAKE_CXX_FLAGS_SANITIZERRELWITHDEBINFO "-O3 -g0 -DEIGEN_INITIALIZE_MATRICES_BY_NAN -fno-omit-frame-pointer -fsanitize=address")
+set(CMAKE_CXX_FLAGS_SANITIZERDEBUG "-O0 -g0 -DEIGEN_INITIALIZE_MATRICES_BY_NAN -fno-omit-frame-pointer -fsanitize=address,undefined")
+set(CMAKE_CXX_FLAGS_SANITIZERRELWITHDEBINFO "-O3 -g0 -DEIGEN_INITIALIZE_MATRICES_BY_NAN -fno-omit-frame-pointer -fsanitize=address,undefined")
 
 
 set(EIGEN_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/eigen")
