@@ -537,7 +537,7 @@ class So3Spline {
     SO3 exp_k_delta[DEG];
     VecD rot_vel_current[DEG];
 
-    MatD Jr_delta_inv[DEG], JrkJri[DEG];
+    MatD Jr_delta_inv[DEG], Jr_kdelta[DEG];
 
     for (int i = DEG - 1; i >= 0; i--) {
       const SO3& p0 = knots[s + i];
@@ -550,8 +550,7 @@ class So3Spline {
       Jr_delta_inv[i] *= p1.inverse().matrix();
 
       VecD k_delta = coeff[i + 1] * delta_vec[i];
-      Sophus::rightJacobianSO3(-k_delta, JrkJri[i]);
-      JrkJri[i] *= Jr_delta_inv[i];
+      Sophus::rightJacobianSO3(-k_delta, Jr_kdelta[i]);
 
       R_tmp[i] = accum.matrix();
       VecD accum_delta = R_tmp[i] * delta_vec[i];
@@ -565,57 +564,50 @@ class So3Spline {
       accum *= exp_k_delta[i];
     }
 
-    MatD d_vel_d_delta[DEG];
     MatD d_acccel_d_delta[DEG];
-
-    MatD H_mat[DEG][DEG];
+    MatD J_v_mat[DEG][DEG];
     MatD vc_mat[DEG];
     VecD vc = rot_vel_current[0] - rot_vel;
     vc_mat[0] = SO3::hat(vc);
 
-    H_mat[0][0] = d_vel_d_delta[0] = R_tmp[0] * Jr_delta_inv[0] * dcoeff[1];
-    d_acccel_d_delta[0] = R_tmp[0] * Jr_delta_inv[0] * ddcoeff[1];
-
-    VecD v = delta_vec[0] * dcoeff[1];
+    d_acccel_d_delta[0] = R_tmp[0] * ddcoeff[1];
     VecD dv = delta_vec[0] * ddcoeff[1];
     for (int i = 0; i < DEG; i++) {
-      VecD vv = delta_vec[i] * dcoeff[i + 1];
-
       if (i > 0) {
-        MatD tmp = R_tmp[i] * Jr_delta_inv[i];
-
-        d_vel_d_delta[i] =
-            R_tmp[i - 1] * SO3::hat(v) * JrkJri[i] * coeff[i + 1] +
-            tmp * dcoeff[i + 1];
         d_acccel_d_delta[i] =
-            R_tmp[i - 1] * SO3::hat(dv) * JrkJri[i] * coeff[i + 1] +
-            tmp * ddcoeff[i + 1];
+            R_tmp[i - 1] * SO3::hat(dv) * Jr_kdelta[i] * coeff[i + 1] +
+            R_tmp[i] * ddcoeff[i + 1];
 
-        v = exp_k_delta[i] * v + vv;
         dv = exp_k_delta[i] * dv + delta_vec[i] * ddcoeff[i + 1];
 
         vc += rot_vel_current[i - 1] + rot_vel_current[i];
         vc_mat[i] = SO3::hat(vc);
-        H_mat[i][i] = tmp * dcoeff[i + 1];
       }
 
+      J_v_mat[i][i] = R_tmp[i] * dcoeff[i + 1];
+      VecD vv = delta_vec[i] * dcoeff[i + 1];
       for (int j = i + 1; j < DEG; j++) {
-        H_mat[j][i] =
-            R_tmp[j - 1] * Sophus::SO3d::hat(vv) * JrkJri[j] * coeff[j + 1];
+        J_v_mat[i][j] =
+            R_tmp[j - 1] * Sophus::SO3d::hat(vv) * Jr_kdelta[j] * coeff[j + 1];
         vv = exp_k_delta[j] * vv;
       }
     }
 
+    MatD d_vel_d_delta[DEG];
+
     for (int j = 0; j < DEG; j++) {
-      for (int i = 0; i <= j; i++)
-        d_acccel_d_delta[j] += vc_mat[i] * H_mat[j][i];
+      d_vel_d_delta[j].setZero();
+      for (int i = 0; i <= j; i++) {
+        d_acccel_d_delta[j] += vc_mat[i] * J_v_mat[i][j];
+        d_vel_d_delta[j] += J_v_mat[i][j];
+      }
+      d_acccel_d_delta[j] *= Jr_delta_inv[j];
+      d_vel_d_delta[j] *= Jr_delta_inv[j];
     }
 
     if (J_vel) {
       J_vel->start_idx = s;
-
       for (int i = 0; i < N; i++) J_vel->d_val_d_knot[i].setZero();
-
       for (int i = 0; i < DEG; i++) {
         J_vel->d_val_d_knot[i] -= d_vel_d_delta[i];
         J_vel->d_val_d_knot[i + 1] += d_vel_d_delta[i];
@@ -624,9 +616,7 @@ class So3Spline {
 
     if (J_accel) {
       J_accel->start_idx = s;
-
       for (int i = 0; i < N; i++) J_accel->d_val_d_knot[i].setZero();
-
       for (int i = 0; i < DEG; i++) {
         J_accel->d_val_d_knot[i] -= d_acccel_d_delta[i];
         J_accel->d_val_d_knot[i + 1] += d_acccel_d_delta[i];
