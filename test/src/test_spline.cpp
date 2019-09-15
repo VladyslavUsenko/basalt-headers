@@ -94,8 +94,8 @@ void test_time_deriv(const basalt::RdSpline<DIM, N> &spline, int64_t t_ns) {
 
 template <int N>
 void test_evaluate_so3(const basalt::So3Spline<N> &spline, int64_t t_ns) {
-  using VectorD = typename basalt::So3Spline<N>::VecD;
-  using MatrixD = typename basalt::So3Spline<N>::MatD;
+  using VectorD = typename basalt::So3Spline<N>::Vec3;
+  using MatrixD = typename basalt::So3Spline<N>::Mat3;
   using SO3 = typename basalt::So3Spline<N>::SO3;
 
   typename basalt::So3Spline<N>::JacobianStruct J;
@@ -133,7 +133,7 @@ void test_evaluate_so3(const basalt::So3Spline<N> &spline, int64_t t_ns) {
 
 template <int N>
 void test_vel_so3(const basalt::So3Spline<N> &spline, int64_t t_ns) {
-  using VectorD = typename basalt::So3Spline<N>::VecD;
+  using VectorD = typename basalt::So3Spline<N>::Vec3;
   using SO3 = typename basalt::So3Spline<N>::SO3;
 
   SO3 res = spline.evaluate(t_ns);
@@ -154,7 +154,7 @@ void test_vel_so3(const basalt::So3Spline<N> &spline, int64_t t_ns) {
 
 template <int N>
 void test_accel_so3(const basalt::So3Spline<N> &spline, int64_t t_ns) {
-  using VectorD = typename basalt::So3Spline<5>::VecD;
+  using VectorD = typename basalt::So3Spline<5>::Vec3;
 
   VectorD vel1;
   VectorD d_res_d_t = spline.accelerationBody(t_ns, &vel1);
@@ -175,9 +175,34 @@ void test_accel_so3(const basalt::So3Spline<N> &spline, int64_t t_ns) {
 }
 
 template <int N>
+void test_jerk_so3(const basalt::So3Spline<N> &spline, int64_t t_ns) {
+  using VectorD = typename basalt::So3Spline<5>::Vec3;
+
+  VectorD vel1, accel1;
+  VectorD d_res_d_t = spline.jerkBody(t_ns, &vel1, &accel1);
+
+  VectorD vel2 = spline.velocityBody(t_ns);
+  EXPECT_TRUE(vel1.isApprox(vel2));
+
+  VectorD accel2 = spline.accelerationBody(t_ns);
+  EXPECT_TRUE(accel1.isApprox(accel2));
+
+  Eigen::Matrix<double, 1, 1> x0;
+  x0.setZero();
+
+  test_jacobian(
+      "d_val_d_t", d_res_d_t,
+      [&](const Eigen::Matrix<double, 1, 1> &x) {
+        int64_t inc = x[0] * 1e9;
+        return spline.accelerationBody(t_ns + inc);
+      },
+      x0);
+}
+
+template <int N>
 void test_evaluate_so3_vel(const basalt::So3Spline<N> &spline, int64_t t_ns) {
-  using VectorD = typename basalt::So3Spline<5>::VecD;
-  using MatrixD = typename basalt::So3Spline<5>::MatD;
+  using VectorD = typename basalt::So3Spline<5>::Vec3;
+  using MatrixD = typename basalt::So3Spline<5>::Mat3;
   using SO3 = typename basalt::So3Spline<5>::SO3;
 
   typename basalt::So3Spline<N>::JacobianStruct J;
@@ -216,8 +241,8 @@ void test_evaluate_so3_vel(const basalt::So3Spline<N> &spline, int64_t t_ns) {
 
 template <int N>
 void test_evaluate_so3_accel(const basalt::So3Spline<N> &spline, int64_t t_ns) {
-  using VectorD = typename basalt::So3Spline<N>::VecD;
-  using MatrixD = typename basalt::So3Spline<N>::MatD;
+  using VectorD = typename basalt::So3Spline<N>::Vec3;
+  using MatrixD = typename basalt::So3Spline<N>::Mat3;
   using SO3 = typename basalt::So3Spline<N>::SO3;
 
   typename basalt::So3Spline<N>::JacobianStruct J_accel, J_vel;
@@ -535,6 +560,26 @@ TEST(SplineTest, SO3CUBSplineAcceleration6) {
 
   for (int64_t t_ns = 1e8; t_ns < spline.maxTimeNs() - 1e8; t_ns += 1e8)
     test_accel_so3(spline, t_ns);
+}
+
+TEST(SplineTest, SO3CUBSplineJerk5) {
+  static const int N = 5;
+
+  basalt::So3Spline<N> spline(int64_t(2e9));
+  spline.genRandomTrajectory(3 * N);
+
+  for (int64_t t_ns = 1e8; t_ns < spline.maxTimeNs() - 1e8; t_ns += 1e8)
+    test_jerk_so3(spline, t_ns);
+}
+
+TEST(SplineTest, SO3CUBSplineJerk6) {
+  static const int N = 6;
+
+  basalt::So3Spline<N> spline(int64_t(2e9));
+  spline.genRandomTrajectory(3 * N);
+
+  for (int64_t t_ns = 1e8; t_ns < spline.maxTimeNs() - 1e8; t_ns += 1e8)
+    test_jerk_so3(spline, t_ns);
 }
 
 TEST(SplineTest, SO3CUBSplineVelocityKnots4) {

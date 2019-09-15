@@ -84,8 +84,8 @@ class So3Spline {
   using MatN = Eigen::Matrix<_Scalar, _N, _N>;
   using VecN = Eigen::Matrix<_Scalar, _N, 1>;
 
-  using VecD = Eigen::Matrix<_Scalar, 3, 1>;
-  using MatD = Eigen::Matrix<_Scalar, 3, 3>;
+  using Vec3 = Eigen::Matrix<_Scalar, 3, 1>;
+  using Mat3 = Eigen::Matrix<_Scalar, 3, 3>;
 
   using SO3 = Sophus::SO3<_Scalar>;
 
@@ -96,7 +96,7 @@ class So3Spline {
   /// all derivatives.
   struct JacobianStruct {
     size_t start_idx;
-    std::array<MatD, _N> d_val_d_knot;
+    std::array<Mat3, _N> d_val_d_knot;
   };
 
   /// @brief Constructor with knot interval and start time
@@ -108,6 +108,7 @@ class So3Spline {
     pow_inv_dt[0] = 1.0;
     pow_inv_dt[1] = s_to_ns / dt_ns;
     pow_inv_dt[2] = pow_inv_dt[1] * pow_inv_dt[1];
+    pow_inv_dt[3] = pow_inv_dt[2] * pow_inv_dt[1];
   }
 
   /// @brief Maximum time represented by spline
@@ -129,16 +130,16 @@ class So3Spline {
   /// resulting in static initial condition
   void genRandomTrajectory(int n, bool static_init = false) {
     if (static_init) {
-      VecD rnd = VecD::Random() * M_PI;
+      Vec3 rnd = Vec3::Random() * M_PI;
 
       for (int i = 0; i < N; i++) knots.push_back(SO3::exp(rnd));
 
       for (int i = 0; i < n - N; i++)
-        knots.push_back(SO3::exp(VecD::Random() * M_PI));
+        knots.push_back(SO3::exp(Vec3::Random() * M_PI));
 
     } else {
       for (int i = 0; i < n; i++)
-        knots.push_back(SO3::exp(VecD::Random() * M_PI));
+        knots.push_back(SO3::exp(Vec3::Random() * M_PI));
     }
   }
 
@@ -221,7 +222,7 @@ class So3Spline {
 
     SO3 res = knots[s];
 
-    MatD J_helper;
+    Mat3 J_helper;
 
     if (J) {
       J->start_idx = s;
@@ -233,11 +234,11 @@ class So3Spline {
       const SO3& p1 = knots[s + i + 1];
 
       SO3 r01 = p0.inverse() * p1;
-      VecD delta = r01.log();
-      VecD kdelta = delta * coeff[i + 1];
+      Vec3 delta = r01.log();
+      Vec3 kdelta = delta * coeff[i + 1];
 
       if (J) {
-        MatD Jl_inv_delta, Jl_k_delta;
+        Mat3 Jl_inv_delta, Jl_k_delta;
 
         Sophus::leftJacobianInvSO3(delta, Jl_inv_delta);
         Sophus::leftJacobianSO3(kdelta, Jl_k_delta);
@@ -300,7 +301,7 @@ class So3Spline {
   /// @param[in] time_ns time for evaluating velocity of the spline in
   /// nanoseconds
   /// @return rotational velocity (3x1 vector)
-  VecD velocityBody(int64_t time_ns) const {
+  Vec3 velocityBody(int64_t time_ns) const {
     int64_t st_ns = (time_ns - start_t_ns);
 
     BASALT_ASSERT_STREAM(st_ns >= 0, "st_ns " << st_ns << " time_ns " << time_ns
@@ -323,7 +324,7 @@ class So3Spline {
 
     SO3 r_accum;
 
-    VecD rot_vel;
+    Vec3 rot_vel;
     rot_vel.setZero();
 
     for (int i = DEG - 1; i >= 0; i--) {
@@ -331,7 +332,7 @@ class So3Spline {
       const SO3& p1 = knots[s + i + 1];
 
       SO3 r01 = p0.inverse() * p1;
-      VecD delta = r01.log();
+      Vec3 delta = r01.log();
 
       rot_vel += r_accum * delta * dcoeff[i + 1];
       r_accum *= SO3::exp(-delta * coeff[i + 1]);
@@ -348,7 +349,7 @@ class So3Spline {
   /// @param[out] J if not nullptr, return the Jacobian of the rotational
   /// velocity in body frame with respect to knots
   /// @return rotational velocity (3x1 vector)
-  VecD velocityBody(int64_t time_ns, JacobianStruct* J) const {
+  Vec3 velocityBody(int64_t time_ns, JacobianStruct* J) const {
     int64_t st_ns = (time_ns - start_t_ns);
 
     BASALT_ASSERT_STREAM(st_ns >= 0, "st_ns " << st_ns << " time_ns " << time_ns
@@ -369,16 +370,16 @@ class So3Spline {
     baseCoeffsWithTime<1>(p, u);
     VecN dcoeff = pow_inv_dt[1] * blending_matrix_ * p;
 
-    VecD rot_vel;
+    Vec3 rot_vel;
     rot_vel.setZero();
 
-    VecD delta_vec[DEG];
+    Vec3 delta_vec[DEG];
 
-    MatD R_tmp[DEG];
+    Mat3 R_tmp[DEG];
     SO3 accum;
     SO3 exp_k_delta[DEG];
 
-    MatD Jr_delta_inv[DEG], Jr_kdelta[DEG];
+    Mat3 Jr_delta_inv[DEG], Jr_kdelta[DEG];
 
     for (int i = DEG - 1; i >= 0; i--) {
       const SO3& p0 = knots[s + i];
@@ -390,7 +391,7 @@ class So3Spline {
       Sophus::rightJacobianInvSO3(delta_vec[i], Jr_delta_inv[i]);
       Jr_delta_inv[i] *= p1.inverse().matrix();
 
-      VecD k_delta = coeff[i + 1] * delta_vec[i];
+      Vec3 k_delta = coeff[i + 1] * delta_vec[i];
       Sophus::rightJacobianSO3(-k_delta, Jr_kdelta[i]);
 
       R_tmp[i] = accum.matrix();
@@ -399,10 +400,10 @@ class So3Spline {
       accum *= exp_k_delta[i];
     }
 
-    MatD d_vel_d_delta[DEG];
+    Mat3 d_vel_d_delta[DEG];
 
     d_vel_d_delta[0] = dcoeff[1] * R_tmp[0] * Jr_delta_inv[0];
-    VecD v = delta_vec[0] * dcoeff[1];
+    Vec3 v = delta_vec[0] * dcoeff[1];
     for (int i = 1; i < DEG; i++) {
       d_vel_d_delta[i] =
           R_tmp[i - 1] * SO3::hat(v) * Jr_kdelta[i] * coeff[i + 1] +
@@ -427,12 +428,12 @@ class So3Spline {
   /// @brief Evaluate rotational acceleration (second time derivative) of SO(3)
   /// B-spline in the body frame
   ///
-  /// @param[in] time_ns time for evaluating velocity of the spline in
+  /// @param[in] time_ns time for evaluating acceleration of the spline in
   /// nanoseconds
   /// @param[out] vel_body if not nullptr, return the rotational velocity in the
   /// body frame (3x1 vector) (side computation)
   /// @return rotational acceleration (3x1 vector)
-  VecD accelerationBody(int64_t time_ns, VecD* vel_body = nullptr) const {
+  Vec3 accelerationBody(int64_t time_ns, Vec3* vel_body = nullptr) const {
     int64_t st_ns = (time_ns - start_t_ns);
 
     BASALT_ASSERT_STREAM(st_ns >= 0, "st_ns " << st_ns << " time_ns " << time_ns
@@ -458,10 +459,10 @@ class So3Spline {
 
     SO3 r_accum;
 
-    VecD rot_vel;
+    Vec3 rot_vel;
     rot_vel.setZero();
 
-    VecD rot_accel;
+    Vec3 rot_accel;
     rot_accel.setZero();
 
     for (int i = DEG - 1; i >= 0; i--) {
@@ -469,11 +470,11 @@ class So3Spline {
       const SO3& p1 = knots[s + i + 1];
 
       SO3 r01 = p0.inverse() * p1;
-      VecD delta = r01.log();
+      Vec3 delta = r01.log();
 
-      VecD r_accum_delta = r_accum * delta;
+      Vec3 r_accum_delta = r_accum * delta;
 
-      VecD rot_vel_current = r_accum_delta * dcoeff[i + 1];
+      Vec3 rot_vel_current = r_accum_delta * dcoeff[i + 1];
       rot_accel +=
           r_accum_delta * ddcoeff[i + 1] + rot_vel_current.cross(rot_vel);
       rot_vel += rot_vel_current;
@@ -487,7 +488,7 @@ class So3Spline {
   /// @brief Evaluate rotational acceleration (second time derivative) of SO(3)
   /// B-spline in the body frame
   ///
-  /// @param[in] time_ns time for evaluating velocity of the spline in
+  /// @param[in] time_ns time for evaluating acceleration of the spline in
   /// nanoseconds
   /// @param[out] J_accel if not nullptr, return the Jacobian of the rotational
   /// acceleration in body frame with respect to knots
@@ -496,8 +497,8 @@ class So3Spline {
   /// @param[out] J_vel if not nullptr, return the Jacobian of the rotational
   /// velocity in the body frame (side computation)
   /// @return rotational acceleration (3x1 vector)
-  VecD accelerationBody(int64_t time_ns, JacobianStruct* J_accel,
-                        VecD* vel_body = nullptr,
+  Vec3 accelerationBody(int64_t time_ns, JacobianStruct* J_accel,
+                        Vec3* vel_body = nullptr,
                         JacobianStruct* J_vel = nullptr) const {
     BASALT_ASSERT(J_accel);
 
@@ -524,20 +525,20 @@ class So3Spline {
     baseCoeffsWithTime<2>(p, u);
     VecN ddcoeff = pow_inv_dt[2] * blending_matrix_ * p;
 
-    VecD rot_accel;
+    Vec3 rot_accel;
     rot_accel.setZero();
 
-    VecD rot_vel;
+    Vec3 rot_vel;
     rot_vel.setZero();
 
-    VecD delta_vec[DEG];
+    Vec3 delta_vec[DEG];
 
-    MatD R_tmp[DEG];
+    Mat3 R_tmp[DEG];
     SO3 accum;
     SO3 exp_k_delta[DEG];
-    VecD rot_vel_current[DEG];
+    Vec3 rot_vel_current[DEG];
 
-    MatD Jr_delta_inv[DEG], Jr_kdelta[DEG];
+    Mat3 Jr_delta_inv[DEG], Jr_kdelta[DEG];
 
     for (int i = DEG - 1; i >= 0; i--) {
       const SO3& p0 = knots[s + i];
@@ -549,11 +550,11 @@ class So3Spline {
       Sophus::rightJacobianInvSO3(delta_vec[i], Jr_delta_inv[i]);
       Jr_delta_inv[i] *= p1.inverse().matrix();
 
-      VecD k_delta = coeff[i + 1] * delta_vec[i];
+      Vec3 k_delta = coeff[i + 1] * delta_vec[i];
       Sophus::rightJacobianSO3(-k_delta, Jr_kdelta[i]);
 
       R_tmp[i] = accum.matrix();
-      VecD accum_delta = R_tmp[i] * delta_vec[i];
+      Vec3 accum_delta = R_tmp[i] * delta_vec[i];
 
       rot_vel_current[i] = accum_delta * dcoeff[i + 1];
       rot_accel +=
@@ -564,14 +565,14 @@ class So3Spline {
       accum *= exp_k_delta[i];
     }
 
-    MatD d_acccel_d_delta[DEG];
-    MatD J_v_mat[DEG][DEG];
-    MatD vc_mat[DEG];
-    VecD vc = rot_vel_current[0] - rot_vel;
+    Mat3 d_acccel_d_delta[DEG];
+    Mat3 J_v_mat[DEG][DEG];
+    Mat3 vc_mat[DEG];
+    Vec3 vc = rot_vel_current[0] - rot_vel;
     vc_mat[0] = SO3::hat(vc);
 
     d_acccel_d_delta[0] = R_tmp[0] * ddcoeff[1];
-    VecD dv = delta_vec[0] * ddcoeff[1];
+    Vec3 dv = delta_vec[0] * ddcoeff[1];
     for (int i = 0; i < DEG; i++) {
       if (i > 0) {
         d_acccel_d_delta[i] =
@@ -585,7 +586,7 @@ class So3Spline {
       }
 
       J_v_mat[i][i] = R_tmp[i] * dcoeff[i + 1];
-      VecD vv = delta_vec[i] * dcoeff[i + 1];
+      Vec3 vv = delta_vec[i] * dcoeff[i + 1];
       for (int j = i + 1; j < DEG; j++) {
         J_v_mat[i][j] =
             R_tmp[j - 1] * Sophus::SO3d::hat(vv) * Jr_kdelta[j] * coeff[j + 1];
@@ -593,7 +594,7 @@ class So3Spline {
       }
     }
 
-    MatD d_vel_d_delta[DEG];
+    Mat3 d_vel_d_delta[DEG];
 
     for (int j = 0; j < DEG; j++) {
       d_vel_d_delta[j].setZero();
@@ -625,6 +626,83 @@ class So3Spline {
 
     if (vel_body) *vel_body = rot_vel;
     return rot_accel;
+  }
+
+  /// @brief Evaluate rotational jerk (third time derivative) of SO(3)
+  /// B-spline in the body frame
+  ///
+  /// @param[in] time_ns time for evaluating jerk of the spline in
+  /// nanoseconds
+  /// @param[out] vel_body if not nullptr, return the rotational velocity in the
+  /// body frame (3x1 vector) (side computation)
+  /// @param[out] accel_body if not nullptr, return the rotational acceleration
+  /// in the body frame (3x1 vector) (side computation)
+  /// @return rotational jerk (3x1 vector)
+  Vec3 jerkBody(int64_t time_ns, Vec3* vel_body = nullptr,
+                Vec3* accel_body = nullptr) const {
+    int64_t st_ns = (time_ns - start_t_ns);
+
+    BASALT_ASSERT_STREAM(st_ns >= 0, "st_ns " << st_ns << " time_ns " << time_ns
+                                              << " start_t_ns " << start_t_ns);
+
+    int64_t s = st_ns / dt_ns;
+    double u = double(st_ns % dt_ns) / double(dt_ns);
+
+    BASALT_ASSERT_STREAM(s >= 0, "s " << s);
+    BASALT_ASSERT_STREAM(size_t(s + N) <= knots.size(), "s " << s << " N " << N
+                                                             << " knots.size() "
+                                                             << knots.size());
+
+    VecN p;
+    baseCoeffsWithTime<0>(p, u);
+    VecN coeff = blending_matrix_ * p;
+
+    baseCoeffsWithTime<1>(p, u);
+    VecN dcoeff = pow_inv_dt[1] * blending_matrix_ * p;
+
+    baseCoeffsWithTime<2>(p, u);
+    VecN ddcoeff = pow_inv_dt[2] * blending_matrix_ * p;
+
+    baseCoeffsWithTime<3>(p, u);
+    VecN dddcoeff = pow_inv_dt[3] * blending_matrix_ * p;
+
+    SO3 r_accum;
+
+    Vec3 rot_vel;
+    rot_vel.setZero();
+
+    Vec3 rot_accel;
+    rot_accel.setZero();
+
+    Vec3 rot_jerk;
+    rot_jerk.setZero();
+
+    for (int i = DEG - 1; i >= 0; i--) {
+      const SO3& p0 = knots[s + i];
+      const SO3& p1 = knots[s + i + 1];
+
+      SO3 r01 = p0.inverse() * p1;
+      Vec3 delta = r01.log();
+
+      Vec3 r_accum_delta = r_accum * delta;
+
+      Vec3 rot_vel_current = r_accum_delta * dcoeff[i + 1];
+      Vec3 rot_accel_current =
+          r_accum_delta * ddcoeff[i + 1] + rot_vel_current.cross(rot_vel);
+
+      rot_jerk +=
+          r_accum_delta * dddcoeff[i + 1] +
+          (r_accum_delta * ddcoeff[i + 1] + rot_accel_current).cross(rot_vel) +
+          rot_vel_current.cross(rot_accel);
+
+      rot_accel += rot_accel_current;
+      rot_vel += rot_vel_current;
+      r_accum *= SO3::exp(-delta * coeff[i + 1]);
+    }
+
+    if (vel_body) *vel_body = rot_vel;
+    if (accel_body) *accel_body = rot_accel;
+    return rot_jerk;
   }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -668,7 +746,7 @@ class So3Spline {
   Eigen::deque<SO3> knots;            ///< Knots
   int64_t dt_ns;                      ///< Knot interval in nanoseconds
   int64_t start_t_ns;                 ///< Start time in nanoseconds
-  std::array<_Scalar, 3> pow_inv_dt;  ///< Array with inverse powers of dt
+  std::array<_Scalar, 4> pow_inv_dt;  ///< Array with inverse powers of dt
 };                                    // namespace basalt
 
 template <int _N, typename _Scalar>
