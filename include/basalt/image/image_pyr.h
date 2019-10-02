@@ -50,6 +50,7 @@ namespace basalt {
 template <typename T, class Allocator = DefaultImageAllocator<T>>
 class ManagedImagePyr {
  public:
+  using PixelType = T;
   using Ptr = std::shared_ptr<ManagedImagePyr<T, Allocator>>;
 
   /// @brief Default constructor.
