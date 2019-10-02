@@ -108,6 +108,8 @@ inline void PitchedCopy(char* dst, unsigned int dst_pitch_bytes,
 /// @brief Image class that supports sub-images, interpolation, element access.
 template <typename T>
 struct Image {
+  using PixelType = T;
+
   inline Image() : pitch(0), ptr(0), w(0), h(0) {}
 
   inline Image(T* ptr, size_t w, size_t h, size_t pitch)
@@ -471,6 +473,7 @@ using DefaultImageAllocator = std::allocator<T>;
 template <typename T, class Allocator = DefaultImageAllocator<T>>
 class ManagedImage : public Image<T> {
  public:
+  using PixelType = T;
   using Ptr = std::shared_ptr<ManagedImage<T, Allocator>>;
 
   // Destructor

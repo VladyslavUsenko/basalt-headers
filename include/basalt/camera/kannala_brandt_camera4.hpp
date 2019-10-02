@@ -349,7 +349,7 @@ class KannalaBrandtCamera4 {
     p3d[2] = cos_theta;
     p3d[3] = 0;
 
-    if (d_p3d_d_param || d_p3d_d_param) {
+    if (d_p3d_d_proj || d_p3d_d_param) {
       Scalar d_thetad_d_mx = 0;
       Scalar d_thetad_d_my = 0;
       Scalar d_scaling_d_thetad = 0;
