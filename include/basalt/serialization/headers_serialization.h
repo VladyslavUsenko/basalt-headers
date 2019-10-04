@@ -208,7 +208,7 @@ template <class Archive, class Scalar, int DIM, int ORDER>
 inline void load(Archive& ar, basalt::RdSpline<DIM, ORDER, Scalar>& spline) {
   int64_t start_t_ns;
   int64_t dt_ns;
-  Eigen::deque<Eigen::Matrix<Scalar, DIM, 1>> knots;
+  Eigen::aligned_deque<Eigen::Matrix<Scalar, DIM, 1>> knots;
 
   ar(start_t_ns);
   ar(dt_ns);

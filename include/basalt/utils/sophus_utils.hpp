@@ -46,8 +46,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace Sophus {
 
 /// @brief Decoupled version of logmap for SE(3)
+///
+/// For SE(3) element vector
+/// \f[
+/// \begin{pmatrix} R & t \\ 0 & 1 \end{pmatrix} \in SE(3),
+/// \f]
+/// returns \f$ (t, \log(R)) \in \mathbb{R}^6 \f$. Here rotation is not coupled
+/// with translation.
+///
+/// @param[in] SE(3) member
+/// @return tangent vector (6x1 vector)
 template <typename Scalar>
-inline static typename SE3<Scalar>::Tangent logd(const SE3<Scalar> &se3) {
+inline typename SE3<Scalar>::Tangent se3_logd(const SE3<Scalar> &se3) {
   typename SE3<Scalar>::Tangent upsilon_omega;
   upsilon_omega.template tail<3>() = se3.so3().log();
   upsilon_omega.template head<3>() = se3.translation();
@@ -56,8 +66,18 @@ inline static typename SE3<Scalar>::Tangent logd(const SE3<Scalar> &se3) {
 }
 
 /// @brief Decoupled version of expmap for SE(3)
+///
+/// For tangent vector \f$ (\upsilon, \omega) \in \mathbb{R}^6 \f$ returns
+/// \f[
+/// \begin{pmatrix} \exp(\omega) & \upsilon \\ 0 & 1 \end{pmatrix} \in SE(3),
+/// \f]
+/// where \f$ \exp(\omega) \in SO(3) \f$. Here rotation is not coupled with
+/// translation.
+///
+/// @param[in] tangent vector (6x1 vector)
+/// @return  SE(3) member
 template <typename Derived>
-inline static SE3<typename Derived::Scalar> expd(
+inline SE3<typename Derived::Scalar> se3_expd(
     const Eigen::MatrixBase<Derived> &upsilon_omega) {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived, 6);
@@ -77,8 +97,8 @@ inline static SE3<typename Derived::Scalar> expd(
 /// @param[in] phi (3x1 vector)
 /// @param[out] J_phi (3x3 matrix)
 template <typename Derived1, typename Derived2>
-void rightJacobianSO3(const Eigen::MatrixBase<Derived1> &phi,
-                      const Eigen::MatrixBase<Derived2> &J_phi) {
+inline void rightJacobianSO3(const Eigen::MatrixBase<Derived1> &phi,
+                             const Eigen::MatrixBase<Derived2> &J_phi) {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived1);
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived2);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived1, 3);
@@ -113,8 +133,8 @@ void rightJacobianSO3(const Eigen::MatrixBase<Derived1> &phi,
 /// @param[in] phi (3x1 vector)
 /// @param[out] J_phi (3x3 matrix)
 template <typename Derived1, typename Derived2>
-void rightJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
-                         const Eigen::MatrixBase<Derived2> &J_phi) {
+inline void rightJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
+                                const Eigen::MatrixBase<Derived2> &J_phi) {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived1);
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived2);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived1, 3);
@@ -149,8 +169,8 @@ void rightJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
 /// @param[in] phi (3x1 vector)
 /// @param[out] J_phi (3x3 matrix)
 template <typename Derived1, typename Derived2>
-void leftJacobianSO3(const Eigen::MatrixBase<Derived1> &phi,
-                     const Eigen::MatrixBase<Derived2> &J_phi) {
+inline void leftJacobianSO3(const Eigen::MatrixBase<Derived1> &phi,
+                            const Eigen::MatrixBase<Derived2> &J_phi) {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived1);
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived2);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived1, 3);
@@ -185,8 +205,8 @@ void leftJacobianSO3(const Eigen::MatrixBase<Derived1> &phi,
 /// @param[in] phi (3x1 vector)
 /// @param[out] J_phi (3x3 matrix)
 template <typename Derived1, typename Derived2>
-void leftJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
-                        const Eigen::MatrixBase<Derived2> &J_phi) {
+inline void leftJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
+                               const Eigen::MatrixBase<Derived2> &J_phi) {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived1);
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived2);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived1, 3);
@@ -221,8 +241,9 @@ void leftJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
 /// @param[in] phi (6x1 vector)
 /// @param[out] J_phi (6x6 matrix)
 template <typename Derived1, typename Derived2>
-void rightJacobianSE3Decoupled(const Eigen::MatrixBase<Derived1> &phi,
-                               const Eigen::MatrixBase<Derived2> &J_phi) {
+inline void rightJacobianSE3Decoupled(
+    const Eigen::MatrixBase<Derived1> &phi,
+    const Eigen::MatrixBase<Derived2> &J_phi) {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived1);
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived2);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived1, 6);
@@ -251,8 +272,9 @@ void rightJacobianSE3Decoupled(const Eigen::MatrixBase<Derived1> &phi,
 /// @param[in] phi (6x1 vector)
 /// @param[out] J_phi (6x6 matrix)
 template <typename Derived1, typename Derived2>
-void rightJacobianInvSE3Decoupled(const Eigen::MatrixBase<Derived1> &phi,
-                                  const Eigen::MatrixBase<Derived2> &J_phi) {
+inline void rightJacobianInvSE3Decoupled(
+    const Eigen::MatrixBase<Derived1> &phi,
+    const Eigen::MatrixBase<Derived2> &J_phi) {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived1);
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived2);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived1, 6);

@@ -125,8 +125,8 @@ TEST(SophusUtilsCase, RightJacobianSE3Decoupled) {
   test_jacobian(
       "rightJacobianSE3Decoupled", Ja,
       [&](const Sophus::Vector6d &x) {
-        return Sophus::logd(Sophus::expd(phi).inverse() *
-                            Sophus::expd(phi + x));
+        return Sophus::se3_logd(Sophus::se3_expd(phi).inverse() *
+                            Sophus::se3_expd(phi + x));
       },
       x0);
 }
@@ -144,7 +144,7 @@ TEST(SophusUtilsCase, RightJacobianInvSE3Decoupled) {
   test_jacobian(
       "rightJacobianInvSE3Decoupled", Ja,
       [&](const Sophus::Vector6d &x) {
-        return Sophus::logd(Sophus::expd(phi) * Sophus::expd(x));
+        return Sophus::se3_logd(Sophus::se3_expd(phi) * Sophus::se3_expd(x));
       },
       x0);
 }
@@ -163,7 +163,7 @@ TEST(SophusUtilsCase, Adjoint) {
   test_jacobian(
       "Adj", Ja,
       [&](const Sophus::Vector6d &x) {
-        return Sophus::logd(pose.inverse() * Sophus::expd(x) * pose);
+        return Sophus::se3_logd(pose.inverse() * Sophus::se3_expd(x) * pose);
       },
       x0);
 }
@@ -214,7 +214,7 @@ TEST(SophusUtilsCase, incTest) {
         pose1.so3() = Sophus::SO3d::exp(x.tail<3>()) * pose.so3();
         pose1.translation() = pose.translation() + x.head<3>();
 
-        return Sophus::logd(pose.inverse() * pose1);
+        return Sophus::se3_logd(pose.inverse() * pose1);
       },
       x0);
 }

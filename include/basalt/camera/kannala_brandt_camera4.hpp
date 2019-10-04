@@ -457,8 +457,8 @@ class KannalaBrandtCamera4 {
   }
 
   /// @brief Projections used for unit-tests
-  static Eigen::vector<KannalaBrandtCamera4> getTestProjections() {
-    Eigen::vector<KannalaBrandtCamera4> res;
+  static Eigen::aligned_vector<KannalaBrandtCamera4> getTestProjections() {
+    Eigen::aligned_vector<KannalaBrandtCamera4> res;
 
     VecN vec1;
     vec1 << 379.045, 379.008, 505.512, 509.969, 0.00693023, -0.0013828,

@@ -242,7 +242,7 @@ TEST(ImuPreintegrationTestCase, ResidualTest) {
       << "res_gt " << res_gt.transpose();
 
   state1.T_w_i = gt_spline.pose(imu_meas.get_dt_ns()) *
-                 Sophus::expd(Sophus::Vector6d::Random() / 10);
+                 Sophus::se3_expd(Sophus::Vector6d::Random() / 10);
   state1.vel_w_i = gt_spline.transVelWorld(imu_meas.get_dt_ns()) +
                    Sophus::Vector3d::Random() / 10;
 
@@ -317,9 +317,9 @@ TEST(ImuPreintegrationTestCase, BiasTest) {
   basalt::Se3Spline<5> gt_spline(int64_t(10e9));
   gt_spline.genRandomTrajectory(num_knots);
 
-  Eigen::vector<Eigen::Vector3d> accel_data_vec;
-  Eigen::vector<Eigen::Vector3d> gyro_data_vec;
-  Eigen::vector<int64_t> timestamps_vec;
+  Eigen::aligned_vector<Eigen::Vector3d> accel_data_vec;
+  Eigen::aligned_vector<Eigen::Vector3d> gyro_data_vec;
+  Eigen::aligned_vector<int64_t> timestamps_vec;
 
   int64_t dt_ns = 1e7;
   for (int64_t t_ns = dt_ns / 2;
@@ -410,9 +410,9 @@ TEST(ImuPreintegrationTestCase, ResidualBiasTest) {
   basalt::Se3Spline<5> gt_spline(int64_t(10e9));
   gt_spline.genRandomTrajectory(num_knots);
 
-  Eigen::vector<Eigen::Vector3d> accel_data_vec;
-  Eigen::vector<Eigen::Vector3d> gyro_data_vec;
-  Eigen::vector<int64_t> timestamps_vec;
+  Eigen::aligned_vector<Eigen::Vector3d> accel_data_vec;
+  Eigen::aligned_vector<Eigen::Vector3d> gyro_data_vec;
+  Eigen::aligned_vector<int64_t> timestamps_vec;
 
   int64_t dt_ns = 1e7;
   for (int64_t t_ns = dt_ns / 2;
@@ -446,7 +446,7 @@ TEST(ImuPreintegrationTestCase, ResidualBiasTest) {
   state0.vel_w_i = gt_spline.transVelWorld(int64_t(0));
 
   state1.T_w_i = gt_spline.pose(imu_meas.get_dt_ns()) *
-                 Sophus::expd(Sophus::Vector6d::Random() / 10);
+                 Sophus::se3_expd(Sophus::Vector6d::Random() / 10);
   state1.vel_w_i = gt_spline.transVelWorld(imu_meas.get_dt_ns()) +
                    Sophus::Vector3d::Random() / 10;
 
@@ -537,9 +537,9 @@ TEST(ImuPreintegrationTestCase, CovarianceTest) {
   basalt::Se3Spline<5> gt_spline(int64_t(10e9));
   gt_spline.genRandomTrajectory(num_knots);
 
-  Eigen::vector<Eigen::Vector3d> accel_data_vec;
-  Eigen::vector<Eigen::Vector3d> gyro_data_vec;
-  Eigen::vector<int64_t> timestamps_vec;
+  Eigen::aligned_vector<Eigen::Vector3d> accel_data_vec;
+  Eigen::aligned_vector<Eigen::Vector3d> gyro_data_vec;
+  Eigen::aligned_vector<int64_t> timestamps_vec;
 
   int64_t dt_ns = 1e7;
   for (int64_t t_ns = dt_ns / 2;

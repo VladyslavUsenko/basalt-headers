@@ -277,7 +277,7 @@ void test_pose(const basalt::Se3Spline<N> &s, int64_t t_ns) {
           basalt::Se3Spline<N> s1 = s;
           s1.applyInc(i, x);
 
-          return Sophus::logd(res.inverse() * s1.pose(t_ns));
+          return Sophus::se3_logd(res.inverse() * s1.pose(t_ns));
         },
         x0);
   }
@@ -299,7 +299,7 @@ void test_pose(const basalt::Se3Spline<N> &s, int64_t t_ns) {
           int64_t t_ns_new = t_ns;
           t_ns_new += x[0] * 1e9;
 
-          return Sophus::logd(res.inverse() * s.pose(t_ns_new));
+          return Sophus::se3_logd(res.inverse() * s.pose(t_ns_new));
         },
         x0);
   }

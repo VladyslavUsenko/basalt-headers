@@ -160,8 +160,8 @@ class GenericCamera {
   /// applied to points before projection
   /// @param[out] proj results of projection
   /// @param[out] proj_success if projection is valid
-  inline void project(const Eigen::vector<Vec3>& p3d, const Mat4& T_c_w,
-                      Eigen::vector<Vec2>& proj,
+  inline void project(const Eigen::aligned_vector<Vec3>& p3d, const Mat4& T_c_w,
+                      Eigen::aligned_vector<Vec2>& proj,
                       std::vector<bool>& proj_success) const {
     std::visit(
         [&](const auto& cam) {
@@ -182,8 +182,8 @@ class GenericCamera {
   /// applied to points before projection
   /// @param[out] proj results of projection
   /// @param[out] proj_success if projection is valid
-  inline void project(const Eigen::vector<Vec4>& p3d, const Mat4& T_c_w,
-                      Eigen::vector<Vec2>& proj,
+  inline void project(const Eigen::aligned_vector<Vec4>& p3d, const Mat4& T_c_w,
+                      Eigen::aligned_vector<Vec2>& proj,
                       std::vector<bool>& proj_success) const {
     std::visit(
         [&](const auto& cam) {
@@ -201,7 +201,7 @@ class GenericCamera {
   /// @param[in] p3d points to project
   /// @param[out] proj results of projection
   /// @param[out] proj_success if projection is valid
-  inline void project(const Eigen::vector<Vec4>& p3d, Eigen::vector<Vec2>& proj,
+  inline void project(const Eigen::aligned_vector<Vec4>& p3d, Eigen::aligned_vector<Vec2>& proj,
                       std::vector<bool>& proj_success) const {
     std::visit(
         [&](const auto& cam) {
@@ -221,10 +221,10 @@ class GenericCamera {
   /// applied to points before projection
   /// @param[out] proj results of projection
   /// @param[out] proj_success if projection is valid
-  inline void project(const Eigen::vector<Vec4>& p3d, const Mat4& T_c_w,
-                      Eigen::vector<Vec2>& proj,
+  inline void project(const Eigen::aligned_vector<Vec4>& p3d, const Mat4& T_c_w,
+                      Eigen::aligned_vector<Vec2>& proj,
                       std::vector<bool>& proj_success,
-                      Eigen::vector<Vec2>& polar_azimuthal_angle) const {
+                      Eigen::aligned_vector<Vec2>& polar_azimuthal_angle) const {
     std::visit(
         [&](const auto& cam) {
           proj.resize(p3d.size());
@@ -249,8 +249,8 @@ class GenericCamera {
   /// @param[in] proj points to unproject
   /// @param[out] p3d results of unprojection
   /// @param[out] unproj_success if unprojection is valid
-  inline void unproject(const Eigen::vector<Vec2>& proj,
-                        Eigen::vector<Vec4>& p3d,
+  inline void unproject(const Eigen::aligned_vector<Vec2>& proj,
+                        Eigen::aligned_vector<Vec4>& p3d,
                         std::vector<bool>& unproj_success) const {
     std::visit(
         [&](const auto& cam) {

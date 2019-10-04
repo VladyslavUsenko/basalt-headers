@@ -38,7 +38,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 template <typename CamT>
 void test_project_jacobian() {
-  Eigen::vector<CamT> test_cams = CamT::getTestProjections();
+  Eigen::aligned_vector<CamT> test_cams = CamT::getTestProjections();
 
   using VecN = typename CamT::VecN;
   using Vec2 = typename CamT::Vec2;
@@ -91,7 +91,7 @@ void test_project_jacobian() {
 
 template <typename CamT>
 void test_project_unproject() {
-  Eigen::vector<CamT> test_cams = CamT::getTestProjections();
+  Eigen::aligned_vector<CamT> test_cams = CamT::getTestProjections();
 
   using Scalar = typename CamT::Vec2::Scalar;
   using Vec2 = typename CamT::Vec2;
@@ -124,7 +124,7 @@ void test_project_unproject() {
 
 template <typename CamT>
 void test_unproject_jacobians() {
-  Eigen::vector<CamT> test_cams = CamT::getTestProjections();
+  Eigen::aligned_vector<CamT> test_cams = CamT::getTestProjections();
 
   using VecN = typename CamT::VecN;
   using Vec2 = typename CamT::Vec2;

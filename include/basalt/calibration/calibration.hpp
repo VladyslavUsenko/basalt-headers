@@ -99,14 +99,14 @@ struct Calibration {
   /// Point in camera coordinate frame \f$ p_c \f$ can be transformed to the
   /// point in IMU coordinate frame as \f$ p_i = T_{ic} p_c, T_{ic} \in
   /// SE(3)\f$
-  Eigen::vector<SE3> T_i_c;
+  Eigen::aligned_vector<SE3> T_i_c;
 
   /// @brief Vector of camera intrinsics. Can store different camera models. See
   /// \ref GenericCamera.
-  Eigen::vector<GenericCamera<Scalar>> intrinsics;
+  Eigen::aligned_vector<GenericCamera<Scalar>> intrinsics;
 
   /// @brief Camera resolutions.
-  Eigen::vector<Eigen::Vector2i> resolution;
+  Eigen::aligned_vector<Eigen::Vector2i> resolution;
 
   /// @brief Vector of splines representing radially symmetric vignetting for
   /// each of the camera.

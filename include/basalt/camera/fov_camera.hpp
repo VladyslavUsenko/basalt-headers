@@ -350,8 +350,8 @@ class FovCamera {
   const VecN& getParam() const { return param; }
 
   /// @brief Projections used for unit-tests
-  static Eigen::vector<FovCamera> getTestProjections() {
-    Eigen::vector<FovCamera> res;
+  static Eigen::aligned_vector<FovCamera> getTestProjections() {
+    Eigen::aligned_vector<FovCamera> res;
 
     VecN vec1;
 
@@ -363,8 +363,8 @@ class FovCamera {
   }
 
   /// @brief Resolutions used for unit-tests
-  static Eigen::vector<Eigen::Vector2i> getTestResolutions() {
-    Eigen::vector<Eigen::Vector2i> res;
+  static Eigen::aligned_vector<Eigen::Vector2i> getTestResolutions() {
+    Eigen::aligned_vector<Eigen::Vector2i> res;
 
     res.emplace_back(752, 480);
 

@@ -9,7 +9,7 @@ void BM_Project(benchmark::State &state) {
   typedef typename CamT::Vec4 Vec4;
   typedef typename CamT::Vec2 Vec2;
 
-  Eigen::vector<CamT> test_cams = CamT::getTestProjections();
+  Eigen::aligned_vector<CamT> test_cams = CamT::getTestProjections();
 
   Vec4 p(0, 0, 5, 1);
 
@@ -38,7 +38,7 @@ void BM_ProjectJacobians(benchmark::State &state) {
   typedef typename CamT::Mat24 Mat24;
   typedef typename CamT::Mat2N Mat2N;
 
-  Eigen::vector<CamT> test_cams = CamT::getTestProjections();
+  Eigen::aligned_vector<CamT> test_cams = CamT::getTestProjections();
 
   Mat24 Jp;
   Mat2N Jparam;
@@ -67,7 +67,7 @@ void BM_Unproject(benchmark::State &state) {
   typedef typename CamT::Vec2 Vec2;
   typedef typename CamT::Vec4 Vec4;
 
-  Eigen::vector<CamT> test_cams = CamT::getTestProjections();
+  Eigen::aligned_vector<CamT> test_cams = CamT::getTestProjections();
 
   for (auto _ : state) {
     for (const CamT &cam : test_cams) {
@@ -94,7 +94,7 @@ void BM_UnprojectJacobians(benchmark::State &state) {
   typedef typename CamT::Vec2 Vec2;
   typedef typename CamT::Vec4 Vec4;
 
-  Eigen::vector<CamT> test_cams = CamT::getTestProjections();
+  Eigen::aligned_vector<CamT> test_cams = CamT::getTestProjections();
 
   typedef typename CamT::Mat42 Mat42;
   typedef typename CamT::Mat4N Mat4N;

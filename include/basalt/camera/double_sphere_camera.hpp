@@ -389,8 +389,8 @@ class DoubleSphereCamera {
   const VecN& getParam() const { return param; }
 
   /// @brief Projections used for unit-tests
-  static Eigen::vector<DoubleSphereCamera> getTestProjections() {
-    Eigen::vector<DoubleSphereCamera> res;
+  static Eigen::aligned_vector<DoubleSphereCamera> getTestProjections() {
+    Eigen::aligned_vector<DoubleSphereCamera> res;
 
     VecN vec1;
     vec1 << 0.5 * 805, 0.5 * 800, 505, 509, 0.5 * -0.150694, 0.5 * 1.48785;

@@ -247,8 +247,8 @@ class PinholeCamera {
   const VecN& getParam() const { return param; }
 
   /// @brief Projections used for unit-tests
-  static Eigen::vector<PinholeCamera> getTestProjections() {
-    Eigen::vector<PinholeCamera> res;
+  static Eigen::aligned_vector<PinholeCamera> getTestProjections() {
+    Eigen::aligned_vector<PinholeCamera> res;
 
     VecN vec1;
 
@@ -266,8 +266,8 @@ class PinholeCamera {
   }
 
   /// @brief Resolutions used for unit-tests
-  static Eigen::vector<Eigen::Vector2i> getTestResolutions() {
-    Eigen::vector<Eigen::Vector2i> res;
+  static Eigen::aligned_vector<Eigen::Vector2i> getTestResolutions() {
+    Eigen::aligned_vector<Eigen::Vector2i> res;
 
     res.emplace_back(752, 480);
     res.emplace_back(512, 512);

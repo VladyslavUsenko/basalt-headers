@@ -332,8 +332,8 @@ class UnifiedCamera {
   const VecN& getParam() const { return param; }
 
   /// @brief Projections used for unit-tests
-  static Eigen::vector<UnifiedCamera> getTestProjections() {
-    Eigen::vector<UnifiedCamera> res;
+  static Eigen::aligned_vector<UnifiedCamera> getTestProjections() {
+    Eigen::aligned_vector<UnifiedCamera> res;
 
     VecN vec1;
 
@@ -351,8 +351,8 @@ class UnifiedCamera {
   }
 
   /// @brief Resolutions used for unit-tests
-  static Eigen::vector<Eigen::Vector2i> getTestResolutions() {
-    Eigen::vector<Eigen::Vector2i> res;
+  static Eigen::aligned_vector<Eigen::Vector2i> getTestResolutions() {
+    Eigen::aligned_vector<Eigen::Vector2i> res;
 
     res.emplace_back(752, 480);
     res.emplace_back(512, 512);
