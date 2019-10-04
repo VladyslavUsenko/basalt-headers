@@ -126,7 +126,7 @@ TEST(SophusUtilsCase, RightJacobianSE3Decoupled) {
       "rightJacobianSE3Decoupled", Ja,
       [&](const Sophus::Vector6d &x) {
         return Sophus::se3_logd(Sophus::se3_expd(phi).inverse() *
-                            Sophus::se3_expd(phi + x));
+                                Sophus::se3_expd(phi + x));
       },
       x0);
 }

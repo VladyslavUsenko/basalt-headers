@@ -743,7 +743,7 @@ class So3Spline {
   static const MatN base_coefficients_;  ///< Base coefficients matrix.
   ///< See \ref computeBaseCoefficients.
 
-  Eigen::aligned_deque<SO3> knots;            ///< Knots
+  Eigen::aligned_deque<SO3> knots;    ///< Knots
   int64_t dt_ns;                      ///< Knot interval in nanoseconds
   int64_t start_t_ns;                 ///< Start time in nanoseconds
   std::array<_Scalar, 4> pow_inv_dt;  ///< Array with inverse powers of dt
