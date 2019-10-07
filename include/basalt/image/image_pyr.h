@@ -60,7 +60,7 @@ class ManagedImagePyr {
   ///
   /// @param other image to use for the pyramid level 0
   /// @param num_level number of levels for the pyramid
-  inline ManagedImagePyr(ManagedImage<T>& other, size_t num_levels) {
+  inline ManagedImagePyr(const ManagedImage<T>& other, size_t num_levels) {
     setFromImage(other, num_levels);
   }
 
@@ -157,6 +157,14 @@ class ManagedImagePyr {
     size_t height = (image.h >> lvl);
 
     return image.SubImage(x, y, width, height);
+  }
+
+  /// @brief Return const image of underlying mipmap
+  ///
+  /// @return const image of of the underlying mipmap representation which can
+  /// be for example used for visualization
+  inline const Image<const T> mipmap() const {
+    return image.SubImage(0, 0, image.w, image.h);
   }
 
   /// @brief Return coordinate offset of the image in the mipmap image.
