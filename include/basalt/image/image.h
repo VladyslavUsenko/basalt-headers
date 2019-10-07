@@ -374,14 +374,25 @@ struct Image {
 
   BASALT_HOST_DEVICE inline bool InBounds(float x, float y,
                                           float border) const {
-    return border <= x && x < (w - border) && border <= y && y < (h - border);
+    return border <= x && x < (w - border - 1) && border <= y &&
+           y < (h - border - 1);
   }
 
-  template <typename TVec, typename TBorder>
+  template <typename Derived>
   BASALT_HOST_DEVICE inline bool InBounds(
-      const TVec& p, const TBorder border = (TBorder)0) const {
-    return border <= p[0] && p[0] < ((int)w - border) && border <= p[1] &&
-           p[1] < ((int)h - border);
+      const Eigen::MatrixBase<Derived>& p,
+      const typename Derived::Scalar border) const {
+    EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived, 2);
+
+    using Scalar = typename Derived::Scalar;
+
+    Scalar offset(0);
+    if constexpr (std::is_floating_point_v<Scalar>) {
+      offset = Scalar(1);
+    }
+
+    return border <= p[0] && p[0] < ((int)w - border - offset) &&
+           border <= p[1] && p[1] < ((int)h - border - offset);
   }
 
   //////////////////////////////////////////////////////
