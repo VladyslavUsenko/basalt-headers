@@ -159,6 +159,14 @@ class ManagedImagePyr {
     return image.SubImage(x, y, width, height);
   }
 
+  /// @brief Return const image of underlying mipmap
+  ///
+  /// @return const image of of the underlying mipmap representation which can
+  /// be for example used for visualization
+  inline const Image<const T> mipmap() const {
+    return image.SubImage(0, 0, image.w, image.h);
+  }
+
   /// @brief Return coordinate offset of the image in the mipmap image.
   ///
   /// @param lvl level to return
