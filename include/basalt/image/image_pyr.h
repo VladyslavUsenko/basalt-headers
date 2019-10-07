@@ -60,7 +60,7 @@ class ManagedImagePyr {
   ///
   /// @param other image to use for the pyramid level 0
   /// @param num_level number of levels for the pyramid
-  inline ManagedImagePyr(ManagedImage<T>& other, size_t num_levels) {
+  inline ManagedImagePyr(const ManagedImage<T>& other, size_t num_levels) {
     setFromImage(other, num_levels);
   }
 
