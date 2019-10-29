@@ -134,10 +134,10 @@ class KannalaBrandtCamera4 {
     const Scalar& z = p3d[2];
 
     const Scalar r2 = x * x + y * y;
-    const Scalar r = std::sqrt(r2);
+    const Scalar r = sqrt(r2);
 
     if (r > Sophus::Constants<Scalar>::epsilonSqrt()) {
-      const Scalar theta = std::atan2(r, z);
+      const Scalar theta = atan2(r, z);
       const Scalar theta2 = theta * theta;
 
       Scalar r_theta = k4 * theta2;
@@ -165,14 +165,14 @@ class KannalaBrandtCamera4 {
         const Scalar d_theta_d_y = d_r_d_y * z / tmp;
         const Scalar d_theta_d_z = -r / tmp;
 
-        Scalar d_r_theta_d_theta = 9 * k4 * theta2;
-        d_r_theta_d_theta += 7 * k3;
+        Scalar d_r_theta_d_theta = Scalar(9) * k4 * theta2;
+        d_r_theta_d_theta += Scalar(7) * k3;
         d_r_theta_d_theta *= theta2;
-        d_r_theta_d_theta += 5 * k2;
+        d_r_theta_d_theta += Scalar(5) * k2;
         d_r_theta_d_theta *= theta2;
-        d_r_theta_d_theta += 3 * k1;
+        d_r_theta_d_theta += Scalar(3) * k1;
         d_r_theta_d_theta *= theta2;
-        d_r_theta_d_theta += 1;
+        d_r_theta_d_theta += Scalar(1);
 
         (*d_proj_d_p3d)(0, 0) =
             fx *
@@ -196,16 +196,16 @@ class KannalaBrandtCamera4 {
         (*d_proj_d_p3d)(0, 2) = fx * x * d_r_theta_d_theta * d_theta_d_z / r;
         (*d_proj_d_p3d)(1, 2) = fy * y * d_r_theta_d_theta * d_theta_d_z / r;
 
-        (*d_proj_d_p3d)(0, 3) = 0;
-        (*d_proj_d_p3d)(1, 3) = 0;
+        (*d_proj_d_p3d)(0, 3) = Scalar(0);
+        (*d_proj_d_p3d)(1, 3) = Scalar(0);
       }
 
       if (d_proj_d_param) {
         (*d_proj_d_param).setZero();
         (*d_proj_d_param)(0, 0) = mx;
-        (*d_proj_d_param)(0, 2) = 1;
+        (*d_proj_d_param)(0, 2) = Scalar(1);
         (*d_proj_d_param)(1, 1) = my;
-        (*d_proj_d_param)(1, 3) = 1;
+        (*d_proj_d_param)(1, 3) = Scalar(1);
 
         (*d_proj_d_param)(0, 4) = fx * x * theta * theta2 / r;
         (*d_proj_d_param)(1, 4) = fy * y * theta * theta2 / r;
@@ -236,9 +236,9 @@ class KannalaBrandtCamera4 {
       if (d_proj_d_param) {
         d_proj_d_param->setZero();
         (*d_proj_d_param)(0, 0) = x / z;
-        (*d_proj_d_param)(0, 2) = 1;
+        (*d_proj_d_param)(0, 2) = Scalar(1);
         (*d_proj_d_param)(1, 1) = y / z;
-        (*d_proj_d_param)(1, 3) = 1;
+        (*d_proj_d_param)(1, 3) = Scalar(1);
       }
     }
 
@@ -334,7 +334,7 @@ class KannalaBrandtCamera4 {
     Scalar d_func_d_theta = 0;
 
     scaling = 1.0;
-    thetad = std::sqrt(mx * mx + my * my);
+    thetad = sqrt(mx * mx + my * my);
 
     if (thetad > Sophus::Constants<Scalar>::epsilonSqrt()) {
       theta = solve_theta<3>(thetad, d_func_d_theta);

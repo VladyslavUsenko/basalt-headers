@@ -123,7 +123,7 @@ class FovCamera {
     const Scalar& z = p[2];
 
     Scalar r2 = x * x + y * y;
-    Scalar r = std::sqrt(r2);
+    Scalar r = sqrt(r2);
 
     Scalar z2 = z * z;
 
@@ -231,7 +231,7 @@ class FovCamera {
     const Scalar mx = (p[0] - cx) / fx;
     const Scalar my = (p[1] - cy) / fy;
 
-    const Scalar rd = std::sqrt(mx * mx + my * my);
+    const Scalar rd = sqrt(mx * mx + my * my);
 
     Scalar ru = 1.0;
     Scalar sin_rd_w = 0.0;

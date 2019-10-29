@@ -131,9 +131,9 @@ class ExtendedUnifiedCamera {
 
     const Scalar r2 = x * x + y * y;
     const Scalar rho2 = beta * r2 + z * z;
-    const Scalar rho = std::sqrt(rho2);
+    const Scalar rho = sqrt(rho2);
 
-    const Scalar norm = alpha * rho + (1 - alpha) * z;
+    const Scalar norm = alpha * rho + (1.0 - alpha) * z;
 
     const Scalar mx = x / norm;
     const Scalar my = y / norm;
@@ -141,14 +141,15 @@ class ExtendedUnifiedCamera {
     proj = Vec2(fx * mx + cx, fy * my + cy);
 
     // Check if valid
-    const Scalar w = alpha > 0.5 ? (1 - alpha) / alpha : alpha / (1 - alpha);
+    const Scalar w =
+        alpha > 0.5 ? (1.0 - alpha) / alpha : alpha / (1.0 - alpha);
     if (z <= -w * rho) return false;
 
     if (d_proj_d_p3d) {
       const Scalar denom = norm * norm * rho;
       const Scalar mid = -(alpha * beta * x * y);
       const Scalar add = norm * rho;
-      const Scalar addz = (alpha * z + (1 - alpha) * rho);
+      const Scalar addz = (alpha * z + (1.0 - alpha) * rho);
 
       (*d_proj_d_p3d)(0, 0) = fx * (add - x * x * alpha * beta);
       (*d_proj_d_p3d)(1, 0) = fy * mid;
@@ -156,8 +157,8 @@ class ExtendedUnifiedCamera {
       (*d_proj_d_p3d)(1, 1) = fy * (add - y * y * alpha * beta);
       (*d_proj_d_p3d)(0, 2) = -fx * x * addz;
       (*d_proj_d_p3d)(1, 2) = -fy * y * addz;
-      (*d_proj_d_p3d)(0, 3) = 0;
-      (*d_proj_d_p3d)(1, 3) = 0;
+      (*d_proj_d_p3d)(0, 3) = Scalar(0);
+      (*d_proj_d_p3d)(1, 3) = Scalar(0);
 
       (*d_proj_d_p3d) /= denom;
     }
@@ -167,9 +168,9 @@ class ExtendedUnifiedCamera {
 
       (*d_proj_d_param).setZero();
       (*d_proj_d_param)(0, 0) = mx;
-      (*d_proj_d_param)(0, 2) = 1;
+      (*d_proj_d_param)(0, 2) = Scalar(1);
       (*d_proj_d_param)(1, 1) = my;
-      (*d_proj_d_param)(1, 3) = 1;
+      (*d_proj_d_param)(1, 3) = Scalar(1);
 
       const Scalar tmp_x = -fx * x / norm2;
       const Scalar tmp_y = -fy * y / norm2;
@@ -239,12 +240,12 @@ class ExtendedUnifiedCamera {
     }
 
     const Scalar tmp1 = (1 - alpha * alpha * beta * r2);
-    const Scalar tmp_sqrt = std::sqrt(1 - (alpha - gamma) * beta * r2);
+    const Scalar tmp_sqrt = sqrt(1 - (alpha - gamma) * beta * r2);
     const Scalar tmp2 = (alpha * tmp_sqrt + gamma);
 
     const Scalar k = tmp1 / tmp2;
 
-    const Scalar norm = std::sqrt(r2 + k * k);
+    const Scalar norm = sqrt(r2 + k * k);
 
     p3d = Vec4(mx, my, k, 0) / norm;
 

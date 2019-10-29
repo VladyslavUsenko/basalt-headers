@@ -140,9 +140,9 @@ class PinholeCamera {
     if (d_proj_d_param) {
       d_proj_d_param->setZero();
       (*d_proj_d_param)(0, 0) = x / z;
-      (*d_proj_d_param)(0, 2) = 1;
+      (*d_proj_d_param)(0, 2) = Scalar(1);
       (*d_proj_d_param)(1, 1) = y / z;
-      (*d_proj_d_param)(1, 3) = 1;
+      (*d_proj_d_param)(1, 3) = Scalar(1);
     }
 
     return true;
@@ -181,7 +181,7 @@ class PinholeCamera {
 
     const Scalar r2 = mx * mx + my * my;
 
-    const Scalar norm = std::sqrt(1 + r2);
+    const Scalar norm = sqrt(1 + r2);
     const Scalar norm_inv = 1.0 / norm;
 
     p3d[0] = mx * norm_inv;
