@@ -55,6 +55,15 @@ struct CeresSplineHelper {
   static const MatN cummulative_blending_matrix_;
   static const MatN base_coefficients_;
 
+  /// @brief Vector of derivatives of time polynomial.
+  ///
+  /// Computes a derivative of \f$ \begin{bmatrix}1 & t & t^2 & \dots &
+  /// t^{N-1}\end{bmatrix} \f$ with repect to time. For example, the first
+  /// derivative would be \f$ \begin{bmatrix}0 & 1 & 2 t & \dots & (N-1)
+  /// t^{N-2}\end{bmatrix} \f$.
+  /// @param Derivative derivative to evaluate
+  /// @param[out] res_const vector to store the result
+  /// @param[in] t
   template <int Derivative, class Derived>
   static inline void baseCoeffsWithTime(
       const Eigen::MatrixBase<Derived>& res_const, double t) {
@@ -75,6 +84,18 @@ struct CeresSplineHelper {
     }
   }
 
+  /// @brief Evaluate Lie group cummulative B-spline and time derivatives.
+  ///
+  /// @param[in] sKnots array of pointers of the spline knots. The size of each
+  /// knot should be GroupT::num_parameters: 4 for SO(3) and 7 for SE(3).
+  /// @param[in] u normalized time to compute value of the spline
+  /// @param[in] inv_dt inverse of the time spacing in seconds between spline
+  /// knots
+  /// @param[out] transform_out if not nullptr return the value of the spline
+  /// @param[out] vel_out if not nullptr velocity (first time derivative) in the
+  /// body frame
+  /// @param[out] accel_out if not nullptr acceleration (second time derivative)
+  /// in the body frame
   template <class T, template <class> class GroupT>
   static inline void evaluate_lie(
       T const* const* sKnots, const double u, const double inv_dt,
@@ -141,6 +162,15 @@ struct CeresSplineHelper {
     if (accel_out) *accel_out = rot_accel;
   }
 
+  /// @brief Evaluate Euclidean B-spline or time derivatives.
+  ///
+  /// @param[in] sKnots array of pointers of the spline knots. The size of each
+  /// knot should be DIM.
+  /// @param[in] u normalized time to compute value of the spline
+  /// @param[in] inv_dt inverse of the time spacing in seconds between spline
+  /// knots
+  /// @param[out] vec_out if DERIV=0 returns value of the spline, otherwise
+  /// corresponding derivative.
   template <class T, int DIM, int DERIV>
   static inline void evaluate(T const* const* sKnots, const double u,
                               const double inv_dt,
