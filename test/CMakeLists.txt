@@ -24,6 +24,9 @@ target_link_libraries(test_sophus gtest gtest_main)
 add_executable(test_preintegration src/test_preintegration.cpp)
 target_link_libraries(test_preintegration gtest gtest_main ${TBB_LIBRARIES})
 
+add_executable(test_ceres_spline_helper src/test_ceres_spline_helper.cpp)
+target_link_libraries(test_ceres_spline_helper gtest gtest_main ${TBB_LIBRARIES})
+
 # benchmarks (currently doesnt work on macOS and with clang)
 if(NOT APPLE AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "ENABLE tests")
