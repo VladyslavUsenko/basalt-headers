@@ -666,8 +666,6 @@ class So3Spline {
     baseCoeffsWithTime<3>(p, u);
     VecN dddcoeff = pow_inv_dt[3] * blending_matrix_ * p;
 
-    SO3 r_accum;
-
     Vec3 rot_vel;
     rot_vel.setZero();
 
@@ -677,27 +675,28 @@ class So3Spline {
     Vec3 rot_jerk;
     rot_jerk.setZero();
 
-    for (int i = DEG - 1; i >= 0; i--) {
+    for (int i = 0; i < DEG; i++) {
       const SO3& p0 = knots[s + i];
       const SO3& p1 = knots[s + i + 1];
 
       SO3 r01 = p0.inverse() * p1;
       Vec3 delta = r01.log();
 
-      Vec3 r_accum_delta = r_accum * delta;
+      SO3 rot = SO3::exp(-delta * coeff[i + 1]);
 
-      Vec3 rot_vel_current = r_accum_delta * dcoeff[i + 1];
-      Vec3 rot_accel_current =
-          r_accum_delta * ddcoeff[i + 1] + rot_vel_current.cross(rot_vel);
+      rot_vel = rot * rot_vel;
+      Vec3 vel_current = dcoeff[i + 1] * delta;
+      rot_vel += vel_current;
 
-      rot_jerk +=
-          r_accum_delta * dddcoeff[i + 1] +
-          (r_accum_delta * ddcoeff[i + 1] + rot_accel_current).cross(rot_vel) +
-          rot_vel_current.cross(rot_accel);
+      rot_accel = rot * rot_accel;
+      Vec3 rot_vel_cross_vel_current = rot_vel.cross(vel_current);
+      rot_accel += ddcoeff[i + 1] * delta + rot_vel_cross_vel_current;
 
-      rot_accel += rot_accel_current;
-      rot_vel += rot_vel_current;
-      r_accum *= SO3::exp(-delta * coeff[i + 1]);
+      rot_jerk = rot * rot_jerk;
+      rot_jerk += dddcoeff[i + 1] * delta +
+                  (ddcoeff[i + 1] * rot_vel + 2 * dcoeff[i + 1] * rot_accel -
+                   dcoeff[i + 1] * rot_vel_cross_vel_current)
+                      .cross(delta);
     }
 
     if (vel_body) *vel_body = rot_vel;

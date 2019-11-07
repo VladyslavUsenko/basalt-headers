@@ -103,24 +103,31 @@ struct CeresSplineHelper {
       T const* const* sKnots, const double u, const double inv_dt,
       GroupT<T>* transform_out = nullptr,
       typename GroupT<T>::Tangent* vel_out = nullptr,
-      typename GroupT<T>::Tangent* accel_out = nullptr) {
+      typename GroupT<T>::Tangent* accel_out = nullptr,
+      typename GroupT<T>::Tangent* jerk_out = nullptr) {
     using Group = GroupT<T>;
     using Tangent = typename GroupT<T>::Tangent;
     using Adjoint = typename GroupT<T>::Adjoint;
 
-    VecN p, coeff, dcoeff, ddcoeff;
+    VecN p, coeff, dcoeff, ddcoeff, dddcoeff;
 
     CeresSplineHelper<N>::template baseCoeffsWithTime<0>(p, u);
     coeff = CeresSplineHelper<N>::cumulative_blending_matrix_ * p;
 
-    if (vel_out || accel_out) {
+    if (vel_out || accel_out || jerk_out) {
       CeresSplineHelper<N>::template baseCoeffsWithTime<1>(p, u);
       dcoeff = inv_dt * CeresSplineHelper<N>::cumulative_blending_matrix_ * p;
 
-      if (accel_out) {
+      if (accel_out || jerk_out) {
         CeresSplineHelper<N>::template baseCoeffsWithTime<2>(p, u);
         ddcoeff = inv_dt * inv_dt *
                   CeresSplineHelper<N>::cumulative_blending_matrix_ * p;
+
+        if (jerk_out) {
+          CeresSplineHelper<N>::template baseCoeffsWithTime<3>(p, u);
+          dddcoeff = inv_dt * inv_dt * inv_dt *
+                     CeresSplineHelper<N>::cumulative_blending_matrix_ * p;
+        }
       }
     }
 
@@ -129,10 +136,11 @@ struct CeresSplineHelper {
       *transform_out = p00;
     }
 
-    Tangent rot_vel, rot_accel;
+    Tangent rot_vel, rot_accel, rot_jerk;
 
-    if (vel_out || accel_out) rot_vel.setZero();
-    if (accel_out) rot_accel.setZero();
+    if (vel_out || accel_out || jerk_out) rot_vel.setZero();
+    if (accel_out || jerk_out) rot_accel.setZero();
+    if (jerk_out) rot_jerk.setZero();
 
     for (int i = 0; i < DEG; i++) {
       Eigen::Map<Group const> const p0(sKnots[i]);
@@ -145,23 +153,34 @@ struct CeresSplineHelper {
 
       if (transform_out) (*transform_out) *= exp_kdelta;
 
-      if (vel_out || accel_out) {
+      if (vel_out || accel_out || jerk_out) {
         Adjoint A = exp_kdelta.inverse().Adj();
 
-        rot_vel = A * (rot_vel);
+        rot_vel = A * rot_vel;
         Tangent rot_vel_current = delta * dcoeff[i + 1];
         rot_vel += rot_vel_current;
 
-        if (accel_out) {
-          rot_accel = A * (rot_accel);
-          rot_accel += ddcoeff[i + 1] * delta +
-                       Group::lieBracket(rot_vel, rot_vel_current);
+        if (accel_out || jerk_out) {
+          rot_accel = A * rot_accel;
+          Tangent accel_lie_bracket =
+              Group::lieBracket(rot_vel, rot_vel_current);
+          rot_accel += ddcoeff[i + 1] * delta + accel_lie_bracket;
+
+          if (jerk_out) {
+            rot_jerk = A * rot_jerk;
+            rot_jerk += dddcoeff[i + 1] * delta +
+                        Group::lieBracket(ddcoeff[i + 1] * rot_vel +
+                                              2 * dcoeff[i + 1] * rot_accel -
+                                              dcoeff[i + 1] * accel_lie_bracket,
+                                          delta);
+          }
         }
       }
     }
 
     if (vel_out) *vel_out = rot_vel;
     if (accel_out) *accel_out = rot_accel;
+    if (jerk_out) *jerk_out = rot_jerk;
   }
 
   /// @brief Evaluate Euclidean B-spline or time derivatives.

@@ -19,9 +19,10 @@ void test_ceres_spline_helper_so3() {
     Sophus::SO3d pos1 = spline.evaluate(t_ns);
     Eigen::Vector3d vel1 = spline.velocityBody(t_ns);
     Eigen::Vector3d accel1 = spline.accelerationBody(t_ns);
+    Eigen::Vector3d jerk1 = spline.jerkBody(t_ns);
 
     Sophus::SO3d pos2;
-    Eigen::Vector3d vel2, accel2;
+    Eigen::Vector3d vel2, accel2, jerk2;
 
     {
       double pow_inv_dt = 1e9 / dt_ns;
@@ -50,11 +51,14 @@ void test_ceres_spline_helper_so3() {
           &vec[0], u, pow_inv_dt, nullptr, &vel2);
       basalt::CeresSplineHelper<N>::template evaluate_lie<double, Sophus::SO3>(
           &vec[0], u, pow_inv_dt, nullptr, nullptr, &accel2);
+      basalt::CeresSplineHelper<N>::template evaluate_lie<double, Sophus::SO3>(
+          &vec[0], u, pow_inv_dt, nullptr, nullptr, nullptr, &jerk2);
     }
 
     EXPECT_TRUE(pos1.matrix().isApprox(pos2.matrix()));
     EXPECT_TRUE(vel1.isApprox(vel2));
     EXPECT_TRUE(accel1.isApprox(accel2));
+    EXPECT_TRUE(jerk1.isApprox(jerk2));
   }
 }
 
