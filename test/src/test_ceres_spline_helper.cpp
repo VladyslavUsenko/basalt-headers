@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "gtest/gtest.h"
+#include "test_utils.h"
 
 #include <basalt/spline/ceres_spline_helper.h>
 #include <basalt/spline/rd_spline.h>
@@ -40,7 +41,7 @@ void test_ceres_spline_helper_so3() {
                            "s " << s << " N " << N << " knots.size() "
                                 << spline.getKnots().size());
 
-      std::vector<const double*> vec;
+      std::vector<const double *> vec;
       for (int i = 0; i < N; i++) {
         vec.emplace_back(spline.getKnots()[s + i].data());
       }
@@ -93,7 +94,7 @@ void test_ceres_spline_helper_rd() {
                            "s " << s << " N " << N << " knots.size() "
                                 << spline.getKnots().size());
 
-      std::vector<const double*> vec;
+      std::vector<const double *> vec;
       for (int i = 0; i < N; i++) {
         vec.emplace_back(spline.getKnots()[s + i].data());
       }
@@ -110,6 +111,100 @@ void test_ceres_spline_helper_rd() {
     EXPECT_TRUE(vel1.isApprox(vel2));
     EXPECT_TRUE(accel1.isApprox(accel2));
   }
+}
+
+template <int N>
+void test_ceres_spline_helper_accel_se3() {
+  static const int64_t dt_ns = 2e9;
+
+  Eigen::aligned_vector<Sophus::SE3d> knots;
+
+  for (int i = 0; i < 3 * N; i++) {
+    knots.emplace_back(Sophus::SE3d::exp(Sophus::Vector6d::Random()));
+  }
+
+  for (int i = 0; i < 2 * N; i++)
+    for (double u = 0.01; u < 0.99; u += 0.01) {
+      Sophus::Vector6d accel;
+
+      {
+        double pow_inv_dt = 1e9 / dt_ns;
+
+        std::vector<const double *> vec;
+        for (int j = 0; j < N; j++) {
+          vec.emplace_back(knots[i + j].data());
+        }
+
+        basalt::CeresSplineHelper<N>::template evaluate_lie<double,
+                                                            Sophus::SE3>(
+            &vec[0], u, pow_inv_dt, nullptr, nullptr, &accel);
+
+        Eigen::Matrix<double, 1, 1> x0;
+        x0.setZero();
+
+        test_jacobian(
+            "ceres_se3_accel", accel,
+            [&](const Eigen::Matrix<double, 1, 1> &x) {
+              Sophus::Vector6d vel;
+
+              double inc = x[0] / (dt_ns * 1e-9);
+
+              basalt::CeresSplineHelper<N>::template evaluate_lie<double,
+                                                                  Sophus::SE3>(
+                  &vec[0], u + inc, pow_inv_dt, nullptr, &vel);
+
+              return vel;
+            },
+            x0);
+      }
+    }
+}
+
+template <int N>
+void test_ceres_spline_helper_jerk_se3() {
+  static const int64_t dt_ns = 2e9;
+
+  Eigen::aligned_vector<Sophus::SE3d> knots;
+
+  for (int i = 0; i < 3 * N; i++) {
+    knots.emplace_back(Sophus::SE3d::exp(Sophus::Vector6d::Random()));
+  }
+
+  for (int i = 0; i < 2 * N; i++)
+    for (double u = 0.01; u < 0.99; u += 0.01) {
+      Sophus::Vector6d jerk;
+
+      {
+        double pow_inv_dt = 1e9 / dt_ns;
+
+        std::vector<const double *> vec;
+        for (int j = 0; j < N; j++) {
+          vec.emplace_back(knots[i + j].data());
+        }
+
+        basalt::CeresSplineHelper<N>::template evaluate_lie<double,
+                                                            Sophus::SE3>(
+            &vec[0], u, pow_inv_dt, nullptr, nullptr, nullptr, &jerk);
+
+        Eigen::Matrix<double, 1, 1> x0;
+        x0.setZero();
+
+        test_jacobian(
+            "ceres_se3_accel", jerk,
+            [&](const Eigen::Matrix<double, 1, 1> &x) {
+              Sophus::Vector6d accel;
+
+              double inc = x[0] / (dt_ns * 1e-9);
+
+              basalt::CeresSplineHelper<N>::template evaluate_lie<double,
+                                                                  Sophus::SE3>(
+                  &vec[0], u + inc, pow_inv_dt, nullptr, nullptr, &accel);
+
+              return accel;
+            },
+            x0);
+      }
+    }
 }
 
 TEST(CeresSplineTestSuite, CeresSplineHelperSO3_4) {
@@ -134,4 +229,28 @@ TEST(CeresSplineTestSuite, CeresSplineHelperRd_5) {
 
 TEST(CeresSplineTestSuite, CeresSplineHelperRd_6) {
   test_ceres_spline_helper_so3<6>();
+}
+
+TEST(CeresSplineTestSuite, CeresSplineHelperSE3accel4) {
+  test_ceres_spline_helper_accel_se3<4>();
+}
+
+TEST(CeresSplineTestSuite, CeresSplineHelperSE3accel5) {
+  test_ceres_spline_helper_accel_se3<5>();
+}
+
+TEST(CeresSplineTestSuite, CeresSplineHelperSE3accel6) {
+  test_ceres_spline_helper_accel_se3<6>();
+}
+
+TEST(CeresSplineTestSuite, CeresSplineHelperSE3jerk4) {
+  test_ceres_spline_helper_jerk_se3<4>();
+}
+
+TEST(CeresSplineTestSuite, CeresSplineHelperSE3jerk5) {
+  test_ceres_spline_helper_jerk_se3<5>();
+}
+
+TEST(CeresSplineTestSuite, CeresSplineHelperSE3jerk6) {
+  test_ceres_spline_helper_jerk_se3<6>();
 }
