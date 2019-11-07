@@ -65,6 +65,16 @@ inline void assertion_failed_msg(char const* expr, char const* msg,
 
 #define BASALT_LIKELY(x) __builtin_expect(x, 1)
 
+#if defined(BASALT_DISABLE_ASSERTS)
+
+#define BASALT_ASSERT(expr) ((void)0)
+
+#define BASALT_ASSERT_MSG(expr) ((void)0)
+
+#define BASALT_ASSERT_STREAM(expr) ((void)0)
+
+#else
+
 #define BASALT_ASSERT(expr)                                               \
   (BASALT_LIKELY(!!(expr))                                                \
        ? ((void)0)                                                        \
@@ -83,3 +93,5 @@ inline void assertion_failed_msg(char const* expr, char const* msg,
        : (std::cerr << msg << std::endl,                                   \
           ::basalt::assertion_failed(#expr, __PRETTY_FUNCTION__, __FILE__, \
                                      __LINE__)))
+
+#endif
