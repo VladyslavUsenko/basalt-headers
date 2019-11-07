@@ -8,8 +8,8 @@
 #include <basalt/spline/rd_spline.h>
 #include <basalt/spline/so3_spline.h>
 
-TEST(CeresSplineTestSuite, CeresSplineHelperSO3) {
-  static const int N = 5;
+template <int N>
+void test_ceres_spline_helper_so3() {
   static const int64_t dt_ns = 2e9;
 
   basalt::So3Spline<N> spline(dt_ns);
@@ -44,11 +44,11 @@ TEST(CeresSplineTestSuite, CeresSplineHelperSO3) {
         vec.emplace_back(spline.getKnots()[s + i].data());
       }
 
-      basalt::CeresSplineHelper<N>::evaluate_lie<double, Sophus::SO3>(
+      basalt::CeresSplineHelper<N>::template evaluate_lie<double, Sophus::SO3>(
           &vec[0], u, pow_inv_dt, &pos2);
-      basalt::CeresSplineHelper<N>::evaluate_lie<double, Sophus::SO3>(
+      basalt::CeresSplineHelper<N>::template evaluate_lie<double, Sophus::SO3>(
           &vec[0], u, pow_inv_dt, nullptr, &vel2);
-      basalt::CeresSplineHelper<N>::evaluate_lie<double, Sophus::SO3>(
+      basalt::CeresSplineHelper<N>::template evaluate_lie<double, Sophus::SO3>(
           &vec[0], u, pow_inv_dt, nullptr, nullptr, &accel2);
     }
 
@@ -58,9 +58,9 @@ TEST(CeresSplineTestSuite, CeresSplineHelperSO3) {
   }
 }
 
-TEST(CeresSplineTestSuite, CeresSplineHelperRd) {
+template <int N>
+void test_ceres_spline_helper_rd() {
   static const int DIM = 3;
-  static const int N = 5;
   static const int64_t dt_ns = 2e9;
 
   basalt::RdSpline<DIM, N> spline(dt_ns);
@@ -94,16 +94,40 @@ TEST(CeresSplineTestSuite, CeresSplineHelperRd) {
         vec.emplace_back(spline.getKnots()[s + i].data());
       }
 
-      basalt::CeresSplineHelper<N>::evaluate<double, 3, 0>(&vec[0], u,
-                                                           pow_inv_dt, &pos2);
-      basalt::CeresSplineHelper<N>::evaluate<double, 3, 1>(&vec[0], u,
-                                                           pow_inv_dt, &vel2);
-      basalt::CeresSplineHelper<N>::evaluate<double, 3, 2>(&vec[0], u,
-                                                           pow_inv_dt, &accel2);
+      basalt::CeresSplineHelper<N>::template evaluate<double, DIM, 0>(
+          &vec[0], u, pow_inv_dt, &pos2);
+      basalt::CeresSplineHelper<N>::template evaluate<double, DIM, 1>(
+          &vec[0], u, pow_inv_dt, &vel2);
+      basalt::CeresSplineHelper<N>::template evaluate<double, DIM, 2>(
+          &vec[0], u, pow_inv_dt, &accel2);
     }
 
     EXPECT_TRUE(pos1.isApprox(pos2));
     EXPECT_TRUE(vel1.isApprox(vel2));
     EXPECT_TRUE(accel1.isApprox(accel2));
   }
+}
+
+TEST(CeresSplineTestSuite, CeresSplineHelperSO3_4) {
+  test_ceres_spline_helper_so3<4>();
+}
+
+TEST(CeresSplineTestSuite, CeresSplineHelperSO3_5) {
+  test_ceres_spline_helper_so3<5>();
+}
+
+TEST(CeresSplineTestSuite, CeresSplineHelperSO3_6) {
+  test_ceres_spline_helper_so3<6>();
+}
+
+TEST(CeresSplineTestSuite, CeresSplineHelperRd_4) {
+  test_ceres_spline_helper_so3<4>();
+}
+
+TEST(CeresSplineTestSuite, CeresSplineHelperRd_5) {
+  test_ceres_spline_helper_so3<5>();
+}
+
+TEST(CeresSplineTestSuite, CeresSplineHelperRd_6) {
+  test_ceres_spline_helper_so3<6>();
 }

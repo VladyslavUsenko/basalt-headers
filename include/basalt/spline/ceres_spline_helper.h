@@ -54,7 +54,7 @@ struct CeresSplineHelper {
   using VecN = Eigen::Matrix<double, _N, 1>;
 
   static const MatN blending_matrix_;
-  static const MatN cummulative_blending_matrix_;
+  static const MatN cumulative_blending_matrix_;
   static const MatN base_coefficients_;
 
   /// @brief Vector of derivatives of time polynomial.
@@ -111,16 +111,16 @@ struct CeresSplineHelper {
     VecN p, coeff, dcoeff, ddcoeff;
 
     CeresSplineHelper<N>::template baseCoeffsWithTime<0>(p, u);
-    coeff = CeresSplineHelper<N>::cummulative_blending_matrix_ * p;
+    coeff = CeresSplineHelper<N>::cumulative_blending_matrix_ * p;
 
     if (vel_out || accel_out) {
       CeresSplineHelper<N>::template baseCoeffsWithTime<1>(p, u);
-      dcoeff = inv_dt * CeresSplineHelper<N>::cummulative_blending_matrix_ * p;
+      dcoeff = inv_dt * CeresSplineHelper<N>::cumulative_blending_matrix_ * p;
 
       if (accel_out) {
         CeresSplineHelper<N>::template baseCoeffsWithTime<2>(p, u);
         ddcoeff = inv_dt * inv_dt *
-                  CeresSplineHelper<N>::cummulative_blending_matrix_ * p;
+                  CeresSplineHelper<N>::cumulative_blending_matrix_ * p;
       }
     }
 
@@ -209,7 +209,7 @@ const typename CeresSplineHelper<_N>::MatN
 
 template <int _N>
 const typename CeresSplineHelper<_N>::MatN
-    CeresSplineHelper<_N>::cummulative_blending_matrix_ =
+    CeresSplineHelper<_N>::cumulative_blending_matrix_ =
         basalt::computeBlendingMatrix<_N, double, true>();
 
 }  // namespace basalt
