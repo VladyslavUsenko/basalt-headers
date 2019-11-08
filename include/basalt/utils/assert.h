@@ -69,9 +69,9 @@ inline void assertion_failed_msg(char const* expr, char const* msg,
 
 #define BASALT_ASSERT(expr) ((void)0)
 
-#define BASALT_ASSERT_MSG(expr) ((void)0)
+#define BASALT_ASSERT_MSG(expr, msg) ((void)0)
 
-#define BASALT_ASSERT_STREAM(expr) ((void)0)
+#define BASALT_ASSERT_STREAM(expr, msg) ((void)0)
 
 #else
 
