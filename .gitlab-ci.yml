@@ -68,8 +68,8 @@ bionic-asan-build:
   <<: *prepare_docker_definition
   <<: *compile_and_test_definition
   variables:
-    CC: clang-8
-    CXX: clang++-8
+    CC: clang-9
+    CXX: clang++-9
     BUILD_TYPE: SanitizerRelWithDebInfo
     # LeakSanitizer doesn't work in (non-priviliged) container
     ASAN_OPTIONS: "detect_leaks=0"
