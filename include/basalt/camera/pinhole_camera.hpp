@@ -231,8 +231,6 @@ class PinholeCamera {
     param[1] = init[1];
     param[2] = init[2];
     param[3] = init[3];
-    param[4] = 0.5;
-    param[5] = 1;
   }
 
   /// @brief Increment intrinsic parameters by inc
