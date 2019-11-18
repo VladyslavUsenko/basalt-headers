@@ -130,23 +130,23 @@ class FovCamera {
     const Scalar tanwhalf = std::tan(w / 2);
     const Scalar atan_wrd = std::atan2(2 * tanwhalf * r, z);
 
-    Scalar rd = 1.0;
-    Scalar d_rd_d_w = 0;
-    Scalar d_rd_d_x = 0;
-    Scalar d_rd_d_y = 0;
-    Scalar d_rd_d_z = 0;
+    Scalar rd = Scalar(1);
+    Scalar d_rd_d_w = Scalar(0);
+    Scalar d_rd_d_x = Scalar(0);
+    Scalar d_rd_d_y = Scalar(0);
+    Scalar d_rd_d_z = Scalar(0);
 
-    Scalar tmp1 = 1.0 / std::cos(w / 2);
-    Scalar d_tanwhalf_d_w = 0.5 * tmp1 * tmp1;
-    Scalar tmp = (z2 + 4 * tanwhalf * tanwhalf * r2);
-    Scalar d_atan_wrd_d_w = 2 * r * d_tanwhalf_d_w * z / tmp;
+    Scalar tmp1 = Scalar(1) / std::cos(w / 2);
+    Scalar d_tanwhalf_d_w = Scalar(0.5) * tmp1 * tmp1;
+    Scalar tmp = (z2 + Scalar(4) * tanwhalf * tanwhalf * r2);
+    Scalar d_atan_wrd_d_w = Scalar(2) * r * d_tanwhalf_d_w * z / tmp;
 
     if (w > Sophus::Constants<Scalar>::epsilonSqrt()) {
       if (r2 < Sophus::Constants<Scalar>::epsilonSqrt()) {
         if (z < Sophus::Constants<Scalar>::epsilonSqrt()) return false;
 
-        rd = 2 * tanwhalf / w;
-        d_rd_d_w = 2 * (d_tanwhalf_d_w * w - tanwhalf) / (w * w);
+        rd = Scalar(2) * tanwhalf / w;
+        d_rd_d_w = Scalar(2) * (d_tanwhalf_d_w * w - tanwhalf) / (w * w);
       } else {
         rd = atan_wrd / (r * w);
         d_rd_d_w = (d_atan_wrd_d_w * w - atan_wrd) / (r * w * w);
@@ -154,9 +154,9 @@ class FovCamera {
         const Scalar d_r_d_x = x / r;
         const Scalar d_r_d_y = y / r;
 
-        const Scalar d_atan_wrd_d_x = 2 * tanwhalf * d_r_d_x * z / tmp;
-        const Scalar d_atan_wrd_d_y = 2 * tanwhalf * d_r_d_y * z / tmp;
-        const Scalar d_atan_wrd_d_z = -2 * tanwhalf * r / tmp;
+        const Scalar d_atan_wrd_d_x = Scalar(2) * tanwhalf * d_r_d_x * z / tmp;
+        const Scalar d_atan_wrd_d_y = Scalar(2) * tanwhalf * d_r_d_y * z / tmp;
+        const Scalar d_atan_wrd_d_z = -Scalar(2) * tanwhalf * r / tmp;
 
         d_rd_d_x = (d_atan_wrd_d_x * r - d_r_d_x * atan_wrd) / (r * r * w);
         d_rd_d_y = (d_atan_wrd_d_y * r - d_r_d_y * atan_wrd) / (r * r * w);
@@ -184,9 +184,9 @@ class FovCamera {
     if (d_r_d_param) {
       d_r_d_param->setZero();
       (*d_r_d_param)(0, 0) = mx;
-      (*d_r_d_param)(0, 2) = 1;
+      (*d_r_d_param)(0, 2) = Scalar(1);
       (*d_r_d_param)(1, 1) = my;
-      (*d_r_d_param)(1, 3) = 1;
+      (*d_r_d_param)(1, 3) = Scalar(1);
 
       (*d_r_d_param)(0, 4) = fx * x * d_rd_d_w;
       (*d_r_d_param)(1, 4) = fy * y * d_rd_d_w;
@@ -225,21 +225,21 @@ class FovCamera {
     const Scalar& cy = param[3];
     const Scalar& w = param[4];
 
-    const Scalar tan_w_2 = std::tan(w / 2.0);
-    const Scalar mul2tanwby2 = tan_w_2 * 2.0;
+    const Scalar tan_w_2 = std::tan(w / Scalar(2));
+    const Scalar mul2tanwby2 = tan_w_2 * Scalar(2);
 
     const Scalar mx = (p[0] - cx) / fx;
     const Scalar my = (p[1] - cy) / fy;
 
     const Scalar rd = sqrt(mx * mx + my * my);
 
-    Scalar ru = 1.0;
-    Scalar sin_rd_w = 0.0;
-    Scalar cos_rd_w = 1.0;
+    Scalar ru = Scalar(1);
+    Scalar sin_rd_w = Scalar(0);
+    Scalar cos_rd_w = Scalar(1);
 
-    Scalar d_ru_d_rd = 0.0;
+    Scalar d_ru_d_rd = Scalar(0);
 
-    Scalar rd_inv = 1.0;
+    Scalar rd_inv = Scalar(1);
 
     if (mul2tanwby2 > Sophus::Constants<Scalar>::epsilonSqrt() &&
         rd > Sophus::Constants<Scalar>::epsilonSqrt()) {
@@ -247,7 +247,7 @@ class FovCamera {
       cos_rd_w = std::cos(rd * w);
       ru = sin_rd_w / (rd * mul2tanwby2);
 
-      rd_inv = 1.0 / rd;
+      rd_inv = Scalar(1) / rd;
 
       d_ru_d_rd =
           (w * cos_rd_w * rd - sin_rd_w) * rd_inv * rd_inv / mul2tanwby2;
@@ -256,7 +256,7 @@ class FovCamera {
     res[0] = mx * ru;
     res[1] = my * ru;
     res[2] = cos_rd_w;
-    res[3] = 0;
+    res[3] = Scalar(0);
 
     if (d_r_d_p || d_r_d_param) {
       Vec4 c0, c1;
@@ -264,12 +264,12 @@ class FovCamera {
       c0(0) = (ru + mx * d_ru_d_rd * mx * rd_inv) / fx;
       c0(1) = my * d_ru_d_rd * mx * rd_inv / fx;
       c0(2) = -sin_rd_w * w * mx * rd_inv / fx;
-      c0(3) = 0;
+      c0(3) = Scalar(0);
 
       c1(0) = my * d_ru_d_rd * mx * rd_inv / fy;
       c1(1) = (ru + my * d_ru_d_rd * my * rd_inv) / fy;
       c1(2) = -sin_rd_w * w * my * rd_inv / fy;
-      c1(3) = 0;
+      c1(3) = Scalar(0);
 
       if (d_r_d_p) {
         d_r_d_p->col(0) = c0;
@@ -285,8 +285,8 @@ class FovCamera {
         d_r_d_param->col(0) = -c0 * mx;
         d_r_d_param->col(1) = -c1 * my;
 
-        Scalar tmp = (cos_rd_w - (tan_w_2 * tan_w_2 + 1) * sin_rd_w * rd_inv /
-                                     (2 * tan_w_2)) /
+        Scalar tmp = (cos_rd_w - (tan_w_2 * tan_w_2 + Scalar(1)) * sin_rd_w *
+                                     rd_inv / (2 * tan_w_2)) /
                      mul2tanwby2;
 
         (*d_r_d_param)(0, 4) = mx * tmp;
@@ -295,24 +295,24 @@ class FovCamera {
       }
 
       Scalar norm = res.norm();
-      Scalar norm_inv = Scalar(1.0) / norm;
+      Scalar norm_inv = Scalar(1) / norm;
       Scalar norm_inv2 = norm_inv * norm_inv;
       Scalar norm_inv3 = norm_inv2 * norm_inv;
 
       Mat44 d_p_norm_d_p;
       d_p_norm_d_p.setZero();
 
-      d_p_norm_d_p(0, 0) = norm_inv * (1 - res[0] * res[0] * norm_inv2);
+      d_p_norm_d_p(0, 0) = norm_inv * (Scalar(1) - res[0] * res[0] * norm_inv2);
       d_p_norm_d_p(1, 0) = -res[1] * res[0] * norm_inv3;
       d_p_norm_d_p(2, 0) = -res[2] * res[0] * norm_inv3;
 
       d_p_norm_d_p(0, 1) = -res[1] * res[0] * norm_inv3;
-      d_p_norm_d_p(1, 1) = norm_inv * (1 - res[1] * res[1] * norm_inv2);
+      d_p_norm_d_p(1, 1) = norm_inv * (Scalar(1) - res[1] * res[1] * norm_inv2);
       d_p_norm_d_p(2, 1) = -res[1] * res[2] * norm_inv3;
 
       d_p_norm_d_p(0, 2) = -res[2] * res[0] * norm_inv3;
       d_p_norm_d_p(1, 2) = -res[2] * res[1] * norm_inv3;
-      d_p_norm_d_p(2, 2) = norm_inv * (1 - res[2] * res[2] * norm_inv2);
+      d_p_norm_d_p(2, 2) = norm_inv * (Scalar(1) - res[2] * res[2] * norm_inv2);
 
       if (d_r_d_p) (*d_r_d_p) = d_p_norm_d_p * (*d_r_d_p);
       if (d_r_d_param) (*d_r_d_param) = d_p_norm_d_p * (*d_r_d_param);

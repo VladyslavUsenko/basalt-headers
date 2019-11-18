@@ -154,37 +154,33 @@ class DoubleSphereCamera {
     const Scalar d2_2 = r2 + kk;
     const Scalar d2 = sqrt(d2_2);
 
-    const Scalar norm = alpha * d2 + (1.0 - alpha) * k;
-    const Scalar norm_inv = Scalar(1) / norm;
+    const Scalar norm = alpha * d2 + (Scalar(1) - alpha) * k;
 
-    const Scalar mx = x * norm_inv;
-    const Scalar my = y * norm_inv;
+    const Scalar mx = x / norm;
+    const Scalar my = y / norm;
 
     proj[0] = fx * mx + cx;
     proj[1] = fy * my + cy;
 
     if (d_proj_d_p3d || d_proj_d_param) {
-      const Scalar d2_inv = Scalar(1) / d2;
-      const Scalar norm_inv2 = norm_inv * norm_inv;
+      const Scalar norm2 = norm * norm;
 
       if (d_proj_d_p3d) {
-        const Scalar d1_inv = Scalar(1) / d1;
         const Scalar xy = x * y;
-        const Scalar tt2 = xi * z * d1_inv + 1.0;
+        const Scalar tt2 = xi * z / d1 + Scalar(1);
 
-        const Scalar d_norm_d_r2 =
-            (xi * (Scalar(1) - alpha) * d1_inv +
-             alpha * (xi * k * d1_inv + Scalar(1)) * d2_inv) *
-            norm_inv2;
+        const Scalar d_norm_d_r2 = (xi * (Scalar(1) - alpha) / d1 +
+                                    alpha * (xi * k / d1 + Scalar(1)) / d2) /
+                                   norm2;
 
         const Scalar tmp2 =
-            ((Scalar(1) - alpha) * tt2 + alpha * k * tt2 * d2_inv) * norm_inv2;
+            ((Scalar(1) - alpha) * tt2 + alpha * k * tt2 / d2) / norm2;
 
-        (*d_proj_d_p3d)(0, 0) = fx * (norm_inv - xx * d_norm_d_r2);
+        (*d_proj_d_p3d)(0, 0) = fx * (Scalar(1) / norm - xx * d_norm_d_r2);
         (*d_proj_d_p3d)(1, 0) = -fy * xy * d_norm_d_r2;
 
         (*d_proj_d_p3d)(0, 1) = -fx * xy * d_norm_d_r2;
-        (*d_proj_d_p3d)(1, 1) = fy * (norm_inv - yy * d_norm_d_r2);
+        (*d_proj_d_p3d)(1, 1) = fy * (Scalar(1) / norm - yy * d_norm_d_r2);
 
         (*d_proj_d_p3d)(0, 2) = -fx * x * tmp2;
         (*d_proj_d_p3d)(1, 2) = -fy * y * tmp2;
@@ -200,9 +196,8 @@ class DoubleSphereCamera {
         (*d_proj_d_param)(1, 1) = my;
         (*d_proj_d_param)(1, 3) = Scalar(1);
 
-        const Scalar tmp4 =
-            (alpha - Scalar(1) - alpha * k * d2_inv) * d1 * norm_inv2;
-        const Scalar tmp5 = (k - d2) * norm_inv2;
+        const Scalar tmp4 = (alpha - Scalar(1) - alpha * k / d2) * d1 / norm2;
+        const Scalar tmp5 = (k - d2) / norm2;
 
         (*d_proj_d_param)(0, 4) = fx * x * tmp4;
         (*d_proj_d_param)(1, 4) = fy * y * tmp4;
@@ -263,36 +258,37 @@ class DoubleSphereCamera {
 
     const Scalar r2 = mx * mx + my * my;
 
-    if (alpha > 0.5) {
-      if (r2 >= Scalar(1.0) / (2 * alpha - 1)) return false;
+    if (alpha > Scalar(0.5)) {
+      if (r2 >= Scalar(1) / (Scalar(2) * alpha - Scalar(1))) return false;
     }
 
     const Scalar xi2_2 = alpha * alpha;
     const Scalar xi1_2 = xi * xi;
 
-    const Scalar sqrt2 = sqrt(1 - (2 * alpha - 1) * r2);
+    const Scalar sqrt2 = sqrt(Scalar(1) - (Scalar(2) * alpha - Scalar(1)) * r2);
 
-    const Scalar norm2 = alpha * sqrt2 + 1 - alpha;
+    const Scalar norm2 = alpha * sqrt2 + Scalar(1) - alpha;
 
-    const Scalar mz = (1 - xi2_2 * r2) / norm2;
+    const Scalar mz = (Scalar(1) - xi2_2 * r2) / norm2;
     const Scalar mz2 = mz * mz;
 
     const Scalar norm1 = mz2 + r2;
-    const Scalar sqrt1 = sqrt(mz2 + (1 - xi1_2) * r2);
+    const Scalar sqrt1 = sqrt(mz2 + (Scalar(1) - xi1_2) * r2);
     const Scalar k = (mz * xi + sqrt1) / norm1;
 
     p3d[0] = k * mx;
     p3d[1] = k * my;
     p3d[2] = k * mz - xi;
-    p3d[3] = 0;
+    p3d[3] = Scalar(0);
 
     if (d_p3d_d_proj || d_p3d_d_param) {
       const Scalar norm2_2 = norm2 * norm2;
       const Scalar norm1_2 = norm1 * norm1;
 
-      const Scalar d_mz_d_r2 =
-          (0.5 * alpha - xi2_2) * (r2 * xi2_2 - 1) / (sqrt2 * norm2_2) -
-          xi2_2 / norm2;
+      const Scalar d_mz_d_r2 = (Scalar(0.5) * alpha - xi2_2) *
+                                   (r2 * xi2_2 - Scalar(1)) /
+                                   (sqrt2 * norm2_2) -
+                               xi2_2 / norm2;
 
       const Scalar d_mz_d_mx = 2 * mx * d_mz_d_r2;
       const Scalar d_mz_d_my = 2 * my * d_mz_d_r2;
@@ -302,9 +298,12 @@ class DoubleSphereCamera {
           (norm1_2 * sqrt1);
 
       const Scalar d_k_d_r2 =
-          (xi * d_mz_d_r2 + 0.5 / sqrt1 * (2 * mz * d_mz_d_r2 + 1 - xi1_2)) /
+          (xi * d_mz_d_r2 +
+           Scalar(0.5) / sqrt1 *
+               (Scalar(2) * mz * d_mz_d_r2 + Scalar(1) - xi1_2)) /
               norm1 -
-          (mz * xi + sqrt1) * (2 * mz * d_mz_d_r2 + 1) / norm1_2;
+          (mz * xi + sqrt1) * (Scalar(2) * mz * d_mz_d_r2 + Scalar(1)) /
+              norm1_2;
 
       const Scalar d_k_d_mx = d_k_d_r2 * 2 * mx;
       const Scalar d_k_d_my = d_k_d_r2 * 2 * my;
@@ -314,14 +313,14 @@ class DoubleSphereCamera {
       c0[0] = (mx * d_k_d_mx + k);
       c0[1] = my * d_k_d_mx;
       c0[2] = (mz * d_k_d_mx + k * d_mz_d_mx);
-      c0[3] = 0;
+      c0[3] = Scalar(0);
 
       c0 /= fx;
 
       c1[0] = mx * d_k_d_my;
       c1[1] = (my * d_k_d_my + k);
       c1[2] = (mz * d_k_d_my + k * d_mz_d_my);
-      c1[3] = 0;
+      c1[3] = Scalar(0);
 
       c1 /= fy;
 
@@ -333,9 +332,10 @@ class DoubleSphereCamera {
       if (d_p3d_d_param) {
         const Scalar d_k_d_xi1 = (mz * sqrt1 - xi * r2) / (sqrt1 * norm1);
 
-        const Scalar d_mz_d_xi2 =
-            (1 - r2 * xi2_2) * (r2 * alpha / sqrt2 - sqrt2 + 1) / norm2_2 -
-            2 * r2 * alpha / norm2;
+        const Scalar d_mz_d_xi2 = (Scalar(1) - r2 * xi2_2) *
+                                      (r2 * alpha / sqrt2 - sqrt2 + Scalar(1)) /
+                                      norm2_2 -
+                                  Scalar(2) * r2 * alpha / norm2;
 
         const Scalar d_k_d_xi2 = d_k_d_mz * d_mz_d_xi2;
 
@@ -348,12 +348,12 @@ class DoubleSphereCamera {
         (*d_p3d_d_param)(0, 4) = mx * d_k_d_xi1;
         (*d_p3d_d_param)(1, 4) = my * d_k_d_xi1;
         (*d_p3d_d_param)(2, 4) = mz * d_k_d_xi1 - 1;
-        (*d_p3d_d_param)(3, 4) = 0;
+        (*d_p3d_d_param)(3, 4) = Scalar(0);
 
         (*d_p3d_d_param)(0, 5) = mx * d_k_d_xi2;
         (*d_p3d_d_param)(1, 5) = my * d_k_d_xi2;
         (*d_p3d_d_param)(2, 5) = mz * d_k_d_xi2 + k * d_mz_d_xi2;
-        (*d_p3d_d_param)(3, 5) = 0;
+        (*d_p3d_d_param)(3, 5) = Scalar(0);
       }
     }
 

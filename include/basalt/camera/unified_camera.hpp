@@ -223,50 +223,50 @@ class UnifiedCamera {
     const Scalar& u = proj[0];
     const Scalar& v = proj[1];
 
-    const Scalar xi = alpha / (1 - alpha);
+    const Scalar xi = alpha / (Scalar(1) - alpha);
 
     const Scalar mxx = (u - cx) / fx;
     const Scalar myy = (v - cy) / fy;
 
-    const Scalar mx = (1 - alpha) * mxx;
-    const Scalar my = (1 - alpha) * myy;
+    const Scalar mx = (Scalar(1) - alpha) * mxx;
+    const Scalar my = (Scalar(1) - alpha) * myy;
 
     const Scalar r2 = mx * mx + my * my;
 
     // Check if valid
-    if (alpha > 0.5) {
-      if (r2 >= Scalar(1.0) / ((2 * alpha - 1))) return false;
+    if (alpha > Scalar(0.5)) {
+      if (r2 >= Scalar(1) / ((Scalar(2) * alpha - Scalar(1)))) return false;
     }
 
     const Scalar xi2 = xi * xi;
 
-    const Scalar n = sqrt(1 + (1 - xi2) * (r2));
-    const Scalar m = (1 + r2);
+    const Scalar n = sqrt(Scalar(1) + (Scalar(1) - xi2) * (r2));
+    const Scalar m = (Scalar(1) + r2);
 
     const Scalar k = (xi + n) / m;
 
     p3d[0] = k * mx;
     p3d[1] = k * my;
     p3d[2] = k - xi;
-    p3d[3] = 0;
+    p3d[3] = Scalar(0);
 
     if (d_p3d_d_proj || d_p3d_d_param) {
-      const Scalar dk_dmx =
-          -2 * mx * (n + xi) / (m * m) + mx * (1 - xi2) / (n * m);
-      const Scalar dk_dmy =
-          -2 * my * (n + xi) / (m * m) + my * (1 - xi2) / (n * m);
+      const Scalar dk_dmx = -Scalar(2) * mx * (n + xi) / (m * m) +
+                            mx * (Scalar(1) - xi2) / (n * m);
+      const Scalar dk_dmy = -Scalar(2) * my * (n + xi) / (m * m) +
+                            my * (Scalar(1) - xi2) / (n * m);
 
       Vec4 c0, c1;
 
       c0(0) = (dk_dmx * mx + k) / fx;
       c0(1) = dk_dmx * my / fx;
       c0(2) = dk_dmx / fx;
-      c0(3) = 0;
+      c0(3) = Scalar(0);
 
       c1(0) = dk_dmy * mx / fy;
       c1(1) = (dk_dmy * my + k) / fy;
       c1(2) = dk_dmy / fy;
-      c1(3) = 0;
+      c1(3) = Scalar(0);
 
       c0 *= (1 - alpha);
       c1 *= (1 - alpha);
@@ -277,8 +277,10 @@ class UnifiedCamera {
       }
 
       if (d_p3d_d_param) {
-        const Scalar d_xi_d_alpha = 1 / ((1 - alpha) * (1 - alpha));
-        const Scalar d_m_d_alpha = -2 * (1 - alpha) * (mxx * mxx + myy * myy);
+        const Scalar d_xi_d_alpha =
+            Scalar(1) / ((Scalar(1) - alpha) * (Scalar(1) - alpha));
+        const Scalar d_m_d_alpha =
+            -Scalar(2) * (Scalar(1) - alpha) * (mxx * mxx + myy * myy);
 
         const Scalar d_n_d_alpha = -(mxx * mxx + myy * myy) / n;
 

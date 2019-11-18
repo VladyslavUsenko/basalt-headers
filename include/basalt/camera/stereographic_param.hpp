@@ -78,7 +78,7 @@ class StereographicParam {
   static inline Vec2 project(const Vec4& p3d, Mat24* d_r_d_p = nullptr) {
     const Scalar sqrt = p3d.norm();
     const Scalar norm = p3d[2] + sqrt;
-    const Scalar norm_inv = 1 / norm;
+    const Scalar norm_inv = Scalar(1) / norm;
 
     const Vec2 res(p3d[0] * norm_inv, p3d[1] * norm_inv);
 
@@ -97,8 +97,8 @@ class StereographicParam {
       (*d_r_d_p)(0, 2) = p3d[0] * norm * tmp;
       (*d_r_d_p)(1, 2) = p3d[1] * norm * tmp;
 
-      (*d_r_d_p)(0, 3) = 0;
-      (*d_r_d_p)(1, 3) = 0;
+      (*d_r_d_p)(0, 3) = Scalar(0);
+      (*d_r_d_p)(1, 3) = Scalar(0);
     }
 
     return res;
@@ -125,9 +125,10 @@ class StereographicParam {
     const Scalar y2 = proj[1] * proj[1];
     const Scalar r2 = x2 + y2;
 
-    const Scalar norm_inv = Scalar(2) / (1 + r2);
+    const Scalar norm_inv = Scalar(2) / (Scalar(1) + r2);
 
-    const Vec4 res(proj[0] * norm_inv, proj[1] * norm_inv, norm_inv - 1, 0);
+    const Vec4 res(proj[0] * norm_inv, proj[1] * norm_inv, norm_inv - Scalar(1),
+                   Scalar(0));
 
     if (d_r_d_p) {
       const Scalar norm_inv2 = norm_inv * norm_inv;
@@ -142,8 +143,8 @@ class StereographicParam {
       (*d_r_d_p)(2, 0) = -proj[0] * norm_inv2;
       (*d_r_d_p)(2, 1) = -proj[1] * norm_inv2;
 
-      (*d_r_d_p)(3, 0) = 0;
-      (*d_r_d_p)(3, 1) = 0;
+      (*d_r_d_p)(3, 0) = Scalar(0);
+      (*d_r_d_p)(3, 1) = Scalar(0);
     }
 
     return res;

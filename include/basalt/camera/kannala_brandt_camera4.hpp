@@ -347,18 +347,18 @@ class KannalaBrandtCamera4 {
     p3d[0] = mx * scaling;
     p3d[1] = my * scaling;
     p3d[2] = cos_theta;
-    p3d[3] = 0;
+    p3d[3] = Scalar(0);
 
     if (d_p3d_d_proj || d_p3d_d_param) {
-      Scalar d_thetad_d_mx = 0;
-      Scalar d_thetad_d_my = 0;
-      Scalar d_scaling_d_thetad = 0;
-      Scalar d_cos_d_thetad = 0;
+      Scalar d_thetad_d_mx = Scalar(0);
+      Scalar d_thetad_d_my = Scalar(0);
+      Scalar d_scaling_d_thetad = Scalar(0);
+      Scalar d_cos_d_thetad = Scalar(0);
 
-      Scalar d_scaling_d_k1 = 0;
-      Scalar d_cos_d_k1 = 0;
+      Scalar d_scaling_d_k1 = Scalar(0);
+      Scalar d_cos_d_k1 = Scalar(0);
 
-      Scalar theta2 = 0;
+      Scalar theta2 = Scalar(0);
 
       if (thetad > Sophus::Constants<Scalar>::epsilonSqrt()) {
         d_thetad_d_mx = mx / thetad;
@@ -393,12 +393,12 @@ class KannalaBrandtCamera4 {
       c0(0) = d_res0_d_mx / fx;
       c0(1) = d_res1_d_mx / fx;
       c0(2) = d_res2_d_mx / fx;
-      c0(3) = 0;
+      c0(3) = Scalar(0);
 
       c1(0) = d_res0_d_my / fy;
       c1(1) = d_res1_d_my / fy;
       c1(2) = d_res2_d_my / fy;
-      c1(3) = 0;
+      c1(3) = Scalar(0);
 
       if (d_p3d_d_proj) {
         d_p3d_d_proj->col(0) = c0;
@@ -417,7 +417,7 @@ class KannalaBrandtCamera4 {
         (*d_p3d_d_param)(0, 4) = mx * d_scaling_d_k1;
         (*d_p3d_d_param)(1, 4) = my * d_scaling_d_k1;
         (*d_p3d_d_param)(2, 4) = d_cos_d_k1;
-        (*d_p3d_d_param)(3, 4) = 0;
+        (*d_p3d_d_param)(3, 4) = Scalar(0);
 
         d_p3d_d_param->col(5) = d_p3d_d_param->col(4) * theta2;
         d_p3d_d_param->col(6) = d_p3d_d_param->col(5) * theta2;

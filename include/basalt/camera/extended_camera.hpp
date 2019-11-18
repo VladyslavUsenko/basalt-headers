@@ -133,7 +133,7 @@ class ExtendedUnifiedCamera {
     const Scalar rho2 = beta * r2 + z * z;
     const Scalar rho = sqrt(rho2);
 
-    const Scalar norm = alpha * rho + (1.0 - alpha) * z;
+    const Scalar norm = alpha * rho + (Scalar(1) - alpha) * z;
 
     const Scalar mx = x / norm;
     const Scalar my = y / norm;
@@ -141,15 +141,15 @@ class ExtendedUnifiedCamera {
     proj = Vec2(fx * mx + cx, fy * my + cy);
 
     // Check if valid
-    const Scalar w =
-        alpha > 0.5 ? (1.0 - alpha) / alpha : alpha / (1.0 - alpha);
+    const Scalar w = alpha > Scalar(0.5) ? (Scalar(1) - alpha) / alpha
+                                         : alpha / (Scalar(1) - alpha);
     if (z <= -w * rho) return false;
 
     if (d_proj_d_p3d) {
       const Scalar denom = norm * norm * rho;
       const Scalar mid = -(alpha * beta * x * y);
       const Scalar add = norm * rho;
-      const Scalar addz = (alpha * z + (1.0 - alpha) * rho);
+      const Scalar addz = (alpha * z + (Scalar(1) - alpha) * rho);
 
       (*d_proj_d_p3d)(0, 0) = fx * (add - x * x * alpha * beta);
       (*d_proj_d_p3d)(1, 0) = fy * mid;
@@ -180,7 +180,7 @@ class ExtendedUnifiedCamera {
       (*d_proj_d_param)(0, 4) = tmp_x * tmp4;
       (*d_proj_d_param)(1, 4) = tmp_y * tmp4;
 
-      const Scalar tmp5 = 0.5 * alpha * r2 / rho;
+      const Scalar tmp5 = Scalar(0.5) * alpha * r2 / rho;
 
       (*d_proj_d_param)(0, 5) = tmp_x * tmp5;
       (*d_proj_d_param)(1, 5) = tmp_y * tmp5;
@@ -232,15 +232,15 @@ class ExtendedUnifiedCamera {
     const Scalar my = (proj[1] - cy) / fy;
 
     const Scalar r2 = mx * mx + my * my;
-    const Scalar gamma = 1 - alpha;
+    const Scalar gamma = Scalar(1) - alpha;
 
     // Check if valid
-    if (alpha > 0.5) {
-      if (r2 >= Scalar(1.0) / ((alpha - gamma) * beta)) return false;
+    if (alpha > Scalar(0.5)) {
+      if (r2 >= Scalar(1) / ((alpha - gamma) * beta)) return false;
     }
 
-    const Scalar tmp1 = (1 - alpha * alpha * beta * r2);
-    const Scalar tmp_sqrt = sqrt(1 - (alpha - gamma) * beta * r2);
+    const Scalar tmp1 = (Scalar(1) - alpha * alpha * beta * r2);
+    const Scalar tmp_sqrt = sqrt(Scalar(1) - (alpha - gamma) * beta * r2);
     const Scalar tmp2 = (alpha * tmp_sqrt + gamma);
 
     const Scalar k = tmp1 / tmp2;
@@ -255,22 +255,24 @@ class ExtendedUnifiedCamera {
       const Scalar tmp2_2 = tmp2 * tmp2;
 
       const Scalar d_k_d_r2 =
-          0.5 * alpha * beta *
-          (-2 * alpha * tmp2 + tmp1 * (alpha - gamma) / tmp_sqrt) / tmp2_2;
+          Scalar(0.5) * alpha * beta *
+          (-Scalar(2) * alpha * tmp2 + tmp1 * (alpha - gamma) / tmp_sqrt) /
+          tmp2_2;
 
-      const Scalar d_norm_inv_d_r2 = -0.5 * (1 + 2 * k * d_k_d_r2) / norm2;
+      const Scalar d_norm_inv_d_r2 =
+          -Scalar(0.5) * (Scalar(1) + Scalar(2) * k * d_k_d_r2) / norm2;
 
       Vec4 c0, c1;
       c0[0] = (1 + 2 * mx * mx * d_norm_inv_d_r2);
       c0[1] = (2 * my * mx * d_norm_inv_d_r2);
       c0[2] = 2 * mx * (k * d_norm_inv_d_r2 + d_k_d_r2);
-      c0[3] = 0;
+      c0[3] = Scalar(0);
       c0 /= fx * norm;
 
       c1[0] = (2 * my * mx * d_norm_inv_d_r2);
       c1[1] = (1 + 2 * my * my * d_norm_inv_d_r2);
       c1[2] = 2 * my * (k * d_norm_inv_d_r2 + d_k_d_r2);
-      c1[3] = 0;
+      c1[3] = Scalar(0);
       c1 /= fy * norm;
 
       if (d_p3d_d_proj) {
@@ -286,26 +288,27 @@ class ExtendedUnifiedCamera {
         (*d_p3d_d_param).col(1) = d_p3d_d_param->col(3) * my;
 
         const Scalar d_k_d_alpha =
-            (-2 * alpha * beta * r2 * tmp2 -
-             (tmp_sqrt - alpha * beta * r2 / tmp_sqrt - 1) * tmp1) /
+            (-Scalar(2) * alpha * beta * r2 * tmp2 -
+             (tmp_sqrt - alpha * beta * r2 / tmp_sqrt - Scalar(1)) * tmp1) /
             tmp2_2;
 
         const Scalar d_k_d_beta =
             alpha * r2 *
-            (0.5 * tmp1 * (alpha - gamma) / tmp_sqrt - alpha * tmp2) / tmp2_2;
+            (Scalar(0.5) * tmp1 * (alpha - gamma) / tmp_sqrt - alpha * tmp2) /
+            tmp2_2;
 
         const Scalar d_norm_inv_d_k = -k / norm2;
 
         (*d_p3d_d_param)(0, 4) = mx * d_norm_inv_d_k * d_k_d_alpha;
         (*d_p3d_d_param)(1, 4) = my * d_norm_inv_d_k * d_k_d_alpha;
         (*d_p3d_d_param)(2, 4) = (k * d_norm_inv_d_k + 1) * d_k_d_alpha;
-        (*d_p3d_d_param)(3, 4) = 0;
+        (*d_p3d_d_param)(3, 4) = Scalar(0);
         d_p3d_d_param->col(4) /= norm;
 
         (*d_p3d_d_param)(0, 5) = mx * d_norm_inv_d_k * d_k_d_beta;
         (*d_p3d_d_param)(1, 5) = my * d_norm_inv_d_k * d_k_d_beta;
         (*d_p3d_d_param)(2, 5) = (k * d_norm_inv_d_k + 1) * d_k_d_beta;
-        (*d_p3d_d_param)(3, 5) = 0;
+        (*d_p3d_d_param)(3, 5) = Scalar(0);
         d_p3d_d_param->col(5) /= norm;
       }
     }

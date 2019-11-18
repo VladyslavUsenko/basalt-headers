@@ -181,27 +181,28 @@ class PinholeCamera {
 
     const Scalar r2 = mx * mx + my * my;
 
-    const Scalar norm = sqrt(1 + r2);
-    const Scalar norm_inv = 1.0 / norm;
+    const Scalar norm = sqrt(Scalar(1) + r2);
+    const Scalar norm_inv = Scalar(1) / norm;
 
     p3d[0] = mx * norm_inv;
     p3d[1] = my * norm_inv;
     p3d[2] = norm_inv;
-    p3d[3] = 0;
+    p3d[3] = Scalar(0);
 
     if (d_p3d_d_proj || d_p3d_d_param) {
-      const Scalar d_norm_inv_d_r2 = -0.5 * norm_inv * norm_inv * norm_inv;
+      const Scalar d_norm_inv_d_r2 =
+          -Scalar(0.5) * norm_inv * norm_inv * norm_inv;
 
       Vec4 c0, c1;
       c0(0) = (norm_inv + 2 * mx * mx * d_norm_inv_d_r2) / fx;
       c0(1) = (2 * my * mx * d_norm_inv_d_r2) / fx;
       c0(2) = 2 * mx * d_norm_inv_d_r2 / fx;
-      c0(3) = 0;
+      c0(3) = Scalar(0);
 
       c1(0) = (2 * my * mx * d_norm_inv_d_r2) / fy;
       c1(1) = (norm_inv + 2 * my * my * d_norm_inv_d_r2) / fy;
       c1(2) = 2 * my * d_norm_inv_d_r2 / fy;
-      c1(3) = 0;
+      c1(3) = Scalar(0);
 
       if (d_p3d_d_proj) {
         d_p3d_d_proj->col(0) = c0;
