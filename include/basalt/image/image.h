@@ -293,15 +293,15 @@ struct Image {
   }
 
   template <typename S>
-  inline float interp(S x, S y) const {
+  inline S interp(S x, S y) const {
     int ix = x;
     int iy = y;
 
     S dx = x - ix;
     S dy = y - iy;
 
-    S ddx = 1.0f - dx;
-    S ddy = 1.0f - dy;
+    S ddx = S(1.0) - dx;
+    S ddy = S(1.0) - dy;
 
     return ddx * ddy * (*this)(ix, iy) + ddx * dy * (*this)(ix, iy + 1) +
            dx * ddy * (*this)(ix + 1, iy) + dx * dy * (*this)(ix + 1, iy + 1);
@@ -315,8 +315,8 @@ struct Image {
     S dx = x - ix;
     S dy = y - iy;
 
-    S ddx = 1.0f - dx;
-    S ddy = 1.0f - dy;
+    S ddx = S(1.0) - dx;
+    S ddy = S(1.0) - dy;
 
     Eigen::Matrix<S, 3, 1> res;
 
@@ -340,7 +340,7 @@ struct Image {
     S res_px = ddx * ddy * px1y0 + ddx * dy * px1y1 + dx * ddy * px2y0 +
                dx * dy * px2y1;
 
-    res[1] = 0.5 * (res_px - res_mx);
+    res[1] = S(0.5) * (res_px - res_mx);
 
     const T& px0ym1 = (*this)(ix, iy - 1);
     const T& px1ym1 = (*this)(ix + 1, iy - 1);
@@ -354,7 +354,7 @@ struct Image {
     S res_py = ddx * ddy * px0y1 + ddx * dy * px0y2 + dx * ddy * px1y1 +
                dx * dy * px1y2;
 
-    res[2] = 0.5 * (res_py - res_my);
+    res[2] = S(0.5) * (res_py - res_my);
 
     return res;
   }
