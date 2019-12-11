@@ -294,6 +294,10 @@ struct Image {
 
   template <typename S>
   inline S interp(S x, S y) const {
+    static_assert(std::is_floating_point_v<S>,
+                  "interpolation / gradient only makes sense "
+                  "for floating point result type");
+
     int ix = x;
     int iy = y;
 
@@ -309,6 +313,10 @@ struct Image {
 
   template <typename S>
   inline Eigen::Matrix<S, 3, 1> interpGrad(S x, S y) const {
+    static_assert(std::is_floating_point_v<S>,
+                  "interpolation / gradient only makes sense "
+                  "for floating point result type");
+
     int ix = x;
     int iy = y;
 
