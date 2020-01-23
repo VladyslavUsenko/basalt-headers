@@ -45,6 +45,8 @@ namespace basalt {
 
 /// @brief Helper for implementing Lie group and Euclidean b-splines in ceres of
 /// order N
+///
+/// See [[arXiv:1911.08860]](https://arxiv.org/abs/1911.08860) for more details.
 template <int _N>
 struct CeresSplineHelper {
   static constexpr int N = _N;        // Order of the spline.

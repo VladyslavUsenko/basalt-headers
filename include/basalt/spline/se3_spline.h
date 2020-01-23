@@ -50,7 +50,9 @@ namespace basalt {
 
 /// @brief Uniform B-spline for SE(3) of order N. Internally uses an SO(3) (\ref
 /// So3Spline) spline for rotation and 3D Euclidean spline (\ref RdSpline) for
-/// translation.
+/// translation (split representaion).
+///
+/// See [[arXiv:1911.08860]](https://arxiv.org/abs/1911.08860) for more details.
 template <int _N, typename _Scalar = double>
 class Se3Spline {
  public:

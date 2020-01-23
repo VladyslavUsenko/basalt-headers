@@ -91,6 +91,8 @@ namespace basalt {
 /// Higher time derivatives are evaluated similarly. This class supports
 /// vector values for knots \f$ p_{i} \f$. The corresponding derivative vector
 /// on the right is computed using \ref baseCoeffsWithTime.
+///
+/// See [[arXiv:1911.08860]](https://arxiv.org/abs/1911.08860) for more details.
 template <int _DIM, int _N, typename _Scalar = double>
 class RdSpline {
  public:

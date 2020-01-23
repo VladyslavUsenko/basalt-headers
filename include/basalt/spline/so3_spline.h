@@ -72,6 +72,8 @@ namespace basalt {
 ///    \begin{pmatrix} 24 & 0 & 0 & 0 & 0 \\ 23 & 4 & -6 & 4 & -1 \\ 12 & 16 & 0
 ///    & -8 & 3 \\ 1 & 4 & 6 & 4 & -3 \\ 0 & 0 & 0 & 0 & 1 \end{pmatrix}.
 /// \f}
+///
+/// See [[arXiv:1911.08860]](https://arxiv.org/abs/1911.08860) for more details.
 template <int _N, typename _Scalar = double>
 class So3Spline {
  public:
