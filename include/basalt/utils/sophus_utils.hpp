@@ -40,6 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
 #include <sophus/se3.hpp>
+#include <sophus/sim3.hpp>
 
 #include <basalt/utils/eigen_utils.hpp>
 
@@ -86,6 +87,37 @@ inline SE3<typename Derived::Scalar> se3_expd(
 
   return SE3<Scalar>(SO3<Scalar>::exp(upsilon_omega.template tail<3>()),
                      upsilon_omega.template head<3>());
+}
+
+/// @brief Decoupled version of logmap for Sim(3)
+///
+///
+/// @param[in] Sim(3) member
+/// @return tangent vector (7x1 vector)
+template <typename Scalar>
+inline typename Sim3<Scalar>::Tangent sim3_logd(const Sim3<Scalar> &sim3) {
+  typename Sim3<Scalar>::Tangent upsilon_omega;
+  upsilon_omega.template tail<4>() = sim3.rxso3().log();
+  upsilon_omega.template head<3>() = sim3.translation();
+
+  return upsilon_omega;
+}
+
+/// @brief Decoupled version of expmap for Sim(3)
+///
+///
+/// @param[in] tangent vector (7x1 vector)
+/// @return  Sim(3) member
+template <typename Derived>
+inline Sim3<typename Derived::Scalar> sim3_expd(
+    const Eigen::MatrixBase<Derived> &upsilon_omega) {
+  EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived);
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived, 7);
+
+  using Scalar = typename Derived::Scalar;
+
+  return Sim3<Scalar>(RxSO3<Scalar>::exp(upsilon_omega.template tail<4>()),
+                      upsilon_omega.template head<3>());
 }
 
 /// @brief Right Jacobian for SO(3)
@@ -290,6 +322,68 @@ inline void rightJacobianInvSE3Decoupled(
   Eigen::Matrix<Scalar, 3, 1> omega = phi.template tail<3>();
   rightJacobianInvSO3(omega, J.template bottomRightCorner<3, 3>());
   J.template topLeftCorner<3, 3>() = Sophus::SO3<Scalar>::exp(omega).matrix();
+}
+
+/// @brief Right Jacobian for decoupled SE(3)
+///
+/// For \f$ \exp(x) \in Sim(3) \f$ provides a Jacobian that approximates the sum
+/// under decoupled expmap with a right multiplication of decoupled expmap for
+/// small \f$ \epsilon \f$.  Can be used to compute:  \f$ \exp(\phi + \epsilon)
+/// \approx \exp(\phi) \exp(J_{\phi} \epsilon)\f$
+/// @param[in] phi (7x1 vector)
+/// @param[out] J_phi (7x7 matrix)
+template <typename Derived1, typename Derived2>
+inline void rightJacobianSim3Decoupled(
+    const Eigen::MatrixBase<Derived1> &phi,
+    const Eigen::MatrixBase<Derived2> &J_phi) {
+  EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived1);
+  EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived2);
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived1, 7);
+  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Derived2, 7, 7);
+
+  using Scalar = typename Derived1::Scalar;
+
+  Eigen::MatrixBase<Derived2> &J =
+      const_cast<Eigen::MatrixBase<Derived2> &>(J_phi);
+
+  J.setZero();
+
+  Eigen::Matrix<Scalar, 4, 1> omega = phi.template tail<4>();
+  rightJacobianSO3(omega.template head<3>(), J.template block<3, 3>(3, 3));
+  J.template topLeftCorner<3, 3>() =
+      Sophus::RxSO3<Scalar>::exp(omega).inverse().matrix();
+  J(6, 6) = 1;
+}
+
+/// @brief Right Inverse Jacobian for decoupled Sim(3)
+///
+/// For \f$ \exp(x) \in Sim(3) \f$ provides an inverse Jacobian that
+/// approximates the decoupled logmap of the right multiplication of the
+/// decoupled expmap of the arguments with a sum for small \f$ \epsilon \f$. Can
+/// be used to compute:  \f$ \log
+/// (\exp(\phi) \exp(\epsilon)) \approx \phi + J_{\phi} \epsilon\f$
+/// @param[in] phi (7x1 vector)
+/// @param[out] J_phi (7x7 matrix)
+template <typename Derived1, typename Derived2>
+inline void rightJacobianInvSim3Decoupled(
+    const Eigen::MatrixBase<Derived1> &phi,
+    const Eigen::MatrixBase<Derived2> &J_phi) {
+  EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived1);
+  EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived2);
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived1, 7);
+  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Derived2, 7, 7);
+
+  using Scalar = typename Derived1::Scalar;
+
+  Eigen::MatrixBase<Derived2> &J =
+      const_cast<Eigen::MatrixBase<Derived2> &>(J_phi);
+
+  J.setZero();
+
+  Eigen::Matrix<Scalar, 4, 1> omega = phi.template tail<4>();
+  rightJacobianInvSO3(omega.template head<3>(), J.template block<3, 3>(3, 3));
+  J.template topLeftCorner<3, 3>() = Sophus::RxSO3<Scalar>::exp(omega).matrix();
+  J(6, 6) = 1;
 }
 
 }  // namespace Sophus

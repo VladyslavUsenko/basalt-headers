@@ -308,3 +308,59 @@ TEST(SophusUtilsCase, RxSO2Test) {
       },
       x0);
 }
+
+TEST(SophusUtilsCase, RightJacobianSim3Decoupled) {
+  Sophus::Vector7d phi;
+  phi.setRandom();
+
+  Sophus::Matrix7d Ja, Jn;
+  Sophus::rightJacobianSim3Decoupled(phi, Ja);
+
+  Sophus::Vector7d x0;
+  x0.setZero();
+
+  test_jacobian(
+      "rightJacobianSim3Decoupled", Ja,
+      [&](const Sophus::Vector7d &x) {
+        return Sophus::sim3_logd(Sophus::sim3_expd(phi).inverse() *
+                                 Sophus::sim3_expd(phi + x));
+      },
+      x0);
+}
+
+TEST(SophusUtilsCase, RightJacobianInvSim3Decoupled) {
+  Sophus::Vector7d phi;
+  phi.setRandom();
+
+  Sophus::Matrix7d Ja, Jn;
+  Sophus::rightJacobianInvSim3Decoupled(phi, Ja);
+
+  Sophus::Vector7d x0;
+  x0.setZero();
+
+  test_jacobian(
+      "rightJacobianInvSim3Decoupled", Ja,
+      [&](const Sophus::Vector7d &x) {
+        return Sophus::sim3_logd(Sophus::sim3_expd(phi) * Sophus::sim3_expd(x));
+      },
+      x0);
+}
+
+TEST(SophusUtilsCase, AdjointSim3) {
+  Sophus::Vector7d phi;
+  phi.setRandom();
+
+  Sophus::Sim3d pose = Sophus::Sim3d::exp(Sophus::Vector7d::Random());
+
+  Sophus::Matrix7d Ja = pose.inverse().Adj();
+
+  Sophus::Vector7d x0;
+  x0.setZero();
+
+  test_jacobian(
+      "AdjSim3", Ja,
+      [&](const Sophus::Vector7d &x) {
+        return Sophus::sim3_logd(pose.inverse() * Sophus::sim3_expd(x) * pose);
+      },
+      x0);
+}
