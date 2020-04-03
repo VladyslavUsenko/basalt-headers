@@ -364,3 +364,77 @@ TEST(SophusUtilsCase, AdjointSim3) {
       },
       x0);
 }
+
+TEST(SophusUtilsCase, RelPoseTestSE3) {
+  Sophus::SE3d T_wi = Sophus::SE3d::exp(Sophus::Vector6d::Random());
+  Sophus::SE3d T_wj = Sophus::SE3d::exp(Sophus::Vector6d::Random());
+
+  Sophus::SE3d T_ij_meas =
+      T_wi.inverse() * T_wj *
+      Sophus::SE3d::exp(Sophus::Vector6d::Random() / 100);  // small noise
+
+  Sophus::SE3d T_ji = T_wj.inverse() * T_wi;
+  Sophus::Vector6d res = Sophus::se3_logd(T_ij_meas * T_ji);
+
+  Sophus::Matrix6d J_T_wi, J_T_wj;
+  Sophus::rightJacobianInvSE3Decoupled(res, J_T_wi);
+  J_T_wj = -J_T_wi * T_ji.inverse().Adj();
+
+  Sophus::Vector6d x0;
+  x0.setZero();
+
+  test_jacobian(
+      "d_res_d_T_wi", J_T_wi,
+      [&](const Sophus::Vector6d &x) {
+        Sophus::SE3d T_wi_new = T_wi * Sophus::se3_expd(x);
+
+        return Sophus::se3_logd(T_ij_meas * T_wj.inverse() * T_wi_new);
+      },
+      x0);
+
+  test_jacobian(
+      "d_res_d_T_wj", J_T_wj,
+      [&](const Sophus::Vector6d &x) {
+        Sophus::SE3d T_wj_new = T_wj * Sophus::se3_expd(x);
+
+        return Sophus::se3_logd(T_ij_meas * T_wj_new.inverse() * T_wi);
+      },
+      x0);
+}
+
+TEST(SophusUtilsCase, RelPoseTestSim3) {
+  Sophus::Sim3d T_wi = Sophus::Sim3d::exp(Sophus::Vector7d::Random());
+  Sophus::Sim3d T_wj = Sophus::Sim3d::exp(Sophus::Vector7d::Random());
+
+  Sophus::Sim3d T_ij_meas =
+      T_wi.inverse() * T_wj *
+      Sophus::Sim3d::exp(Sophus::Vector7d::Random() / 100);  // small noise
+
+  Sophus::Sim3d T_ji = T_wj.inverse() * T_wi;
+  Sophus::Vector7d res = Sophus::sim3_logd(T_ij_meas * T_ji);
+
+  Sophus::Matrix7d J_T_wi, J_T_wj;
+  Sophus::rightJacobianInvSim3Decoupled(res, J_T_wi);
+  J_T_wj = -J_T_wi * T_ji.inverse().Adj();
+
+  Sophus::Vector7d x0;
+  x0.setZero();
+
+  test_jacobian(
+      "d_res_d_T_wi", J_T_wi,
+      [&](const Sophus::Vector7d &x) {
+        Sophus::Sim3d T_wi_new = T_wi * Sophus::sim3_expd(x);
+
+        return Sophus::sim3_logd(T_ij_meas * T_wj.inverse() * T_wi_new);
+      },
+      x0);
+
+  test_jacobian(
+      "d_res_d_T_wj", J_T_wj,
+      [&](const Sophus::Vector7d &x) {
+        Sophus::Sim3d T_wj_new = T_wj * Sophus::sim3_expd(x);
+
+        return Sophus::sim3_logd(T_ij_meas * T_wj_new.inverse() * T_wi);
+      },
+      x0);
+}
