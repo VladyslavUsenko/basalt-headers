@@ -149,10 +149,8 @@ TEST(SophusUtilsCase, RightJacobianInvSE3Decoupled) {
       x0);
 }
 
+// Verify that the adjoint definition works equally for expd and logd.
 TEST(SophusUtilsCase, Adjoint) {
-  Sophus::Vector6d phi;
-  phi.setRandom();
-
   Sophus::SE3d pose = Sophus::SE3d::exp(Sophus::Vector6d::Random());
 
   Sophus::Matrix6d Ja = pose.inverse().Adj();
@@ -191,10 +189,8 @@ TEST(SophusUtilsCase, RotTestSO3) {
       x0);
 }
 
+// Jacobian of the SE3 right-increment w.r.t. the decoupled left-increment.
 TEST(SophusUtilsCase, incTest) {
-  Sophus::Vector6d phi;
-  phi.setRandom();
-
   Sophus::SE3d pose = Sophus::SE3d::exp(Sophus::Vector6d::Random());
 
   Sophus::Matrix6d Ja;
@@ -215,6 +211,30 @@ TEST(SophusUtilsCase, incTest) {
         pose1.translation() = pose.translation() + x.head<3>();
 
         return Sophus::se3_logd(pose.inverse() * pose1);
+      },
+      x0);
+}
+
+// Jacobian of the SE3 left-increment w.r.t. the decoupled left-increment.
+TEST(SophusUtilsCase, incTest2) {
+  Sophus::SE3d pose = Sophus::SE3d::exp(Sophus::Vector6d::Random());
+
+  Sophus::Matrix6d Ja;
+  Ja.setIdentity();
+
+  Ja.topRightCorner<3, 3>() = Sophus::SO3d::hat(pose.translation());
+
+  Sophus::Vector6d x0;
+  x0.setZero();
+
+  test_jacobian(
+      "inc test", Ja,
+      [&](const Sophus::Vector6d &x) {
+        Sophus::SE3d pose1;
+        pose1.so3() = Sophus::SO3d::exp(x.tail<3>()) * pose.so3();
+        pose1.translation() = pose.translation() + x.head<3>();
+
+        return Sophus::se3_logd(pose1 * pose.inverse());
       },
       x0);
 }
@@ -346,10 +366,8 @@ TEST(SophusUtilsCase, RightJacobianInvSim3Decoupled) {
       x0);
 }
 
+// Verify adjoint definition holds for decoupled log/exp.
 TEST(SophusUtilsCase, AdjointSim3) {
-  Sophus::Vector7d phi;
-  phi.setRandom();
-
   Sophus::Sim3d pose = Sophus::Sim3d::exp(Sophus::Vector7d::Random());
 
   Sophus::Matrix7d Ja = pose.inverse().Adj();
@@ -365,126 +383,177 @@ TEST(SophusUtilsCase, AdjointSim3) {
       x0);
 }
 
-TEST(SophusUtilsCase, RelPoseTestSE3) {
+// Note: For the relative pose tests we test different measurement error
+// magnitudes. It is not sufficient to only test small errors. For example,
+// with 1e-4, the tests do also pass when approximating the rightJacobian with
+// identity.
+
+TEST(SophusUtilsCase, RelPoseTestRightIncSE3) {
   Sophus::SE3d T_wi = Sophus::SE3d::exp(Sophus::Vector6d::Random());
   Sophus::SE3d T_wj = Sophus::SE3d::exp(Sophus::Vector6d::Random());
 
-  Sophus::SE3d T_ij_meas =
-      T_wi.inverse() * T_wj *
-      Sophus::SE3d::exp(Sophus::Vector6d::Random() / 100);  // small noise
+  for (const double meas_error : {1e0, 1e-1, 1e-2, 1e-4}) {
+    Sophus::SE3d T_ij_meas =
+        T_wi.inverse() * T_wj *
+        Sophus::SE3d::exp(Sophus::Vector6d::Random() * meas_error);
 
-  Sophus::SE3d T_ji = T_wj.inverse() * T_wi;
-  Sophus::Vector6d res = Sophus::se3_logd(T_ij_meas * T_ji);
+    Sophus::SE3d T_ji = T_wj.inverse() * T_wi;
+    Sophus::Vector6d res = Sophus::se3_logd(T_ij_meas * T_ji);
 
-  Sophus::Matrix6d J_T_wi, J_T_wj;
-  Sophus::rightJacobianInvSE3Decoupled(res, J_T_wi);
-  J_T_wj = -J_T_wi * T_ji.inverse().Adj();
+    Sophus::Matrix6d J_T_wi, J_T_wj;
+    Sophus::rightJacobianInvSE3Decoupled(res, J_T_wi);
+    J_T_wj = -J_T_wi * T_ji.inverse().Adj();
 
-  Sophus::Vector6d x0;
-  x0.setZero();
+    Sophus::Vector6d x0;
+    x0.setZero();
 
-  test_jacobian(
-      "d_res_d_T_wi", J_T_wi,
-      [&](const Sophus::Vector6d &x) {
-        Sophus::SE3d T_wi_new = T_wi * Sophus::se3_expd(x);
+    test_jacobian(
+        "d_res_d_T_wi", J_T_wi,
+        [&](const Sophus::Vector6d &x) {
+          Sophus::SE3d T_wi_new = T_wi * Sophus::se3_expd(x);
 
-        return Sophus::se3_logd(T_ij_meas * T_wj.inverse() * T_wi_new);
-      },
-      x0);
+          return Sophus::se3_logd(T_ij_meas * T_wj.inverse() * T_wi_new);
+        },
+        x0);
 
-  test_jacobian(
-      "d_res_d_T_wj", J_T_wj,
-      [&](const Sophus::Vector6d &x) {
-        Sophus::SE3d T_wj_new = T_wj * Sophus::se3_expd(x);
+    test_jacobian(
+        "d_res_d_T_wj", J_T_wj,
+        [&](const Sophus::Vector6d &x) {
+          Sophus::SE3d T_wj_new = T_wj * Sophus::se3_expd(x);
 
-        return Sophus::se3_logd(T_ij_meas * T_wj_new.inverse() * T_wi);
-      },
-      x0);
+          return Sophus::se3_logd(T_ij_meas * T_wj_new.inverse() * T_wi);
+        },
+        x0);
+  }
 }
 
-TEST(SophusUtilsCase, RelPoseTestSE3_2) {
+TEST(SophusUtilsCase, RelPoseTestLeftIncSE3) {
   Sophus::SE3d T_wi = Sophus::SE3d::exp(Sophus::Vector6d::Random());
   Sophus::SE3d T_wj = Sophus::SE3d::exp(Sophus::Vector6d::Random());
 
-  Sophus::SE3d T_ij_meas =
-      T_wi.inverse() * T_wj *
-      Sophus::SE3d::exp(Sophus::Vector6d::Random() / 100);  // small noise
+  for (const double meas_error : {1e0, 1e-1, 1e-2, 1e-4}) {
+    Sophus::SE3d T_ij_meas =
+        T_wi.inverse() * T_wj *
+        Sophus::SE3d::exp(Sophus::Vector6d::Random() * meas_error);
 
-  Sophus::SE3d T_ji = T_wj.inverse() * T_wi;
-  Sophus::Vector6d res = Sophus::se3_logd(T_ij_meas * T_ji);
+    Sophus::SE3d T_ji = T_wj.inverse() * T_wi;
+    Sophus::Vector6d res = Sophus::se3_logd(T_ij_meas * T_ji);
 
-  Sophus::Matrix6d J_T_wi, J_T_wj, RR_i, RR_j;
+    Sophus::Matrix6d J_T_wi, J_T_wj;
+    Sophus::rightJacobianInvSE3Decoupled(res, J_T_wi);
+    J_T_wi = J_T_wi * T_wi.inverse().Adj();
+    J_T_wj = -J_T_wi;
 
-  Sophus::rightJacobianInvSE3Decoupled(res, J_T_wi);
-  J_T_wj = -J_T_wi * T_ji.inverse().Adj();
+    Sophus::Vector6d x0;
+    x0.setZero();
 
-  RR_i.setZero();
-  RR_i.topLeftCorner<3, 3>() = RR_i.bottomRightCorner<3, 3>() =
-      T_wi.so3().inverse().matrix();
+    test_jacobian(
+        "d_res_d_T_wi", J_T_wi,
+        [&](const Sophus::Vector6d &x) {
+          Sophus::SE3d T_wi_new = Sophus::se3_expd(x) * T_wi;
 
-  RR_j.setZero();
-  RR_j.topLeftCorner<3, 3>() = RR_j.bottomRightCorner<3, 3>() =
-      T_wj.so3().inverse().matrix();
+          return Sophus::se3_logd(T_ij_meas * T_wj.inverse() * T_wi_new);
+        },
+        x0);
 
-  Sophus::Vector6d x0;
-  x0.setZero();
+    test_jacobian(
+        "d_res_d_T_wj", J_T_wj,
+        [&](const Sophus::Vector6d &x) {
+          Sophus::SE3d T_wj_new = Sophus::se3_expd(x) * T_wj;
 
-  test_jacobian(
-      "d_res_d_T_wi", J_T_wi * RR_i,
-      [&](const Sophus::Vector6d &x) {
-        Sophus::SE3d T_wi_new;
-        T_wi_new.so3() = Sophus::SO3d::exp(x.tail<3>()) * T_wi.so3();
-        T_wi_new.translation() = T_wi.translation() + x.head<3>();
-
-        return Sophus::se3_logd(T_ij_meas * T_wj.inverse() * T_wi_new);
-      },
-      x0);
-
-  test_jacobian(
-      "d_res_d_T_wj", J_T_wj * RR_j,
-      [&](const Sophus::Vector6d &x) {
-        Sophus::SE3d T_wj_new;
-        T_wj_new.so3() = Sophus::SO3d::exp(x.tail<3>()) * T_wj.so3();
-        T_wj_new.translation() = T_wj.translation() + x.head<3>();
-
-        return Sophus::se3_logd(T_ij_meas * T_wj_new.inverse() * T_wi);
-      },
-      x0);
+          return Sophus::se3_logd(T_ij_meas * T_wj_new.inverse() * T_wi);
+        },
+        x0);
+  }
 }
 
-TEST(SophusUtilsCase, RelPoseTestSim3) {
+TEST(SophusUtilsCase, RelPoseTestDecoupledLeftIncSE3) {
+  Sophus::SE3d T_wi = Sophus::SE3d::exp(Sophus::Vector6d::Random());
+  Sophus::SE3d T_wj = Sophus::SE3d::exp(Sophus::Vector6d::Random());
+
+  for (const double meas_error : {1e0, 1e-1, 1e-2, 1e-4}) {
+    Sophus::SE3d T_ij_meas =
+        T_wi.inverse() * T_wj *
+        Sophus::SE3d::exp(Sophus::Vector6d::Random() * meas_error);
+
+    Sophus::SE3d T_ji = T_wj.inverse() * T_wi;
+    Sophus::Vector6d res = Sophus::se3_logd(T_ij_meas * T_ji);
+
+    Sophus::Matrix6d J_T_wi, J_T_wj, RR_i, RR_j;
+
+    Sophus::rightJacobianInvSE3Decoupled(res, J_T_wi);
+    J_T_wj = -J_T_wi * T_ji.inverse().Adj();
+
+    RR_i.setZero();
+    RR_i.topLeftCorner<3, 3>() = RR_i.bottomRightCorner<3, 3>() =
+        T_wi.so3().inverse().matrix();
+
+    RR_j.setZero();
+    RR_j.topLeftCorner<3, 3>() = RR_j.bottomRightCorner<3, 3>() =
+        T_wj.so3().inverse().matrix();
+
+    Sophus::Vector6d x0;
+    x0.setZero();
+
+    test_jacobian(
+        "d_res_d_T_wi", J_T_wi * RR_i,
+        [&](const Sophus::Vector6d &x) {
+          Sophus::SE3d T_wi_new;
+          T_wi_new.so3() = Sophus::SO3d::exp(x.tail<3>()) * T_wi.so3();
+          T_wi_new.translation() = T_wi.translation() + x.head<3>();
+
+          return Sophus::se3_logd(T_ij_meas * T_wj.inverse() * T_wi_new);
+        },
+        x0);
+
+    test_jacobian(
+        "d_res_d_T_wj", J_T_wj * RR_j,
+        [&](const Sophus::Vector6d &x) {
+          Sophus::SE3d T_wj_new;
+          T_wj_new.so3() = Sophus::SO3d::exp(x.tail<3>()) * T_wj.so3();
+          T_wj_new.translation() = T_wj.translation() + x.head<3>();
+
+          return Sophus::se3_logd(T_ij_meas * T_wj_new.inverse() * T_wi);
+        },
+        x0);
+  }
+}
+
+TEST(SophusUtilsCase, RelPoseTestRightIncSim3) {
   Sophus::Sim3d T_wi = Sophus::Sim3d::exp(Sophus::Vector7d::Random());
   Sophus::Sim3d T_wj = Sophus::Sim3d::exp(Sophus::Vector7d::Random());
 
-  Sophus::Sim3d T_ij_meas =
-      T_wi.inverse() * T_wj *
-      Sophus::Sim3d::exp(Sophus::Vector7d::Random() / 100);  // small noise
+  for (const double meas_error : {1e0, 1e-1, 1e-2, 1e-4}) {
+    Sophus::Sim3d T_ij_meas =
+        T_wi.inverse() * T_wj *
+        Sophus::Sim3d::exp(Sophus::Vector7d::Random() * meas_error);
 
-  Sophus::Sim3d T_ji = T_wj.inverse() * T_wi;
-  Sophus::Vector7d res = Sophus::sim3_logd(T_ij_meas * T_ji);
+    Sophus::Sim3d T_ji = T_wj.inverse() * T_wi;
+    Sophus::Vector7d res = Sophus::sim3_logd(T_ij_meas * T_ji);
 
-  Sophus::Matrix7d J_T_wi, J_T_wj;
-  Sophus::rightJacobianInvSim3Decoupled(res, J_T_wi);
-  J_T_wj = -J_T_wi * T_ji.inverse().Adj();
+    Sophus::Matrix7d J_T_wi, J_T_wj;
+    Sophus::rightJacobianInvSim3Decoupled(res, J_T_wi);
+    J_T_wj = -J_T_wi * T_ji.inverse().Adj();
 
-  Sophus::Vector7d x0;
-  x0.setZero();
+    Sophus::Vector7d x0;
+    x0.setZero();
 
-  test_jacobian(
-      "d_res_d_T_wi", J_T_wi,
-      [&](const Sophus::Vector7d &x) {
-        Sophus::Sim3d T_wi_new = T_wi * Sophus::sim3_expd(x);
+    test_jacobian(
+        "d_res_d_T_wi", J_T_wi,
+        [&](const Sophus::Vector7d &x) {
+          Sophus::Sim3d T_wi_new = T_wi * Sophus::sim3_expd(x);
 
-        return Sophus::sim3_logd(T_ij_meas * T_wj.inverse() * T_wi_new);
-      },
-      x0);
+          return Sophus::sim3_logd(T_ij_meas * T_wj.inverse() * T_wi_new);
+        },
+        x0);
 
-  test_jacobian(
-      "d_res_d_T_wj", J_T_wj,
-      [&](const Sophus::Vector7d &x) {
-        Sophus::Sim3d T_wj_new = T_wj * Sophus::sim3_expd(x);
+    test_jacobian(
+        "d_res_d_T_wj", J_T_wj,
+        [&](const Sophus::Vector7d &x) {
+          Sophus::Sim3d T_wj_new = T_wj * Sophus::sim3_expd(x);
 
-        return Sophus::sim3_logd(T_ij_meas * T_wj_new.inverse() * T_wi);
-      },
-      x0);
+          return Sophus::sim3_logd(T_ij_meas * T_wj_new.inverse() * T_wi);
+        },
+        x0);
+  }
 }
