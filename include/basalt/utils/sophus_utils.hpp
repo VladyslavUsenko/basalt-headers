@@ -142,17 +142,21 @@ inline void rightJacobianSO3(const Eigen::MatrixBase<Derived1> &phi,
       const_cast<Eigen::MatrixBase<Derived2> &>(J_phi);
 
   Scalar phi_norm2 = phi.squaredNorm();
-  Scalar phi_norm = std::sqrt(phi_norm2);
-  Scalar phi_norm3 = phi_norm2 * phi_norm;
+  Eigen::Matrix<Scalar, 3, 3> phi_hat = Sophus::SO3<Scalar>::hat(phi);
+  Eigen::Matrix<Scalar, 3, 3> phi_hat2 = phi_hat * phi_hat;
 
   J.setIdentity();
 
-  if (Sophus::Constants<Scalar>::epsilon() < phi_norm) {
-    Eigen::Matrix<Scalar, 3, 3> phi_hat = Sophus::SO3<Scalar>::hat(phi);
-    Eigen::Matrix<Scalar, 3, 3> phi_hat2 = phi_hat * phi_hat;
+  if (phi_norm2 > Sophus::Constants<Scalar>::epsilon()) {
+    Scalar phi_norm = std::sqrt(phi_norm2);
+    Scalar phi_norm3 = phi_norm2 * phi_norm;
 
     J -= phi_hat * (1 - std::cos(phi_norm)) / phi_norm2;
     J += phi_hat2 * (phi_norm - std::sin(phi_norm)) / phi_norm3;
+  } else {
+    // Taylor expansion around 0
+    J -= phi_hat / 2;
+    J += phi_hat2 / 6;
   }
 }
 
@@ -178,17 +182,20 @@ inline void rightJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
       const_cast<Eigen::MatrixBase<Derived2> &>(J_phi);
 
   Scalar phi_norm2 = phi.squaredNorm();
-  Scalar phi_norm = std::sqrt(phi_norm2);
+  Eigen::Matrix<Scalar, 3, 3> phi_hat = Sophus::SO3<Scalar>::hat(phi);
+  Eigen::Matrix<Scalar, 3, 3> phi_hat2 = phi_hat * phi_hat;
 
   J.setIdentity();
+  J += phi_hat / 2;
 
-  if (Sophus::Constants<Scalar>::epsilon() < phi_norm) {
-    Eigen::Matrix<Scalar, 3, 3> phi_hat = Sophus::SO3<Scalar>::hat(phi);
-    Eigen::Matrix<Scalar, 3, 3> phi_hat2 = phi_hat * phi_hat;
+  if (phi_norm2 > Sophus::Constants<Scalar>::epsilon()) {
+    Scalar phi_norm = std::sqrt(phi_norm2);
 
-    J += phi_hat / 2;
     J += phi_hat2 * (1 / phi_norm2 - (1 + std::cos(phi_norm)) /
                                          (2 * phi_norm * std::sin(phi_norm)));
+  } else {
+    // Taylor expansion around 0
+    J += phi_hat2 / 12;
   }
 }
 
@@ -214,17 +221,21 @@ inline void leftJacobianSO3(const Eigen::MatrixBase<Derived1> &phi,
       const_cast<Eigen::MatrixBase<Derived2> &>(J_phi);
 
   Scalar phi_norm2 = phi.squaredNorm();
-  Scalar phi_norm = std::sqrt(phi_norm2);
-  Scalar phi_norm3 = phi_norm2 * phi_norm;
+  Eigen::Matrix<Scalar, 3, 3> phi_hat = Sophus::SO3<Scalar>::hat(phi);
+  Eigen::Matrix<Scalar, 3, 3> phi_hat2 = phi_hat * phi_hat;
 
   J.setIdentity();
 
-  if (Sophus::Constants<Scalar>::epsilon() < phi_norm) {
-    Eigen::Matrix<Scalar, 3, 3> phi_hat = Sophus::SO3<Scalar>::hat(phi);
-    Eigen::Matrix<Scalar, 3, 3> phi_hat2 = phi_hat * phi_hat;
+  if (phi_norm2 > Sophus::Constants<Scalar>::epsilon()) {
+    Scalar phi_norm = std::sqrt(phi_norm2);
+    Scalar phi_norm3 = phi_norm2 * phi_norm;
 
     J += phi_hat * (1 - std::cos(phi_norm)) / phi_norm2;
     J += phi_hat2 * (phi_norm - std::sin(phi_norm)) / phi_norm3;
+  } else {
+    // Taylor expansion around 0
+    J += phi_hat / 2;
+    J += phi_hat2 / 6;
   }
 }
 
@@ -250,17 +261,20 @@ inline void leftJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
       const_cast<Eigen::MatrixBase<Derived2> &>(J_phi);
 
   Scalar phi_norm2 = phi.squaredNorm();
-  Scalar phi_norm = std::sqrt(phi_norm2);
+  Eigen::Matrix<Scalar, 3, 3> phi_hat = Sophus::SO3<Scalar>::hat(phi);
+  Eigen::Matrix<Scalar, 3, 3> phi_hat2 = phi_hat * phi_hat;
 
   J.setIdentity();
+  J -= phi_hat / 2;
 
-  if (Sophus::Constants<Scalar>::epsilon() < phi_norm) {
-    Eigen::Matrix<Scalar, 3, 3> phi_hat = Sophus::SO3<Scalar>::hat(phi);
-    Eigen::Matrix<Scalar, 3, 3> phi_hat2 = phi_hat * phi_hat;
+  if (phi_norm2 > Sophus::Constants<Scalar>::epsilon()) {
+    Scalar phi_norm = std::sqrt(phi_norm2);
 
-    J -= phi_hat / 2;
     J += phi_hat2 * (1 / phi_norm2 - (1 + std::cos(phi_norm)) /
                                          (2 * phi_norm * std::sin(phi_norm)));
+  } else {
+    // Taylor expansion around 0
+    J += phi_hat2 / 12;
   }
 }
 
