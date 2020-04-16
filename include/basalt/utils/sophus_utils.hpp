@@ -91,34 +91,56 @@ inline SE3<typename Derived::Scalar> se3_expd(
 
 /// @brief Decoupled version of logmap for Sim(3)
 ///
+/// For Sim(3) element vector
+/// \f[
+/// \begin{pmatrix} sR & t \\ 0 & 1 \end{pmatrix} \in SE(3),
+/// \f]
+/// returns \f$ (t, \log(R), log(s)) \in \mathbb{R}^3 \f$. Here rotation and
+/// scale are not coupled with translation. Rotation and scale are commutative
+/// anyway.
 ///
 /// @param[in] Sim(3) member
 /// @return tangent vector (7x1 vector)
 template <typename Scalar>
 inline typename Sim3<Scalar>::Tangent sim3_logd(const Sim3<Scalar> &sim3) {
-  typename Sim3<Scalar>::Tangent upsilon_omega;
-  upsilon_omega.template tail<4>() = sim3.rxso3().log();
-  upsilon_omega.template head<3>() = sim3.translation();
+  typename Sim3<Scalar>::Tangent upsilon_omega_sigma;
+  upsilon_omega_sigma.template tail<4>() = sim3.rxso3().log();
+  upsilon_omega_sigma.template head<3>() = sim3.translation();
 
-  return upsilon_omega;
+  return upsilon_omega_sigma;
 }
 
 /// @brief Decoupled version of expmap for Sim(3)
 ///
+/// For tangent vector \f$ (\upsilon, \omega, \sigma) \in \mathbb{R}^7 \f$
+/// returns
+/// \f[
+/// \begin{pmatrix} \exp(\sigma)\exp(\omega) & \upsilon \\ 0 & 1 \end{pmatrix}
+///                                                              \in Sim(3),
+/// \f]
+/// where \f$ \exp(\omega) \in SO(3) \f$. Here rotation and scale are not
+/// coupled with translation. Rotation and scale are commutative anyway.
 ///
 /// @param[in] tangent vector (7x1 vector)
 /// @return  Sim(3) member
 template <typename Derived>
 inline Sim3<typename Derived::Scalar> sim3_expd(
-    const Eigen::MatrixBase<Derived> &upsilon_omega) {
+    const Eigen::MatrixBase<Derived> &upsilon_omega_sigma) {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived, 7);
 
   using Scalar = typename Derived::Scalar;
 
-  return Sim3<Scalar>(RxSO3<Scalar>::exp(upsilon_omega.template tail<4>()),
-                      upsilon_omega.template head<3>());
+  return Sim3<Scalar>(
+      RxSO3<Scalar>::exp(upsilon_omega_sigma.template tail<4>()),
+      upsilon_omega_sigma.template head<3>());
 }
+
+// Note on the use of const_cast in the following functions: The output
+// parameter is only marked 'const' to make the C++ compiler accept a temporary
+// expression here. These functions use const_cast it, so constness isn't
+// honored here. See:
+// https://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html
 
 /// @brief Right Jacobian for SO(3)
 ///
@@ -338,7 +360,7 @@ inline void rightJacobianInvSE3Decoupled(
   J.template topLeftCorner<3, 3>() = Sophus::SO3<Scalar>::exp(omega).matrix();
 }
 
-/// @brief Right Jacobian for decoupled SE(3)
+/// @brief Right Jacobian for decoupled Sim(3)
 ///
 /// For \f$ \exp(x) \in Sim(3) \f$ provides a Jacobian that approximates the sum
 /// under decoupled expmap with a right multiplication of decoupled expmap for
