@@ -38,8 +38,13 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # clang-specific compile flags
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   set(BASALT_HEADERS_CXX_FLAGS "${BASALT_HEADERS_CXX_FLAGS} -Wno-exceptions -fcolor-diagnostics -frelaxed-template-template-args -Wno-error=deprecated-declarations")
+
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10)
+    # These are disabled to avoid lot's of warnings in Eigen code with clang 10
+    set(BASALT_HEADERS_CXX_FLAGS "${BASALT_HEADERS_CXX_FLAGS} -Wno-error=misleading-indentation")
+  endif()
 else()
-  set(BASALT_HEADERS_CXX_FLAGS "${BASALT_HEADERS_CXX_FLAGS}")
+  set(BASALT_HEADERS_CXX_FLAGS "${BASALT_HEADERS_CXX_FLAGS} -Wno-error=maybe-uninitialized")
 endif()
 
 
