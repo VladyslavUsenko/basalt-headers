@@ -3,7 +3,7 @@
 	url = https://github.com/strasdat/Sophus.git
 [submodule "thirdparty/cereal"]
 	path = thirdparty/cereal
-	url = https://github.com/USCiLab/cereal
+	url = https://github.com/USCiLab/cereal.git
 [submodule "test/googletest"]
 	path = test/googletest
 	url = https://github.com/google/googletest.git
@@ -12,4 +12,4 @@
 	url = https://github.com/google/benchmark.git
 [submodule "thirdparty/eigen"]
 	path = thirdparty/eigen
-	url = https://gitlab.com/libeigen/eigen
+	url = https://gitlab.com/libeigen/eigen.git
