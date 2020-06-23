@@ -42,7 +42,7 @@ TEST(SophusUtilsCase, RightJacobianSO3) {
   Eigen::Vector3d phi;
   phi.setRandom();
 
-  Eigen::Matrix3d Ja, Jn;
+  Eigen::Matrix3d Ja;
   Sophus::rightJacobianSO3(phi, Ja);
 
   Eigen::Vector3d x0;
@@ -61,7 +61,7 @@ TEST(SophusUtilsCase, RightJacobianInvSO3) {
   Eigen::Vector3d phi;
   phi.setRandom();
 
-  Eigen::Matrix3d Ja, Jn;
+  Eigen::Matrix3d Ja;
   Sophus::rightJacobianInvSO3(phi, Ja);
 
   Eigen::Vector3d x0;
@@ -79,7 +79,7 @@ TEST(SophusUtilsCase, LeftJacobianSO3) {
   Eigen::Vector3d phi;
   phi.setRandom();
 
-  Eigen::Matrix3d Ja, Jn;
+  Eigen::Matrix3d Ja;
   Sophus::leftJacobianSO3(phi, Ja);
 
   Eigen::Vector3d x0;
@@ -98,7 +98,7 @@ TEST(SophusUtilsCase, LeftJacobianInvSO3) {
   Eigen::Vector3d phi;
   phi.setRandom();
 
-  Eigen::Matrix3d Ja, Jn;
+  Eigen::Matrix3d Ja;
   Sophus::leftJacobianInvSO3(phi, Ja);
 
   Eigen::Vector3d x0;
@@ -116,7 +116,7 @@ TEST(SophusUtilsCase, RightJacobianSE3Decoupled) {
   Sophus::Vector6d phi;
   phi.setRandom();
 
-  Sophus::Matrix6d Ja, Jn;
+  Sophus::Matrix6d Ja;
   Sophus::rightJacobianSE3Decoupled(phi, Ja);
 
   Sophus::Vector6d x0;
@@ -135,7 +135,7 @@ TEST(SophusUtilsCase, RightJacobianInvSE3Decoupled) {
   Sophus::Vector6d phi;
   phi.setRandom();
 
-  Sophus::Matrix6d Ja, Jn;
+  Sophus::Matrix6d Ja;
   Sophus::rightJacobianInvSE3Decoupled(phi, Ja);
 
   Sophus::Vector6d x0;
