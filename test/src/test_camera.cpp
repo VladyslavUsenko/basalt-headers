@@ -152,7 +152,7 @@ void test_unproject_jacobians() {
             test_jacobian(
                 "d_r_d_p", Jp,
                 [&](const Vec2 &x) {
-                  Vec4 res;
+                  Vec4 res = Vec4::Zero();
                   cam.unproject(p + x, res);
                   return res;
                 },
@@ -161,7 +161,7 @@ void test_unproject_jacobians() {
             test_jacobian(
                 "d_r_d_param", Jparam,
                 [&](const VecN &x) {
-                  Vec4 res;
+                  Vec4 res = Vec4::Zero();
                   CamT cam1 = cam;
                   cam1 += x;
 
