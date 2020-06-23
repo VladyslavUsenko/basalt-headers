@@ -42,6 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sophus/se3.hpp>
 #include <sophus/sim3.hpp>
 
+#include <basalt/utils/assert.h>
 #include <basalt/utils/eigen_utils.hpp>
 
 namespace Sophus {
@@ -213,13 +214,112 @@ inline void rightJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
   if (phi_norm2 > Sophus::Constants<Scalar>::epsilon()) {
     Scalar phi_norm = std::sqrt(phi_norm2);
 
-    J += phi_hat2 * (1 / phi_norm2 - (1 + std::cos(phi_norm)) /
-                                         (2 * phi_norm * std::sin(phi_norm)));
+    // We require that the angle is in range [0, pi]. We check if we are close
+    // to pi and apply a Taylor expansion to scalar multiplier of phi_hat2.
+    // Technically, log(exp(phi)exp(epsilon)) is not continuous / differentiable
+    // at phi=pi, but we still aim to return a reasonable value for all valid
+    // inputs.
+    BASALT_ASSERT(phi_norm <= M_PI + Sophus::Constants<Scalar>::epsilon());
+
+    if (phi_norm < M_PI - Sophus::Constants<Scalar>::epsilon()) {
+      // regular case for range (0,pi)
+      J += phi_hat2 * (1 / phi_norm2 - (1 + std::cos(phi_norm)) /
+                                           (2 * phi_norm * std::sin(phi_norm)));
+    } else {
+      // 0th-order Taylor expansion around pi
+      J += phi_hat2 / (M_PI * M_PI);
+    }
   } else {
     // Taylor expansion around 0
     J += phi_hat2 / 12;
   }
 }
+
+// Alternative version of rightJacobianInvSO3 that normalizes the angle to
+// [0,pi]. However, it's too complicated and we decided to instead assert the
+// input range, assuming that it is almost never really required (e.g. b/c the
+// input is computed from Log()). Regardless, we leave this version here for
+// future reference.
+/*
+template <typename Derived1, typename Derived2>
+inline void rightJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
+                                const Eigen::MatrixBase<Derived2> &J_phi) {
+  EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived1);
+  EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived2);
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived1, 3);
+  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Derived2, 3, 3);
+
+  using Scalar = typename Derived1::Scalar;
+
+  Eigen::MatrixBase<Derived2> &J =
+      const_cast<Eigen::MatrixBase<Derived2> &>(J_phi);
+
+  Scalar phi_norm2 = phi.squaredNorm();
+
+  if (phi_norm2 < Sophus::Constants<Scalar>::epsilon()) {
+    // short-circuit small angle case: Avoid computing sqrt(phi_norm2).
+    Eigen::Matrix<Scalar, 3, 3> phi_hat = Sophus::SO3<Scalar>::hat(phi);
+    Eigen::Matrix<Scalar, 3, 3> phi_hat2 = phi_hat * phi_hat;
+
+    J.setIdentity();
+    J += phi_hat / 2;
+
+    // Taylor expansion around 0
+    J += phi_hat2 / 12;
+  } else {
+    // non-small angle case: Compute angle.
+    Scalar phi_norm = std::sqrt(phi_norm2);
+
+    // Check phi_norm > pi case and compute phi_hat (we assume that we later
+    // don't use phi directly, and thus don't update it)
+    Eigen::Matrix<Scalar, 3, 3> phi_hat;
+    if (phi_norm > M_PI) {
+      // In the definition of the inverse Jacobian we consider the effect of a
+      // perturbation on exp(phi). So here we normalize the angle to [0, 2pi)
+      // and then flip the axis if it is in (pi, 2pi).
+
+      // we know phi_norm > 0
+      Scalar phi_norm_wrapped = fmod(phi_norm, 2 * M_PI);
+
+      if (phi_norm_wrapped > M_PI) {
+        // flip axis and invert angle
+        phi_norm_wrapped = 2 * M_PI - phi_norm_wrapped;
+        phi_hat =
+            Sophus::SO3<Scalar>::hat(-phi * (phi_norm_wrapped / phi_norm));
+      } else {
+        // already in [0, pi]
+        phi_hat = Sophus::SO3<Scalar>::hat(phi * (phi_norm_wrapped / phi_norm));
+      }
+
+      phi_norm = phi_norm_wrapped;
+      phi_norm2 = phi_norm * phi_norm;
+    } else {
+      // regular case: already in (0, pi]
+      phi_hat = Sophus::SO3<Scalar>::hat(phi);
+    }
+
+    Eigen::Matrix<Scalar, 3, 3> phi_hat2 = phi_hat * phi_hat;
+
+    J.setIdentity();
+    J += phi_hat / 2;
+
+    // Angle is now in range [0, pi]. We check if we are close to 0 (in case of
+    // a wrap-around) or pi and apply Taylor expansions to scalar multiplier of
+    // phi_hat2
+    if (phi_norm < Sophus::Constants<Scalar>::epsilon()) {
+      // 1st-order Taylor expansion around 0
+      J += phi_hat2 / 12;
+    } else if (M_PI - phi_norm < Sophus::Constants<Scalar>::epsilon()) {
+      // 0th-order Taylor expansion around pi
+      J += phi_hat2 / (M_PI * M_PI);
+    } else {
+      // regular case for range (0,pi)
+      J += phi_hat2 * (1 / phi_norm2 - (1 + std::cos(phi_norm)) /
+                                           (2 * phi_norm * std::sin(phi_norm)));
+    }
+  }
+}
+*/
 
 /// @brief Left Jacobian for SO(3)
 ///
@@ -292,8 +392,21 @@ inline void leftJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
   if (phi_norm2 > Sophus::Constants<Scalar>::epsilon()) {
     Scalar phi_norm = std::sqrt(phi_norm2);
 
-    J += phi_hat2 * (1 / phi_norm2 - (1 + std::cos(phi_norm)) /
-                                         (2 * phi_norm * std::sin(phi_norm)));
+    // We require that the angle is in range [0, pi]. We check if we are close
+    // to pi and apply a Taylor expansion to scalar multiplier of phi_hat2.
+    // Technically, log(exp(phi)exp(epsilon)) is not continuous / differentiable
+    // at phi=pi, but we still aim to return a reasonable value for all valid
+    // inputs.
+    BASALT_ASSERT(phi_norm <= M_PI + Sophus::Constants<Scalar>::epsilon());
+
+    if (phi_norm < M_PI - Sophus::Constants<Scalar>::epsilon()) {
+      // regular case for range (0,pi)
+      J += phi_hat2 * (1 / phi_norm2 - (1 + std::cos(phi_norm)) /
+                                           (2 * phi_norm * std::sin(phi_norm)));
+    } else {
+      // 0th-order Taylor expansion around pi
+      J += phi_hat2 / (M_PI * M_PI);
+    }
   } else {
     // Taylor expansion around 0
     J += phi_hat2 / 12;
