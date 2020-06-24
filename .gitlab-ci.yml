@@ -79,6 +79,11 @@ xenial-release-compile:
   <<: *compile_and_test_definition
   image: vladyslavusenko/b_image_xenial:latest
 
+focal-release-compile:
+  <<: *prepare_docker_definition
+  <<: *compile_and_test_definition
+  image: vladyslavusenko/b_image_focal:latest
+
 mojave-relwithdebinfo-compile:
   <<: *compile_and_test_definition
   tags: [macos, "10.14"]
