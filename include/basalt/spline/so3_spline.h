@@ -137,13 +137,13 @@ class So3Spline {
       for (int i = 0; i < N; i++) knots.push_back(SO3::exp(rnd));
 
       for (int i = 0; i < n - N; i++)
-        knots.push_back(knots.back() * SO3::exp(Vec3::Random() * M_PI / 4));
+        knots.push_back(knots.back() * SO3::exp(Vec3::Random() * M_PI / 2));
 
     } else {
       knots.push_back(SO3::exp(Vec3::Random() * M_PI));
 
       for (int i = 1; i < n; i++)
-        knots.push_back(knots.back() * SO3::exp(Vec3::Random() * M_PI / 4));
+        knots.push_back(knots.back() * SO3::exp(Vec3::Random() * M_PI / 2));
     }
   }
 

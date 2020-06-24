@@ -221,7 +221,7 @@ inline void rightJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
     // inputs.
     BASALT_ASSERT(phi_norm <= M_PI + Sophus::Constants<Scalar>::epsilon());
 
-    if (phi_norm < M_PI - Sophus::Constants<Scalar>::epsilon()) {
+    if (phi_norm < M_PI - Sophus::Constants<Scalar>::epsilonSqrt()) {
       // regular case for range (0,pi)
       J += phi_hat2 * (1 / phi_norm2 - (1 + std::cos(phi_norm)) /
                                            (2 * phi_norm * std::sin(phi_norm)));
@@ -399,7 +399,7 @@ inline void leftJacobianInvSO3(const Eigen::MatrixBase<Derived1> &phi,
     // inputs.
     BASALT_ASSERT(phi_norm <= M_PI + Sophus::Constants<Scalar>::epsilon());
 
-    if (phi_norm < M_PI - Sophus::Constants<Scalar>::epsilon()) {
+    if (phi_norm < M_PI - Sophus::Constants<Scalar>::epsilonSqrt()) {
       // regular case for range (0,pi)
       J += phi_hat2 * (1 / phi_norm2 - (1 + std::cos(phi_norm)) /
                                            (2 * phi_norm * std::sin(phi_norm)));
