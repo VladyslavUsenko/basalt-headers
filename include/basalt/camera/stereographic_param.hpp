@@ -76,7 +76,7 @@ class StereographicParam {
   /// @return 2D projection of the point which parametrizes the corresponding
   /// direction vector
   static inline Vec2 project(const Vec4& p3d, Mat24* d_r_d_p = nullptr) {
-    const Scalar sqrt = p3d.norm();
+    const Scalar sqrt = p3d.template head<3>().norm();
     const Scalar norm = p3d[2] + sqrt;
     const Scalar norm_inv = Scalar(1) / norm;
 
