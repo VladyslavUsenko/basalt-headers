@@ -46,7 +46,7 @@ namespace basalt {
 ///
 /// See https://grail.cs.washington.edu/projects/bal/ for details.
 /// This model has N=3 parameters \f$ \mathbf{i} = \left[f, k_1, k_2,
-/// \alpha \right]^T \f$.
+/// \right]^T \f$.
 /// See \ref project and \ref unproject functions for more details.
 template <typename Scalar = double>
 class BalCamera {
