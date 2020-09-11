@@ -45,7 +45,7 @@ namespace basalt {
 /// @brief Camera model used in the paper "Bundle Adjustment in the Large".
 ///
 /// See https://grail.cs.washington.edu/projects/bal/ for details.
-/// This model has N=3 parameters \f$ \mathbf{i} = \left[f, k_1, k_2,
+/// This model has N=3 parameters \f$ \mathbf{i} = \left[f, k_1, k_2
 /// \right]^T \f$.
 /// See \ref project and \ref unproject functions for more details.
 template <typename Scalar = double>
