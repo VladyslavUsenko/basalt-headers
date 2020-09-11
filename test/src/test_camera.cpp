@@ -112,7 +112,7 @@ void test_project_unproject() {
             Vec4 p_uproj;
             cam.unproject(res, p_uproj);
 
-            ASSERT_TRUE(p_normalized.isApprox(
+            EXPECT_TRUE(p_normalized.isApprox(
                 p_uproj, Sophus::Constants<Scalar>::epsilonSqrt()))
                 << "p_normalized " << p_normalized.transpose() << " p_uproj "
                 << p_uproj.transpose();
@@ -214,6 +214,14 @@ TEST(CameraTestCase, FovCameraJacobians) {
   test_project_jacobian<basalt::FovCamera<double>>();
 }
 
+TEST(CameraTestCase, BalCameraJacobians) {
+  test_project_jacobian<basalt::BalCamera<double>>();
+}
+
+TEST(CameraTestCase, BalCameraJacobiansFloat) {
+  test_project_jacobian<basalt::BalCamera<float>>();
+}
+
 ////////////////////////////////////////////////////////////////
 
 TEST(CameraTestCase, PinholeProjectUnproject) {
@@ -254,8 +262,17 @@ TEST(CameraTestCase, DoubleSphereProjectUnprojectFloat) {
 TEST(CameraTestCase, FovProjectUnproject) {
   test_project_unproject<basalt::FovCamera<double>>();
 }
+
 TEST(CameraTestCase, FovProjectUnprojectFloat) {
   test_project_unproject<basalt::FovCamera<float>>();
+}
+
+TEST(CameraTestCase, BalProjectUnproject) {
+  test_project_unproject<basalt::BalCamera<double>>();
+}
+
+TEST(CameraTestCase, BalProjectUnprojectFloat) {
+  test_project_unproject<basalt::BalCamera<float>>();
 }
 
 /////////////////////////////////////////////////////////////////////////

@@ -38,6 +38,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
+#include <basalt/camera/bal_camera.hpp>
 #include <basalt/camera/double_sphere_camera.hpp>
 #include <basalt/camera/extended_camera.hpp>
 #include <basalt/camera/fov_camera.hpp>
