@@ -40,8 +40,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <basalt/utils/sophus_utils.hpp>
 
-#include <type_traits>
-
 namespace basalt {
 
 /// @brief Camera model used in the paper "Bundle Adjustment in the Large".
@@ -199,9 +197,8 @@ class BalCamera {
 
     p3d.normalize();
 
-    if (d_p3d_d_proj || d_p3d_d_param) {
-      static_assert("Jacobians for unprojection are not implemented");
-    }
+    BASALT_ASSERT_STREAM(d_p3d_d_proj == nullptr && d_p3d_d_param == nullptr,
+                         "Jacobians for unprojection are not implemented");
 
     return true;
   }
