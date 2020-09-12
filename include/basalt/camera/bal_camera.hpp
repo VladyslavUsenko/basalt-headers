@@ -47,6 +47,17 @@ namespace basalt {
 /// See https://grail.cs.washington.edu/projects/bal/ for details.
 /// This model has N=3 parameters \f$ \mathbf{i} = \left[f, k_1, k_2
 /// \right]^T \f$.
+///
+/// Unlike the original formulation we assume that the POSITIVE z-axis
+/// points in camera direction and thus don't include the "minus" in the
+/// perspective projection. So when loading BAL datasets you need to negate
+/// the observations.
+///
+/// A 3D point P in camera coordinates is mapped to pixel coordinates p':
+/// p  = [P / P.z]_xy    (perspective division)
+/// p' =  f * r(p) * p   (conversion to pixel coordinates)
+/// r(p) = 1.0 + k1 * ||p||^2 + k2 * ||p||^4.
+///
 /// See \ref project and \ref unproject functions for more details.
 template <typename Scalar = double>
 class BalCamera {
@@ -205,8 +216,7 @@ class BalCamera {
 
   /// @brief Set parameters from initialization
   ///
-  /// Initializes the camera model to  \f$ \left[f_x, f_y, c_x, c_y, 0.5,
-  /// \right]^T \f$
+  /// Initializes the camera model to  \f$ \left[f_x, 0, 0 \right]^T \f$
   ///
   /// @param[in] init vector [fx, fy, cx, cy]
   inline void setFromInit(const Vec4& init) {
@@ -223,8 +233,7 @@ class BalCamera {
 
   /// @brief Returns a const reference to the intrinsic parameters vector
   ///
-  /// The order is following: \f$ \left[f_x, f_y, c_x, c_y, \xi, \alpha
-  /// \right]^T \f$
+  /// The order is following: \f$ \left[f, k1, k2 \right]^T \f$
   /// @return const reference to the intrinsic parameters vector
   const VecN& getParam() const { return param; }
 
