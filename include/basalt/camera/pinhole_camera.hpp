@@ -121,10 +121,10 @@ class PinholeCamera {
     const Scalar& y = p3d[1];
     const Scalar& z = p3d[2];
 
-    if (z < Sophus::Constants<Scalar>::epsilonSqrt()) return false;
-
     proj[0] = fx * x / z + cx;
     proj[1] = fy * y / z + cy;
+
+    if (z < Sophus::Constants<Scalar>::epsilonSqrt()) return false;
 
     if (d_proj_d_p3d) {
       d_proj_d_p3d->setZero();
