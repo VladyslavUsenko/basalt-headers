@@ -104,8 +104,6 @@ class BalCamera {
     const Scalar& y = p3d[1];
     const Scalar& z = p3d[2];
 
-    if (z < Sophus::Constants<Scalar>::epsilonSqrt()) return false;
-
     const Scalar mx = x / z;
     const Scalar my = y / z;
 
@@ -118,6 +116,8 @@ class BalCamera {
     const Scalar rp = Scalar(1) + k1 * r2 + k2 * r4;
 
     proj = Vec2(f * mx * rp, f * my * rp);
+
+    if (z < Sophus::Constants<Scalar>::epsilonSqrt()) return false;
 
     if (d_proj_d_p3d) {
       d_proj_d_p3d->setZero();
