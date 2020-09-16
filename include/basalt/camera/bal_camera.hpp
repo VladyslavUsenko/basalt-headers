@@ -50,8 +50,14 @@ namespace basalt {
 ///
 /// Unlike the original formulation we assume that the POSITIVE z-axis
 /// points in camera direction and thus don't include the "minus" in the
-/// perspective projection. So when loading BAL datasets you need to negate
-/// the observations.
+/// perspective projection. You need to consider this when loading BAL data.
+///
+/// Specifically, for the camera frame we assume the positive z axis pointing
+/// forward in view direction and in the image, y is poiting down, x to the
+/// right. In the original BAL formulation, the camera points in negative z
+/// axis, y is up in the image. Thus when loading the data, we invert the y and
+/// z camera axes (y also in the image) in the perspective projection, we don't
+/// have the "minus" like in the original Snavely model.
 ///
 /// A 3D point P in camera coordinates is mapped to pixel coordinates p':
 /// p  = [P / P.z]_xy    (perspective division)
