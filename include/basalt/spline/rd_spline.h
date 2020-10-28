@@ -148,7 +148,7 @@ class RdSpline {
 
     for (int i = 0; i < _N; i++) res.pow_inv_dt[i] = pow_inv_dt[i];
 
-    for (const auto k : knots)
+    for (const auto& k : knots)
       res.knots.emplace_back(k.template cast<Scalar2>());
 
     return res;
