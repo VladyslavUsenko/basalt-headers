@@ -109,10 +109,15 @@ class BalCamera {
   /// with respect to p3d
   /// @param[out] d_proj_d_param point if not nullptr computed Jacobian of
   /// projection with respect to intrinsic parameters
+  /// @param[in] ignore_validity_check if true, computes residual and jacobians
+  /// regardless of whether projection is valid or not; the projection or
+  /// jacobians may thus contain inf or nan; the return value is not affected by
+  /// this option;
   /// @return if projection is valid
   inline bool project(const Vec4& p3d, Vec2& proj,
                       Mat24* d_proj_d_p3d = nullptr,
-                      Mat2N* d_proj_d_param = nullptr) const {
+                      Mat2N* d_proj_d_param = nullptr,
+                      const bool ignore_validity_check = false) const {
     const Scalar& f = param[0];
     const Scalar& k1 = param[1];
     const Scalar& k2 = param[2];
@@ -134,7 +139,9 @@ class BalCamera {
 
     proj = Vec2(f * mx * rp, f * my * rp);
 
-    if (z < Sophus::Constants<Scalar>::epsilonSqrt()) return false;
+    bool is_valid = z >= Sophus::Constants<Scalar>::epsilonSqrt();
+
+    if (!ignore_validity_check && !is_valid) return false;
 
     if (d_proj_d_p3d) {
       d_proj_d_p3d->setZero();
@@ -161,7 +168,7 @@ class BalCamera {
       (*d_proj_d_param)(1, 2) = f * my * r4;
     }
 
-    return true;
+    return is_valid;
   }
 
   /// @brief Unproject the point and optionally compute Jacobians
