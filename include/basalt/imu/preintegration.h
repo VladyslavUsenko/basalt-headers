@@ -333,7 +333,7 @@ class IntegratedImuMeasurement {
 
     VecN D_inv_sqrt;
     for (size_t i = 0; i < POSE_VEL_SIZE; i++) {
-      if (ldlt.vectorD()[i] < Sophus::Constants<double>::epsilon()) {
+      if (ldlt.vectorD()[i] < std::numeric_limits<double>::min()) {
         D_inv_sqrt[i] = 0;
       } else {
         D_inv_sqrt[i] = 1.0 / sqrt(ldlt.vectorD()[i]);
@@ -346,10 +346,11 @@ class IntegratedImuMeasurement {
 
   PoseVelState delta_state;  ///< Delta state
 
-  MatNN cov;                   ///< Measurement covariance
-  mutable MatNN sqrt_cov_inv;  ///< Cached inverse of measurement covariance
-  mutable bool sqrt_cov_inv_computed;  ///< If the cached inverse covariance
-                                       ///< is computed
+  MatNN cov;  ///< Measurement covariance
+  mutable MatNN
+      sqrt_cov_inv;  ///< Cached square root inverse of measurement covariance
+  mutable bool sqrt_cov_inv_computed;  ///< If the cached square root inverse
+                                       ///< covariance is computed
 
   MatN3 d_state_d_ba, d_state_d_bg;
 
