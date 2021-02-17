@@ -53,9 +53,10 @@ namespace basalt {
 /// k_1, k_2, k_3, k_4 \right]^T \f$. See \ref project and \ref unproject
 /// functions for more details. This model corresponds to fisheye camera model
 /// in OpenCV.
-template <typename Scalar = double>
+template <typename Scalar_ = double>
 class KannalaBrandtCamera4 {
  public:
+  using Scalar = Scalar_;
   static constexpr int N = 8;  ///< Number of intrinsic parameters.
 
   using Vec2 = Eigen::Matrix<Scalar, 2, 1>;

@@ -47,9 +47,10 @@ namespace basalt {
 /// This model has N=4 parameters \f$ \mathbf{i} = \left[f_x, f_y, c_x, c_y
 /// \right]^T \f$ with. See \ref
 /// project and \ref unproject functions for more details.
-template <typename Scalar = double>
+template <typename Scalar_ = double>
 class PinholeCamera {
  public:
+  using Scalar = Scalar_;
   static constexpr int N = 4;  ///< Number of intrinsic parameters.
 
   using Vec2 = Eigen::Matrix<Scalar, 2, 1>;

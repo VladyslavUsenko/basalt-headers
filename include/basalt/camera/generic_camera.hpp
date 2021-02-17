@@ -54,8 +54,10 @@ namespace basalt {
 ///
 /// Particular class of camera model is stored as \ref variant and can be casted
 /// to specific type using std::visit.
-template <typename Scalar>
+template <typename Scalar_>
 class GenericCamera {
+  using Scalar = Scalar_;
+
   using Vec2 = Eigen::Matrix<Scalar, 2, 1>;
   using Vec3 = Eigen::Matrix<Scalar, 3, 1>;
   using Vec4 = Eigen::Matrix<Scalar, 4, 1>;
