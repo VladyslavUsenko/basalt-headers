@@ -60,13 +60,13 @@ std::normal_distribution<> accel_noise_dist{0, accel_std_dev};
 TEST(ImuPreintegrationTestCase, PredictTestGT) {
   int num_knots = 15;
 
-  basalt::IntegratedImuMeasurement imu_meas(0, Eigen::Vector3d::Zero(),
-                                            Eigen::Vector3d::Zero());
+  basalt::IntegratedImuMeasurement<double> imu_meas(0, Eigen::Vector3d::Zero(),
+                                                    Eigen::Vector3d::Zero());
 
   basalt::Se3Spline<5> gt_spline(int64_t(10e9));
   gt_spline.genRandomTrajectory(num_knots);
 
-  basalt::PoseVelState state0, state1, state1_gt;
+  basalt::PoseVelState<double> state0, state1, state1_gt;
 
   state0.T_w_i = gt_spline.pose(int64_t(0));
   state0.vel_w_i = gt_spline.transVelWorld(int64_t(0));
@@ -81,7 +81,7 @@ TEST(ImuPreintegrationTestCase, PredictTestGT) {
         (gt_spline.transAccelWorld(t_ns) - basalt::constants::g);
     Eigen::Vector3d rot_vel_body = gt_spline.rotVelBody(t_ns);
 
-    basalt::ImuData data;
+    basalt::ImuData<double> data;
     data.accel = accel_body;
     data.gyro = rot_vel_body;
     data.t_ns = t_ns + dt_ns / 2;  // measurement in the middle of the interval;
@@ -123,36 +123,36 @@ TEST(ImuPreintegrationTestCase, PredictTest) {
         (gt_spline.transAccelWorld(t_ns) - basalt::constants::g);
     Eigen::Vector3d rot_vel_body = gt_spline.rotVelBody(t_ns);
 
-    basalt::ImuData data;
+    basalt::ImuData<double> data;
     data.accel = accel_body;
     data.gyro = rot_vel_body;
     data.t_ns = t_ns + dt_ns / 2;  // measurement in the middle of the interval;
 
-    basalt::PoseVelState next_state;
+    basalt::PoseVelState<double> next_state;
 
     int64_t curr_state_t_ns = t_ns - dt_ns / 2;
-    basalt::PoseVelState curr_state(curr_state_t_ns,
-                                    gt_spline.pose(curr_state_t_ns),
-                                    gt_spline.transVelWorld(curr_state_t_ns));
+    basalt::PoseVelState<double> curr_state(
+        curr_state_t_ns, gt_spline.pose(curr_state_t_ns),
+        gt_spline.transVelWorld(curr_state_t_ns));
 
-    basalt::IntegratedImuMeasurement::MatNN F;
-    basalt::IntegratedImuMeasurement::MatN3 A, G;
+    basalt::IntegratedImuMeasurement<double>::MatNN F;
+    basalt::IntegratedImuMeasurement<double>::MatN3 A, G;
 
-    basalt::IntegratedImuMeasurement::propagateState(curr_state, data,
-                                                     next_state, &F, &A, &G);
+    basalt::IntegratedImuMeasurement<double>::propagateState(
+        curr_state, data, next_state, &F, &A, &G);
 
     {
-      basalt::PoseVelState::VecN x0;
+      basalt::PoseVelState<double>::VecN x0;
       x0.setZero();
       test_jacobian(
           "F_TEST", F,
-          [&](const basalt::PoseVelState::VecN& x) {
-            basalt::PoseVelState curr_state1 = curr_state;
+          [&](const basalt::PoseVelState<double>::VecN& x) {
+            basalt::PoseVelState<double> curr_state1 = curr_state;
             curr_state1.applyInc(x);
-            basalt::PoseVelState next_state1;
+            basalt::PoseVelState<double> next_state1;
 
-            basalt::IntegratedImuMeasurement::propagateState(curr_state1, data,
-                                                             next_state1);
+            basalt::IntegratedImuMeasurement<double>::propagateState(
+                curr_state1, data, next_state1);
 
             return next_state.diff(next_state1);
           },
@@ -165,12 +165,12 @@ TEST(ImuPreintegrationTestCase, PredictTest) {
       test_jacobian(
           "A_TEST", A,
           [&](const Eigen::Vector3d& x) {
-            basalt::ImuData data1 = data;
+            basalt::ImuData<double> data1 = data;
             data1.accel += x;
-            basalt::PoseVelState next_state1;
+            basalt::PoseVelState<double> next_state1;
 
-            basalt::IntegratedImuMeasurement::propagateState(curr_state, data1,
-                                                             next_state1);
+            basalt::IntegratedImuMeasurement<double>::propagateState(
+                curr_state, data1, next_state1);
 
             return next_state.diff(next_state1);
           },
@@ -183,12 +183,12 @@ TEST(ImuPreintegrationTestCase, PredictTest) {
       test_jacobian(
           "G_TEST", G,
           [&](const Eigen::Vector3d& x) {
-            basalt::ImuData data1 = data;
+            basalt::ImuData<double> data1 = data;
             data1.gyro += x;
-            basalt::PoseVelState next_state1;
+            basalt::PoseVelState<double> next_state1;
 
-            basalt::IntegratedImuMeasurement::propagateState(curr_state, data1,
-                                                             next_state1);
+            basalt::IntegratedImuMeasurement<double>::propagateState(
+                curr_state, data1, next_state1);
 
             return next_state.diff(next_state1);
           },
@@ -204,12 +204,12 @@ TEST(ImuPreintegrationTestCase, ResidualTest) {
   bg = Eigen::Vector3d::Random() / 100;
   ba = Eigen::Vector3d::Random() / 10;
 
-  basalt::IntegratedImuMeasurement imu_meas(0, bg, ba);
+  basalt::IntegratedImuMeasurement<double> imu_meas(0, bg, ba);
 
   basalt::Se3Spline<5> gt_spline(int64_t(10e9));
   gt_spline.genRandomTrajectory(num_knots);
 
-  basalt::PoseVelState state0, state1, state1_gt;
+  basalt::PoseVelState<double> state0, state1, state1_gt;
 
   state0.T_w_i = gt_spline.pose(int64_t(0));
   state0.vel_w_i = gt_spline.transVelWorld(int64_t(0));
@@ -224,7 +224,7 @@ TEST(ImuPreintegrationTestCase, ResidualTest) {
         (gt_spline.transAccelWorld(t_ns) - basalt::constants::g);
     Eigen::Vector3d rot_vel_body = gt_spline.rotVelBody(t_ns);
 
-    basalt::ImuData data;
+    basalt::ImuData<double> data;
     data.accel = accel_body + ba;
     data.gyro = rot_vel_body + bg;
     data.t_ns = t_ns + dt_ns / 2;  // measurement in the middle of the interval;
@@ -235,7 +235,7 @@ TEST(ImuPreintegrationTestCase, ResidualTest) {
   state1_gt.T_w_i = gt_spline.pose(imu_meas.get_dt_ns());
   state1_gt.vel_w_i = gt_spline.transVelWorld(imu_meas.get_dt_ns());
 
-  basalt::PoseVelState::VecN res_gt =
+  basalt::PoseVelState<double>::VecN res_gt =
       imu_meas.residual(state0, basalt::constants::g, state1_gt, bg, ba);
 
   EXPECT_LE(res_gt.array().abs().maxCoeff(), 1e-6)
@@ -246,19 +246,20 @@ TEST(ImuPreintegrationTestCase, ResidualTest) {
   state1.vel_w_i = gt_spline.transVelWorld(imu_meas.get_dt_ns()) +
                    Sophus::Vector3d::Random() / 10;
 
-  basalt::IntegratedImuMeasurement::MatNN d_res_d_state0, d_res_d_state1;
-  basalt::IntegratedImuMeasurement::MatN3 d_res_d_bg, d_res_d_ba;
+  basalt::IntegratedImuMeasurement<double>::MatNN d_res_d_state0,
+      d_res_d_state1;
+  basalt::IntegratedImuMeasurement<double>::MatN3 d_res_d_bg, d_res_d_ba;
 
   imu_meas.residual(state0, basalt::constants::g, state1, bg, ba,
                     &d_res_d_state0, &d_res_d_state1, &d_res_d_bg, &d_res_d_ba);
 
   {
-    basalt::PoseVelState::VecN x0;
+    basalt::PoseVelState<double>::VecN x0;
     x0.setZero();
     test_jacobian(
         "d_res_d_state0", d_res_d_state0,
-        [&](const basalt::PoseVelState::VecN& x) {
-          basalt::PoseVelState state0_new = state0;
+        [&](const basalt::PoseVelState<double>::VecN& x) {
+          basalt::PoseVelState<double> state0_new = state0;
           state0_new.applyInc(x);
 
           return imu_meas.residual(state0_new, basalt::constants::g, state1, bg,
@@ -268,12 +269,12 @@ TEST(ImuPreintegrationTestCase, ResidualTest) {
   }
 
   {
-    basalt::PoseVelState::VecN x0;
+    basalt::PoseVelState<double>::VecN x0;
     x0.setZero();
     test_jacobian(
         "d_res_d_state1", d_res_d_state1,
-        [&](const basalt::PoseVelState::VecN& x) {
-          basalt::PoseVelState state1_new = state1;
+        [&](const basalt::PoseVelState<double>::VecN& x) {
+          basalt::PoseVelState<double> state1_new = state1;
           state1_new.applyInc(x);
 
           return imu_meas.residual(state0, basalt::constants::g, state1_new, bg,
@@ -336,10 +337,10 @@ TEST(ImuPreintegrationTestCase, BiasTest) {
     timestamps_vec.emplace_back(t_ns + dt_ns / 2);
   }
 
-  basalt::IntegratedImuMeasurement imu_meas(0, bg, ba);
+  basalt::IntegratedImuMeasurement<double> imu_meas(0, bg, ba);
 
   for (size_t i = 0; i < timestamps_vec.size(); i++) {
-    basalt::ImuData data;
+    basalt::ImuData<double> data;
     data.accel = accel_data_vec[i];
     data.gyro = gyro_data_vec[i];
     data.t_ns = timestamps_vec[i];
@@ -347,9 +348,9 @@ TEST(ImuPreintegrationTestCase, BiasTest) {
     imu_meas.integrate(data, Eigen::Vector3d::Ones(), Eigen::Vector3d::Ones());
   }
 
-  basalt::IntegratedImuMeasurement::MatN3 d_res_d_ba, d_res_d_bg;
+  basalt::IntegratedImuMeasurement<double>::MatN3 d_res_d_ba, d_res_d_bg;
 
-  basalt::PoseVelState delta_state = imu_meas.getDeltaState();
+  basalt::PoseVelState<double> delta_state = imu_meas.getDeltaState();
 
   {
     Sophus::Vector3d x0;
@@ -357,10 +358,10 @@ TEST(ImuPreintegrationTestCase, BiasTest) {
     test_jacobian(
         "d_res_d_bg", imu_meas.get_d_state_d_bg(),
         [&](const Sophus::Vector3d& x) {
-          basalt::IntegratedImuMeasurement imu_meas1(0, bg + x, ba);
+          basalt::IntegratedImuMeasurement<double> imu_meas1(0, bg + x, ba);
 
           for (size_t i = 0; i < timestamps_vec.size(); i++) {
-            basalt::ImuData data;
+            basalt::ImuData<double> data;
             data.accel = accel_data_vec[i];
             data.gyro = gyro_data_vec[i];
             data.t_ns = timestamps_vec[i];
@@ -369,7 +370,7 @@ TEST(ImuPreintegrationTestCase, BiasTest) {
                                 Eigen::Vector3d::Ones());
           }
 
-          basalt::PoseVelState delta_state1 = imu_meas1.getDeltaState();
+          basalt::PoseVelState<double> delta_state1 = imu_meas1.getDeltaState();
           return delta_state.diff(delta_state1);
         },
         x0);
@@ -381,10 +382,10 @@ TEST(ImuPreintegrationTestCase, BiasTest) {
     test_jacobian(
         "d_res_d_ba", imu_meas.get_d_state_d_ba(),
         [&](const Sophus::Vector3d& x) {
-          basalt::IntegratedImuMeasurement imu_meas1(0, bg, ba + x);
+          basalt::IntegratedImuMeasurement<double> imu_meas1(0, bg, ba + x);
 
           for (size_t i = 0; i < timestamps_vec.size(); i++) {
-            basalt::ImuData data;
+            basalt::ImuData<double> data;
             data.accel = accel_data_vec[i];
             data.gyro = gyro_data_vec[i];
             data.t_ns = timestamps_vec[i];
@@ -393,7 +394,7 @@ TEST(ImuPreintegrationTestCase, BiasTest) {
                                 Eigen::Vector3d::Ones());
           }
 
-          basalt::PoseVelState delta_state1 = imu_meas1.getDeltaState();
+          basalt::PoseVelState<double> delta_state1 = imu_meas1.getDeltaState();
           return delta_state.diff(delta_state1);
         },
         x0);
@@ -429,10 +430,10 @@ TEST(ImuPreintegrationTestCase, ResidualBiasTest) {
     timestamps_vec.emplace_back(t_ns + dt_ns / 2);
   }
 
-  basalt::IntegratedImuMeasurement imu_meas(0, bg, ba);
+  basalt::IntegratedImuMeasurement<double> imu_meas(0, bg, ba);
 
   for (size_t i = 0; i < timestamps_vec.size(); i++) {
-    basalt::ImuData data;
+    basalt::ImuData<double> data;
     data.accel = accel_data_vec[i];
     data.gyro = gyro_data_vec[i];
     data.t_ns = timestamps_vec[i];
@@ -440,7 +441,7 @@ TEST(ImuPreintegrationTestCase, ResidualBiasTest) {
     imu_meas.integrate(data, Eigen::Vector3d::Ones(), Eigen::Vector3d::Ones());
   }
 
-  basalt::PoseVelState state0, state1;
+  basalt::PoseVelState<double> state0, state1;
 
   state0.T_w_i = gt_spline.pose(int64_t(0));
   state0.vel_w_i = gt_spline.transVelWorld(int64_t(0));
@@ -453,17 +454,17 @@ TEST(ImuPreintegrationTestCase, ResidualBiasTest) {
   Eigen::Vector3d bg_test = bg + Eigen::Vector3d::Random() / 1000;
   Eigen::Vector3d ba_test = ba + Eigen::Vector3d::Random() / 100;
 
-  basalt::IntegratedImuMeasurement::MatN3 d_res_d_ba, d_res_d_bg;
+  basalt::IntegratedImuMeasurement<double>::MatN3 d_res_d_ba, d_res_d_bg;
 
-  basalt::PoseVelState::VecN res =
+  basalt::PoseVelState<double>::VecN res =
       imu_meas.residual(state0, basalt::constants::g, state1, bg_test, ba_test,
                         nullptr, nullptr, &d_res_d_bg, &d_res_d_ba);
 
   {
-    basalt::IntegratedImuMeasurement imu_meas1(0, bg_test, ba_test);
+    basalt::IntegratedImuMeasurement<double> imu_meas1(0, bg_test, ba_test);
 
     for (size_t i = 0; i < timestamps_vec.size(); i++) {
-      basalt::ImuData data;
+      basalt::ImuData<double> data;
       data.accel = accel_data_vec[i];
       data.gyro = gyro_data_vec[i];
       data.t_ns = timestamps_vec[i];
@@ -472,7 +473,7 @@ TEST(ImuPreintegrationTestCase, ResidualBiasTest) {
                           Eigen::Vector3d::Ones());
     }
 
-    basalt::PoseVelState::VecN res1 = imu_meas1.residual(
+    basalt::PoseVelState<double>::VecN res1 = imu_meas1.residual(
         state0, basalt::constants::g, state1, bg_test, ba_test);
 
     EXPECT_TRUE(res.isApprox(res1, 1e-4))
@@ -488,10 +489,11 @@ TEST(ImuPreintegrationTestCase, ResidualBiasTest) {
     test_jacobian(
         "d_res_d_ba", d_res_d_ba,
         [&](const Sophus::Vector3d& x) {
-          basalt::IntegratedImuMeasurement imu_meas1(0, bg_test, ba_test + x);
+          basalt::IntegratedImuMeasurement<double> imu_meas1(0, bg_test,
+                                                             ba_test + x);
 
           for (size_t i = 0; i < timestamps_vec.size(); i++) {
-            basalt::ImuData data;
+            basalt::ImuData<double> data;
             data.accel = accel_data_vec[i];
             data.gyro = gyro_data_vec[i];
             data.t_ns = timestamps_vec[i];
@@ -512,10 +514,11 @@ TEST(ImuPreintegrationTestCase, ResidualBiasTest) {
     test_jacobian(
         "d_res_d_bg", d_res_d_bg,
         [&](const Sophus::Vector3d& x) {
-          basalt::IntegratedImuMeasurement imu_meas1(0, bg_test + x, ba_test);
+          basalt::IntegratedImuMeasurement<double> imu_meas1(0, bg_test + x,
+                                                             ba_test);
 
           for (size_t i = 0; i < timestamps_vec.size(); i++) {
-            basalt::ImuData data;
+            basalt::ImuData<double> data;
             data.accel = accel_data_vec[i];
             data.gyro = gyro_data_vec[i];
             data.t_ns = timestamps_vec[i];
@@ -560,11 +563,11 @@ TEST(ImuPreintegrationTestCase, CovarianceTest) {
   accel_cov.setConstant(accel_std_dev * accel_std_dev);
   gyro_cov.setConstant(gyro_std_dev * gyro_std_dev);
 
-  basalt::IntegratedImuMeasurement imu_meas(0, Eigen::Vector3d::Zero(),
-                                            Eigen::Vector3d::Zero());
+  basalt::IntegratedImuMeasurement<double> imu_meas(0, Eigen::Vector3d::Zero(),
+                                                    Eigen::Vector3d::Zero());
 
   for (size_t i = 0; i < timestamps_vec.size(); i++) {
-    basalt::ImuData data;
+    basalt::ImuData<double> data;
     data.accel = accel_data_vec[i];
     data.gyro = gyro_data_vec[i];
     data.t_ns = timestamps_vec[i];
@@ -577,18 +580,18 @@ TEST(ImuPreintegrationTestCase, CovarianceTest) {
 
   // std::cerr << "cov\n" << imu_meas.get_cov() << std::endl;
 
-  basalt::PoseVelState delta_state = imu_meas.getDeltaState();
+  basalt::PoseVelState<double> delta_state = imu_meas.getDeltaState();
 
-  basalt::IntegratedImuMeasurement::MatNN cov_computed;
+  basalt::IntegratedImuMeasurement<double>::MatNN cov_computed;
   cov_computed.setZero();
 
   const int num_samples = 1000;
   for (int i = 0; i < num_samples; i++) {
-    basalt::IntegratedImuMeasurement imu_meas1(0, Eigen::Vector3d::Zero(),
-                                               Eigen::Vector3d::Zero());
+    basalt::IntegratedImuMeasurement<double> imu_meas1(
+        0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
 
     for (size_t i = 0; i < timestamps_vec.size(); i++) {
-      basalt::ImuData data;
+      basalt::ImuData<double> data;
       data.accel = accel_data_vec[i];
       data.gyro = gyro_data_vec[i];
       data.t_ns = timestamps_vec[i];
@@ -604,9 +607,9 @@ TEST(ImuPreintegrationTestCase, CovarianceTest) {
       imu_meas1.integrate(data, accel_cov, gyro_cov);
     }
 
-    basalt::PoseVelState delta_state1 = imu_meas1.getDeltaState();
+    basalt::PoseVelState<double> delta_state1 = imu_meas1.getDeltaState();
 
-    basalt::PoseVelState::VecN diff = delta_state.diff(delta_state1);
+    basalt::PoseVelState<double>::VecN diff = delta_state.diff(delta_state1);
 
     cov_computed += diff * diff.transpose();
   }
@@ -659,12 +662,12 @@ TEST(ImuPreintegrationTestCase, RandomWalkTest) {
 }
 
 TEST(ImuPreintegrationTestCase, ComputeCovInv) {
-  using MatNN = basalt::IntegratedImuMeasurement::MatNN;
+  using MatNN = basalt::IntegratedImuMeasurement<double>::MatNN;
 
   int num_knots = 15;
 
-  basalt::IntegratedImuMeasurement imu_meas(0, Eigen::Vector3d::Zero(),
-                                            Eigen::Vector3d::Zero());
+  basalt::IntegratedImuMeasurement<double> imu_meas(0, Eigen::Vector3d::Zero(),
+                                                    Eigen::Vector3d::Zero());
 
   basalt::Se3Spline<5> gt_spline(int64_t(10e9));
   gt_spline.genRandomTrajectory(num_knots);
@@ -679,7 +682,7 @@ TEST(ImuPreintegrationTestCase, ComputeCovInv) {
         (gt_spline.transAccelWorld(t_ns) - basalt::constants::g);
     Eigen::Vector3d rot_vel_body = gt_spline.rotVelBody(t_ns);
 
-    basalt::ImuData data;
+    basalt::ImuData<double> data;
     data.accel = accel_body;
     data.gyro = rot_vel_body;
     data.t_ns = t_ns + dt_ns / 2;  // measurement in the middle of the interval;
@@ -698,12 +701,12 @@ TEST(ImuPreintegrationTestCase, ComputeCovInv) {
 }
 
 TEST(ImuPreintegrationTestCase, ComputeSqrtCovInv) {
-  using MatNN = basalt::IntegratedImuMeasurement::MatNN;
+  using MatNN = basalt::IntegratedImuMeasurement<double>::MatNN;
 
   int num_knots = 15;
 
-  basalt::IntegratedImuMeasurement imu_meas(0, Eigen::Vector3d::Zero(),
-                                            Eigen::Vector3d::Zero());
+  basalt::IntegratedImuMeasurement<double> imu_meas(0, Eigen::Vector3d::Zero(),
+                                                    Eigen::Vector3d::Zero());
 
   basalt::Se3Spline<5> gt_spline(int64_t(10e9));
   gt_spline.genRandomTrajectory(num_knots);
@@ -718,7 +721,7 @@ TEST(ImuPreintegrationTestCase, ComputeSqrtCovInv) {
         (gt_spline.transAccelWorld(t_ns) - basalt::constants::g);
     Eigen::Vector3d rot_vel_body = gt_spline.rotVelBody(t_ns);
 
-    basalt::ImuData data;
+    basalt::ImuData<double> data;
     data.accel = accel_body;
     data.gyro = rot_vel_body;
     data.t_ns = t_ns + dt_ns / 2;  // measurement in the middle of the interval;
