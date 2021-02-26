@@ -45,22 +45,45 @@ namespace basalt {
 
 #define UNUSED(x) (void)(x)
 
-inline void assertion_failed(char const* expr, char const* function,
-                             char const* file, long line) {
+#define BASALT_ATTRIBUTE_NORETURN __attribute__((noreturn))
+
+inline BASALT_ATTRIBUTE_NORETURN void assertion_failed(char const* expr,
+                                                       char const* function,
+                                                       char const* file,
+                                                       long line) {
   std::cerr << "***** Assertion (" << expr << ") failed in " << function
             << ":\n"
             << file << ':' << line << ":" << std::endl;
   std::abort();
 }
 
-inline void assertion_failed_msg(char const* expr, char const* msg,
-                                 char const* function, char const* file,
-                                 long line) {
+inline BASALT_ATTRIBUTE_NORETURN void assertion_failed_msg(char const* expr,
+                                                           char const* msg,
+                                                           char const* function,
+                                                           char const* file,
+                                                           long line) {
   std::cerr << "***** Assertion (" << expr << ") failed in " << function
             << ":\n"
             << file << ':' << line << ": " << msg << std::endl;
   std::abort();
 }
+
+inline BASALT_ATTRIBUTE_NORETURN void log_fatal(char const* function,
+                                                char const* file, long line) {
+  std::cerr << "***** Fatal error in " << function << ":\n"
+            << file << ':' << line << ":" << std::endl;
+  std::abort();
+}
+
+inline BASALT_ATTRIBUTE_NORETURN void log_fatal_msg(char const* msg,
+                                                    char const* function,
+                                                    char const* file,
+                                                    long line) {
+  std::cerr << "***** Fatal error in " << function << ":\n"
+            << file << ':' << line << ": " << msg << std::endl;
+  std::abort();
+}
+
 }  // namespace basalt
 
 #define BASALT_LIKELY(x) __builtin_expect(x, 1)
@@ -95,3 +118,10 @@ inline void assertion_failed_msg(char const* expr, char const* msg,
                                      __LINE__)))
 
 #endif
+
+#define BASALT_LOG_FATAL(msg) \
+  ::basalt::log_fatal_msg(msg, __PRETTY_FUNCTION__, __FILE__, __LINE__)
+
+#define BASALT_LOG_FATAL_STREAM(msg) \
+  (std::cerr << msg << std::endl,    \
+   ::basalt::log_fatal(__PRETTY_FUNCTION__, __FILE__, __LINE__))
