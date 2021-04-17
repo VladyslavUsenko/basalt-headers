@@ -129,7 +129,7 @@ class IntegratedImuMeasurement {
   }
 
   /// @brief Default constructor.
-  IntegratedImuMeasurement() : start_t_ns(0), cov_inv_computed(false) {
+  IntegratedImuMeasurement() : start_t_ns(0), sqrt_cov_inv_computed(false) {
     cov.setZero();
     d_state_d_ba.setZero();
     d_state_d_bg.setZero();
@@ -142,7 +142,7 @@ class IntegratedImuMeasurement {
                            const Eigen::Vector3d& bias_gyro_lin,
                            const Eigen::Vector3d& bias_accel_lin)
       : start_t_ns(start_t_ns),
-        cov_inv_computed(false),
+        sqrt_cov_inv_computed(false),
         bias_gyro_lin(bias_gyro_lin),
         bias_accel_lin(bias_accel_lin) {
     cov.setZero();
@@ -172,7 +172,7 @@ class IntegratedImuMeasurement {
     delta_state = new_state;
     cov = F * cov * F.transpose() + A * accel_cov.asDiagonal() * A.transpose() +
           G * gyro_cov.asDiagonal() * G.transpose();
-    cov_inv_computed = false;
+    sqrt_cov_inv_computed = false;
 
     d_state_d_ba = -A + F * d_state_d_ba;
     d_state_d_bg = -G + F * d_state_d_bg;
@@ -289,14 +289,23 @@ class IntegratedImuMeasurement {
   int64_t get_start_t_ns() const { return start_t_ns; }
 
   /// @brief Inverse of the measurement covariance matrix
-  inline const MatNN& get_cov_inv() const {
-    if (!cov_inv_computed) {
-      cov_inv.setIdentity();
-      cov.ldlt().solveInPlace(cov_inv);
-      cov_inv_computed = true;
+  inline const MatNN get_cov_inv() const {
+    if (!sqrt_cov_inv_computed) {
+      compute_sqrt_cov_inv();
+      sqrt_cov_inv_computed = true;
     }
 
-    return cov_inv;
+    return sqrt_cov_inv.transpose() * sqrt_cov_inv;
+  }
+
+  /// @brief Square root inverse of the measurement covariance matrix
+  inline const MatNN& get_sqrt_cov_inv() const {
+    if (!sqrt_cov_inv_computed) {
+      compute_sqrt_cov_inv();
+      sqrt_cov_inv_computed = true;
+    }
+
+    return sqrt_cov_inv;
   }
 
   /// @brief Measurement covariance matrix
@@ -314,14 +323,34 @@ class IntegratedImuMeasurement {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
  private:
+  /// @brief Helper function to compute square root of the inverse covariance
+  void compute_sqrt_cov_inv() const {
+    sqrt_cov_inv.setIdentity();
+    auto ldlt = cov.ldlt();
+
+    sqrt_cov_inv = ldlt.transpositionsP() * sqrt_cov_inv;
+    ldlt.matrixL().solveInPlace(sqrt_cov_inv);
+
+    VecN D_inv_sqrt;
+    for (size_t i = 0; i < POSE_VEL_SIZE; i++) {
+      if (ldlt.vectorD()[i] < std::numeric_limits<double>::min()) {
+        D_inv_sqrt[i] = 0;
+      } else {
+        D_inv_sqrt[i] = 1.0 / sqrt(ldlt.vectorD()[i]);
+      }
+    }
+    sqrt_cov_inv = D_inv_sqrt.asDiagonal() * sqrt_cov_inv;
+  }
+
   int64_t start_t_ns;  ///< Integration start time in nanoseconds
 
   PoseVelState delta_state;  ///< Delta state
 
-  MatNN cov;              ///< Measurement covariance
-  mutable MatNN cov_inv;  ///< Cached inverse of measurement covariance
-  mutable bool
-      cov_inv_computed;  ///< If the cached inverse covariance is computed
+  MatNN cov;  ///< Measurement covariance
+  mutable MatNN
+      sqrt_cov_inv;  ///< Cached square root inverse of measurement covariance
+  mutable bool sqrt_cov_inv_computed;  ///< If the cached square root inverse
+                                       ///< covariance is computed
 
   MatN3 d_state_d_ba, d_state_d_bg;
 

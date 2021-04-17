@@ -657,3 +657,84 @@ TEST(ImuPreintegrationTestCase, RandomWalkTest) {
   EXPECT_NEAR(gyro_std_dev * std::sqrt(period_dt), std, 1e-4);
   EXPECT_NEAR(gyro_std_dev * gyro_std_dev * period_dt, var, 1e-6);
 }
+
+TEST(ImuPreintegrationTestCase, ComputeCovInv) {
+  using MatNN = basalt::IntegratedImuMeasurement::MatNN;
+
+  int num_knots = 15;
+
+  basalt::IntegratedImuMeasurement imu_meas(0, Eigen::Vector3d::Zero(),
+                                            Eigen::Vector3d::Zero());
+
+  basalt::Se3Spline<5> gt_spline(int64_t(10e9));
+  gt_spline.genRandomTrajectory(num_knots);
+
+  int64_t dt_ns = 1e7;
+  for (int64_t t_ns = dt_ns / 2;
+       t_ns < int64_t(20e9);  //  gt_spline.maxTimeNs() - int64_t(1e9);
+       t_ns += dt_ns) {
+    Sophus::SE3d pose = gt_spline.pose(t_ns);
+    Eigen::Vector3d accel_body =
+        pose.so3().inverse() *
+        (gt_spline.transAccelWorld(t_ns) - basalt::constants::g);
+    Eigen::Vector3d rot_vel_body = gt_spline.rotVelBody(t_ns);
+
+    basalt::ImuData data;
+    data.accel = accel_body;
+    data.gyro = rot_vel_body;
+    data.t_ns = t_ns + dt_ns / 2;  // measurement in the middle of the interval;
+
+    imu_meas.integrate(data, 0.1 * Eigen::Vector3d::Ones(),
+                       0.01 * Eigen::Vector3d::Ones());
+  }
+
+  MatNN cov_inv_computed = imu_meas.get_cov_inv();
+  MatNN cov_inv_gt = imu_meas.get_cov().inverse();
+
+  EXPECT_TRUE(cov_inv_computed.isApprox(cov_inv_gt, 1e-12))
+      << "cov_inv_computed\n"
+      << cov_inv_computed << "\ncov_inv_gt\n"
+      << cov_inv_gt;
+}
+
+TEST(ImuPreintegrationTestCase, ComputeSqrtCovInv) {
+  using MatNN = basalt::IntegratedImuMeasurement::MatNN;
+
+  int num_knots = 15;
+
+  basalt::IntegratedImuMeasurement imu_meas(0, Eigen::Vector3d::Zero(),
+                                            Eigen::Vector3d::Zero());
+
+  basalt::Se3Spline<5> gt_spline(int64_t(10e9));
+  gt_spline.genRandomTrajectory(num_knots);
+
+  int64_t dt_ns = 1e7;
+  for (int64_t t_ns = dt_ns / 2;
+       t_ns < int64_t(20e9);  //  gt_spline.maxTimeNs() - int64_t(1e9);
+       t_ns += dt_ns) {
+    Sophus::SE3d pose = gt_spline.pose(t_ns);
+    Eigen::Vector3d accel_body =
+        pose.so3().inverse() *
+        (gt_spline.transAccelWorld(t_ns) - basalt::constants::g);
+    Eigen::Vector3d rot_vel_body = gt_spline.rotVelBody(t_ns);
+
+    basalt::ImuData data;
+    data.accel = accel_body;
+    data.gyro = rot_vel_body;
+    data.t_ns = t_ns + dt_ns / 2;  // measurement in the middle of the interval;
+
+    imu_meas.integrate(data, 0.1 * Eigen::Vector3d::Ones(),
+                       0.01 * Eigen::Vector3d::Ones());
+  }
+
+  MatNN sqrt_cov_inv_computed = imu_meas.get_sqrt_cov_inv();
+  MatNN cov_inv_computed =
+      sqrt_cov_inv_computed.transpose() * sqrt_cov_inv_computed;
+
+  MatNN cov_inv_gt = imu_meas.get_cov().inverse();
+
+  EXPECT_TRUE(cov_inv_computed.isApprox(cov_inv_gt, 1e-12))
+      << "cov_inv_computed\n"
+      << cov_inv_computed << "\ncov_inv_gt\n"
+      << cov_inv_gt;
+}
