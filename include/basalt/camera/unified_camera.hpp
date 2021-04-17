@@ -141,7 +141,7 @@ class UnifiedCamera {
     // Check if valid
     const Scalar w = alpha > Scalar(0.5) ? (Scalar(1) - alpha) / alpha
                                          : alpha / (Scalar(1) - alpha);
-    if (z <= -w * rho) return false;
+    const bool is_valid = (z > -w * rho);
 
     if (d_proj_d_p3d) {
       const Scalar denom = norm * norm * rho;
@@ -179,7 +179,7 @@ class UnifiedCamera {
       (*d_proj_d_param)(1, 4) = tmp_y * tmp4;
     }
 
-    return true;
+    return is_valid;
   }
 
   /// @brief Unproject the point and optionally compute Jacobians
@@ -235,9 +235,11 @@ class UnifiedCamera {
     const Scalar r2 = mx * mx + my * my;
 
     // Check if valid
-    if (alpha > Scalar(0.5)) {
-      if (r2 >= Scalar(1) / ((Scalar(2) * alpha - Scalar(1)))) return false;
-    }
+    const bool is_valid =
+        (alpha > Scalar(0.5)) &&
+                (r2 >= Scalar(1) / ((Scalar(2) * alpha - Scalar(1))))
+            ? false
+            : true;
 
     const Scalar xi2 = xi * xi;
 
@@ -301,7 +303,7 @@ class UnifiedCamera {
       }
     }
 
-    return true;
+    return is_valid;
   }
 
   /// @brief Set parameters from initialization

@@ -137,6 +137,7 @@ class KannalaBrandtCamera4 {
     const Scalar r2 = x * x + y * y;
     const Scalar r = sqrt(r2);
 
+    bool is_valid = true;
     if (r > Sophus::Constants<Scalar>::epsilonSqrt()) {
       const Scalar theta = atan2(r, z);
       const Scalar theta2 = theta * theta;
@@ -218,7 +219,7 @@ class KannalaBrandtCamera4 {
 
     } else {
       // Check that the point is not cloze to zero norm
-      if (z < Sophus::Constants<Scalar>::epsilonSqrt()) return false;
+      if (z < Sophus::Constants<Scalar>::epsilonSqrt()) is_valid = false;
 
       proj[0] = fx * x / z + cx;
       proj[1] = fy * y / z + cy;
@@ -243,7 +244,7 @@ class KannalaBrandtCamera4 {
       }
     }
 
-    return true;
+    return is_valid;
   }
 
   /// @brief solve for theta using Newton's method.
