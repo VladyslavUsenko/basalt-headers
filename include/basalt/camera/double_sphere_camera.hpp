@@ -146,7 +146,8 @@ class DoubleSphereCamera {
                                           : alpha / (Scalar(1) - alpha);
     const Scalar w2 =
         (w1 + xi) / sqrt(Scalar(2) * w1 * xi + xi * xi + Scalar(1));
-    if (z <= -w2 * d1) return false;
+
+    const bool is_valid = (z > -w2 * d1);
 
     const Scalar k = xi * d1 + z;
     const Scalar kk = k * k;
@@ -207,7 +208,7 @@ class DoubleSphereCamera {
       }
     }
 
-    return true;
+    return is_valid;
   }
 
   /// @brief Unproject the point and optionally compute Jacobians
@@ -258,9 +259,11 @@ class DoubleSphereCamera {
 
     const Scalar r2 = mx * mx + my * my;
 
-    if (alpha > Scalar(0.5)) {
-      if (r2 >= Scalar(1) / (Scalar(2) * alpha - Scalar(1))) return false;
-    }
+    const bool is_valid =
+        alpha > Scalar(0.5) &&
+                (r2 >= Scalar(1) / (Scalar(2) * alpha - Scalar(1)))
+            ? false
+            : true;
 
     const Scalar xi2_2 = alpha * alpha;
     const Scalar xi1_2 = xi * xi;
@@ -357,7 +360,7 @@ class DoubleSphereCamera {
       }
     }
 
-    return true;
+    return is_valid;
   }
 
   /// @brief Set parameters from initialization
