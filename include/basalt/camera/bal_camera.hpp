@@ -134,7 +134,7 @@ class BalCamera {
 
     proj = Vec2(f * mx * rp, f * my * rp);
 
-    if (z < Sophus::Constants<Scalar>::epsilonSqrt()) return false;
+    const bool is_valid = z >= Sophus::Constants<Scalar>::epsilonSqrt();
 
     if (d_proj_d_p3d) {
       d_proj_d_p3d->setZero();
@@ -161,7 +161,7 @@ class BalCamera {
       (*d_proj_d_param)(1, 2) = f * my * r4;
     }
 
-    return true;
+    return is_valid;
   }
 
   /// @brief Unproject the point and optionally compute Jacobians

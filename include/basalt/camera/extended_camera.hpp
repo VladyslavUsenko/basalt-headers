@@ -143,7 +143,7 @@ class ExtendedUnifiedCamera {
     // Check if valid
     const Scalar w = alpha > Scalar(0.5) ? (Scalar(1) - alpha) / alpha
                                          : alpha / (Scalar(1) - alpha);
-    if (z <= -w * rho) return false;
+    const bool is_valid = (z > -w * rho);
 
     if (d_proj_d_p3d) {
       const Scalar denom = norm * norm * rho;
@@ -186,7 +186,7 @@ class ExtendedUnifiedCamera {
       (*d_proj_d_param)(1, 5) = tmp_y * tmp5;
     }
 
-    return true;
+    return is_valid;
   }
 
   /// @brief Unproject the point and optionally compute Jacobians
@@ -235,9 +235,10 @@ class ExtendedUnifiedCamera {
     const Scalar gamma = Scalar(1) - alpha;
 
     // Check if valid
-    if (alpha > Scalar(0.5)) {
-      if (r2 >= Scalar(1) / ((alpha - gamma) * beta)) return false;
-    }
+    const bool is_valid =
+        alpha > Scalar(0.5) && (r2 >= Scalar(1) / ((alpha - gamma) * beta))
+            ? false
+            : true;
 
     const Scalar tmp1 = (Scalar(1) - alpha * alpha * beta * r2);
     const Scalar tmp_sqrt = sqrt(Scalar(1) - (alpha - gamma) * beta * r2);
@@ -313,7 +314,7 @@ class ExtendedUnifiedCamera {
       }
     }
 
-    return true;
+    return is_valid;
   }
 
   /// @brief Set parameters from initialization
