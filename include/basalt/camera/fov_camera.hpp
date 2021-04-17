@@ -141,9 +141,10 @@ class FovCamera {
     Scalar tmp = (z2 + Scalar(4) * tanwhalf * tanwhalf * r2);
     Scalar d_atan_wrd_d_w = Scalar(2) * r * d_tanwhalf_d_w * z / tmp;
 
+    bool is_valid = true;
     if (w > Sophus::Constants<Scalar>::epsilonSqrt()) {
       if (r2 < Sophus::Constants<Scalar>::epsilonSqrt()) {
-        if (z < Sophus::Constants<Scalar>::epsilonSqrt()) return false;
+        if (z < Sophus::Constants<Scalar>::epsilonSqrt()) is_valid = false;
 
         rd = Scalar(2) * tanwhalf / w;
         d_rd_d_w = Scalar(2) * (d_tanwhalf_d_w * w - tanwhalf) / (w * w);
@@ -192,7 +193,7 @@ class FovCamera {
       (*d_r_d_param)(1, 4) = fy * y * d_rd_d_w;
     }
 
-    return true;
+    return is_valid;
   }
 
   /// @brief Unproject the point and optionally compute Jacobians

@@ -134,7 +134,7 @@ class BalCamera {
 
     proj = Vec2(f * mx * rp, f * my * rp);
 
-    bool is_valid = z >= Sophus::Constants<Scalar>::epsilonSqrt();
+    const bool is_valid = z >= Sophus::Constants<Scalar>::epsilonSqrt();
 
     if (d_proj_d_p3d) {
       d_proj_d_p3d->setZero();

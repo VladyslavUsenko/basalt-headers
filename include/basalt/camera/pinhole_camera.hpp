@@ -124,7 +124,7 @@ class PinholeCamera {
     proj[0] = fx * x / z + cx;
     proj[1] = fy * y / z + cy;
 
-    if (z < Sophus::Constants<Scalar>::epsilonSqrt()) return false;
+    const bool is_valid = z >= Sophus::Constants<Scalar>::epsilonSqrt();
 
     if (d_proj_d_p3d) {
       d_proj_d_p3d->setZero();
@@ -145,7 +145,7 @@ class PinholeCamera {
       (*d_proj_d_param)(1, 3) = Scalar(1);
     }
 
-    return true;
+    return is_valid;
   }
 
   /// @brief Unproject the point and optionally compute Jacobians
