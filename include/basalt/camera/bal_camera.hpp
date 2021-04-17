@@ -65,9 +65,10 @@ namespace basalt {
 /// r(p) = 1.0 + k1 * ||p||^2 + k2 * ||p||^4.
 ///
 /// See \ref project and \ref unproject functions for more details.
-template <typename Scalar = double>
+template <typename Scalar_ = double>
 class BalCamera {
  public:
+  using Scalar = Scalar_;
   static constexpr int N = 3;  ///< Number of intrinsic parameters.
 
   using Vec2 = Eigen::Matrix<Scalar, 2, 1>;

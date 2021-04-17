@@ -50,8 +50,13 @@ constexpr size_t POSE_VEL_BIAS_SIZE =
     15;  ///< Dimentionality of the pose-velocity-bias state
 
 /// @brief State that consists of SE(3) pose at a certain time.
+template <class Scalar_>
 struct PoseState {
-  using VecN = Eigen::Matrix<double, POSE_SIZE, 1>;
+  using Scalar = Scalar_;
+  using VecN = Eigen::Matrix<Scalar, POSE_SIZE, 1>;
+  using Vec6 = Eigen::Matrix<Scalar, 6, 1>;
+  using SO3 = Sophus::SO3<Scalar>;
+  using SE3 = Sophus::SE3<Scalar>;
 
   /// @brief Default constructor with Identity pose and zero timestamp.
   PoseState() { t_ns = 0; }
@@ -60,8 +65,16 @@ struct PoseState {
   ///
   /// @param t_ns timestamp of the state in nanoseconds
   /// @param T_w_i transformation from the body frame to the world frame
-  PoseState(int64_t t_ns, const Sophus::SE3d& T_w_i)
-      : t_ns(t_ns), T_w_i(T_w_i) {}
+  PoseState(int64_t t_ns, const SE3& T_w_i) : t_ns(t_ns), T_w_i(T_w_i) {}
+
+  /// @brief Create copy with different Scalar type.
+  template <class Scalar2>
+  PoseState<Scalar2> cast() const {
+    PoseState<Scalar2> a;
+    a.t_ns = t_ns;
+    a.T_w_i = T_w_i.template cast<Scalar2>();
+    return a;
+  }
 
   /// @brief Apply increment to the pose
   ///
@@ -82,21 +95,25 @@ struct PoseState {
   ///
   /// @param[in] inc 6x1 increment vector
   /// @param[in,out] T the pose to update
-  inline static void incPose(const Sophus::Vector6d& inc, Sophus::SE3d& T) {
-    T.translation() += inc.head<3>();
-    T.so3() = Sophus::SO3d::exp(inc.tail<3>()) * T.so3();
+  inline static void incPose(const Vec6& inc, SE3& T) {
+    T.translation() += inc.template head<3>();
+    T.so3() = SO3::exp(inc.template tail<3>()) * T.so3();
   }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  int64_t t_ns;        ///< timestamp of the state in nanoseconds
-  Sophus::SE3d T_w_i;  ///< pose of the state
+  int64_t t_ns;  ///< timestamp of the state in nanoseconds
+  SE3 T_w_i;     ///< pose of the state
 };
 
 /// @brief State that consists of SE(3) pose and linear velocity at a certain
 /// time.
-struct PoseVelState : public PoseState {
-  using VecN = Eigen::Matrix<double, POSE_VEL_SIZE, 1>;
+template <class Scalar_>
+struct PoseVelState : public PoseState<Scalar_> {
+  using Scalar = Scalar_;
+  using VecN = Eigen::Matrix<Scalar, POSE_VEL_SIZE, 1>;
+  using Vec3 = Eigen::Matrix<Scalar, 3, 1>;
+  using SE3 = Sophus::SE3<Scalar>;
 
   /// @brief Default constructor with Identity pose and zero other values.
   PoseVelState() { vel_w_i.setZero(); };
@@ -106,17 +123,26 @@ struct PoseVelState : public PoseState {
   /// @param t_ns timestamp of the state in nanoseconds
   /// @param T_w_i transformation from the body frame to the world frame
   /// @param vel_w_i linear velocity in world coordinate frame
-  PoseVelState(int64_t t_ns, const Sophus::SE3d& T_w_i,
-               const Eigen::Vector3d& vel_w_i)
-      : PoseState(t_ns, T_w_i), vel_w_i(vel_w_i) {}
+  PoseVelState(int64_t t_ns, const SE3& T_w_i, const Vec3& vel_w_i)
+      : PoseState<Scalar>(t_ns, T_w_i), vel_w_i(vel_w_i) {}
+
+  /// @brief Create copy with different Scalar type.
+  template <class Scalar2>
+  PoseVelState<Scalar2> cast() const {
+    PoseVelState<Scalar2> a;
+    static_cast<PoseState<Scalar2>&>(a) =
+        PoseState<Scalar>::template cast<Scalar2>();
+    a.vel_w_i = vel_w_i.template cast<Scalar2>();
+    return a;
+  }
 
   /// @brief Apply increment to the state.
   ///
   /// For pose see \ref incPose. For velocity simple addition.
   /// @param[in] inc 9x1 increment vector [trans, rot, vel]
   void applyInc(const VecN& inc) {
-    PoseState::applyInc(inc.head<6>());
-    vel_w_i += inc.tail<3>();
+    PoseState<Scalar>::applyInc(inc.template head<6>());
+    vel_w_i += inc.template tail<3>();
   }
 
   /// @brief Compute difference to other state.
@@ -130,24 +156,31 @@ struct PoseVelState : public PoseState {
   ///      p0.diff(p1) == inc; // Should be true.
   /// ```
   /// @param other state to compute difference.
-  VecN diff(const PoseVelState& other) const {
+  VecN diff(const PoseVelState<Scalar>& other) const {
     VecN res;
-    res.segment<3>(0) = other.T_w_i.translation() - T_w_i.translation();
-    res.segment<3>(3) = (other.T_w_i.so3() * T_w_i.so3().inverse()).log();
-    res.tail<3>() = other.vel_w_i - vel_w_i;
+    res.template segment<3>(0) =
+        other.T_w_i.translation() - this->T_w_i.translation();
+    res.template segment<3>(3) =
+        (other.T_w_i.so3() * this->T_w_i.so3().inverse()).log();
+    res.template tail<3>() = other.vel_w_i - vel_w_i;
     return res;
   }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  Eigen::Vector3d vel_w_i;  ///< Linear velocity of the state
+  Vec3 vel_w_i;  ///< Linear velocity of the state
 };
 
 /// @brief State that consists of SE(3) pose, linear velocity, gyroscope and
 /// accelerometer biases at a certain time.
-struct PoseVelBiasState : public PoseVelState {
-  using Ptr = std::shared_ptr<PoseVelBiasState>;
-  using VecN = Eigen::Matrix<double, POSE_VEL_BIAS_SIZE, 1>;
+template <class Scalar_>
+struct PoseVelBiasState : public PoseVelState<Scalar_> {
+  using Scalar = Scalar_;
+  using Ptr = std::shared_ptr<PoseVelBiasState<Scalar>>;
+  using VecN = Eigen::Matrix<Scalar, POSE_VEL_BIAS_SIZE, 1>;
+  using Vec3 = Eigen::Matrix<Scalar, 3, 1>;
+  using SO3 = Sophus::SO3<Scalar>;
+  using SE3 = Sophus::SE3<Scalar>;
 
   /// @brief Default constructor with Identity pose and zero other values.
   PoseVelBiasState() {
@@ -163,13 +196,22 @@ struct PoseVelBiasState : public PoseVelState {
   /// @param vel_w_i linear velocity in world coordinate frame
   /// @param bias_gyro gyroscope bias
   /// @param bias_accel accelerometer bias
-  PoseVelBiasState(int64_t t_ns, const Sophus::SE3d& T_w_i,
-                   const Eigen::Vector3d& vel_w_i,
-                   const Eigen::Vector3d& bias_gyro,
-                   const Eigen::Vector3d& bias_accel)
-      : PoseVelState(t_ns, T_w_i, vel_w_i),
+  PoseVelBiasState(int64_t t_ns, const SE3& T_w_i, const Vec3& vel_w_i,
+                   const Vec3& bias_gyro, const Vec3& bias_accel)
+      : PoseVelState<Scalar>(t_ns, T_w_i, vel_w_i),
         bias_gyro(bias_gyro),
         bias_accel(bias_accel) {}
+
+  /// @brief Create copy with different Scalar type.
+  template <class Scalar2>
+  PoseVelBiasState<Scalar2> cast() const {
+    PoseVelBiasState<Scalar2> a;
+    static_cast<PoseVelState<Scalar2>&>(a) =
+        PoseVelState<Scalar>::template cast<Scalar2>();
+    a.bias_gyro = bias_gyro.template cast<Scalar2>();
+    a.bias_accel = bias_accel.template cast<Scalar2>();
+    return a;
+  }
 
   /// @brief Apply increment to the state.
   ///
@@ -177,9 +219,9 @@ struct PoseVelBiasState : public PoseVelState {
   /// @param[in] inc 15x1 increment vector [trans, rot, vel, bias_gyro,
   /// bias_accel]
   void applyInc(const VecN& inc) {
-    PoseVelState::applyInc(inc.head<9>());
-    bias_gyro += inc.segment<3>(9);
-    bias_accel += inc.segment<3>(12);
+    PoseVelState<Scalar>::applyInc(inc.template head<9>());
+    bias_gyro += inc.template segment<3>(9);
+    bias_accel += inc.template segment<3>(12);
   }
 
   /// @brief Compute difference to other state.
@@ -193,9 +235,9 @@ struct PoseVelBiasState : public PoseVelState {
   ///      p0.diff(p1) == inc; // Should be true.
   /// ```
   /// @param other state to compute difference.
-  VecN diff(const PoseVelBiasState& other) const {
+  VecN diff(const PoseVelBiasState<Scalar>& other) const {
     VecN res;
-    res.segment<9>(0) = PoseVelState::diff(other);
+    res.segment<9>(0) = PoseVelState<Scalar>::diff(other);
     res.segment<3>(9) = other.bias_gyro - bias_gyro;
     res.segment<3>(12) = other.bias_accel - bias_accel;
     return res;
@@ -203,22 +245,35 @@ struct PoseVelBiasState : public PoseVelState {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  Eigen::Vector3d bias_gyro;   ///< Gyroscope bias
-  Eigen::Vector3d bias_accel;  ///< Accelerometer bias
+  Vec3 bias_gyro;   ///< Gyroscope bias
+  Vec3 bias_accel;  ///< Accelerometer bias
 };
 
 /// @brief Timestamped gyroscope and accelerometer measurements.
+template <class Scalar_>
 struct ImuData {
+  using Scalar = Scalar_;
   using Ptr = std::shared_ptr<ImuData>;
+  using Vec3 = Eigen::Matrix<Scalar, 3, 1>;
 
-  int64_t t_ns;           ///< timestamp in nanoseconds
-  Eigen::Vector3d accel;  ///< Accelerometer measurement
-  Eigen::Vector3d gyro;   ///< Gyroscope measurement
+  int64_t t_ns;  ///< timestamp in nanoseconds
+  Vec3 accel;    ///< Accelerometer measurement
+  Vec3 gyro;     ///< Gyroscope measurement
 
   /// @brief Default constructor with zero measurements.
   ImuData() {
     accel.setZero();
     gyro.setZero();
+  }
+
+  /// @brief Create copy with different Scalar type.
+  template <class Scalar2>
+  ImuData<Scalar2> cast() const {
+    ImuData<Scalar2> a;
+    a.t_ns = t_ns;
+    a.accel = accel.template cast<Scalar2>();
+    a.gyro = gyro.template cast<Scalar2>();
+    return a;
   }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

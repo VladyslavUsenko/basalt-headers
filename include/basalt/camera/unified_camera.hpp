@@ -48,9 +48,10 @@ namespace basalt {
 /// This model has N=5 parameters \f$ \mathbf{i} = \left[f_x, f_y, c_x, c_y,
 /// \alpha \right]^T \f$ with \f$ \alpha \in [0,1] \f$.
 /// See \ref project and \ref unproject functions for more details.
-template <typename Scalar = double>
+template <typename Scalar_ = double>
 class UnifiedCamera {
  public:
+  using Scalar = Scalar_;
   static constexpr int N = 5;  ///< Number of intrinsic parameters.
 
   using Vec2 = Eigen::Matrix<Scalar, 2, 1>;

@@ -86,6 +86,8 @@ struct Calibration {
     new_cam.calib_gyro_bias.getParam() =
         calib_gyro_bias.getParam().template cast<Scalar2>();
 
+    new_cam.imu_update_rate = imu_update_rate;
+
     new_cam.gyro_noise_std = gyro_noise_std.template cast<Scalar2>();
     new_cam.accel_noise_std = accel_noise_std.template cast<Scalar2>();
     new_cam.gyro_bias_std = gyro_bias_std.template cast<Scalar2>();
