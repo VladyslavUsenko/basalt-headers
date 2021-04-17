@@ -259,9 +259,11 @@ class DoubleSphereCamera {
 
     const Scalar r2 = mx * mx + my * my;
 
-    if (alpha > Scalar(0.5)) {
-      if (r2 >= Scalar(1) / (Scalar(2) * alpha - Scalar(1))) return false;
-    }
+    const bool is_valid =
+        alpha > Scalar(0.5) &&
+                (r2 >= Scalar(1) / (Scalar(2) * alpha - Scalar(1)))
+            ? false
+            : true;
 
     const Scalar xi2_2 = alpha * alpha;
     const Scalar xi1_2 = xi * xi;
@@ -358,7 +360,7 @@ class DoubleSphereCamera {
       }
     }
 
-    return true;
+    return is_valid;
   }
 
   /// @brief Set parameters from initialization

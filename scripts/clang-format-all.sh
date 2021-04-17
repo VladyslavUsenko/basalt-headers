@@ -25,7 +25,7 @@ if [ -z $CLANG_FORMAT_CMD ]; then
 fi
     
 # clang format check version
-MAJOR_VERSION_NEEDED=8
+MAJOR_VERSION_NEEDED=10
 
 MAJOR_VERSION_DETECTED=`$CLANG_FORMAT_CMD -version | sed -n -E 's/.*version ([0-9]+).*/\1/p'`
 if [ -z $MAJOR_VERSION_DETECTED ]; then
