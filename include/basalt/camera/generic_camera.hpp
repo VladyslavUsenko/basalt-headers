@@ -50,6 +50,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
+using std::sqrt;
+
 /// @brief Generic camera model that can store different camera models
 ///
 /// Particular class of camera model is stored as \ref variant and can be casted
@@ -271,8 +273,8 @@ class GenericCamera {
   static GenericCamera<Scalar> fromString(const std::string& name) {
     GenericCamera<Scalar> res;
 
-    constexpr size_t variant_size = std::variant_size<VariantT>::value;
-    visitAllTypes<variant_size - 1>(res, name);
+    constexpr size_t VARIANT_SIZE = std::variant_size<VariantT>::value;
+    visitAllTypes<VARIANT_SIZE - 1>(res, name);
 
     return res;
   }

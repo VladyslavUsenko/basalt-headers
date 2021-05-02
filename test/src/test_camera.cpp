@@ -37,7 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "test_utils.h"
 
 template <typename CamT>
-void test_project_jacobian() {
+void testProjectJacobian() {
   Eigen::aligned_vector<CamT> test_cams = CamT::getTestProjections();
 
   using VecN = typename CamT::VecN;
@@ -53,16 +53,16 @@ void test_project_jacobian() {
         for (int z = -1; z <= 5; z++) {
           Vec4 p(x, y, z, 1);
 
-          Mat24 Jp;
-          Mat2N Jparam;
+          Mat24 J_p;
+          Mat2N J_param;
 
           Vec2 res1;
 
-          bool success = cam.project(p, res1, &Jp, &Jparam);
+          bool success = cam.project(p, res1, &J_p, &J_param);
 
           if (success) {
             test_jacobian(
-                "d_r_d_p", Jp,
+                "d_r_d_p", J_p,
                 [&](const Vec4 &x) {
                   Vec2 res;
                   cam.project(p + x, res);
@@ -71,7 +71,7 @@ void test_project_jacobian() {
                 Vec4::Zero());
 
             test_jacobian(
-                "d_r_d_param", Jparam,
+                "d_r_d_param", J_param,
                 [&](const VecN &x) {
                   Vec2 res;
 
@@ -90,7 +90,7 @@ void test_project_jacobian() {
 }
 
 template <typename CamT>
-void test_project_unproject() {
+void testProjectUnproject() {
   Eigen::aligned_vector<CamT> test_cams = CamT::getTestProjections();
 
   using Scalar = typename CamT::Vec2::Scalar;
@@ -124,7 +124,7 @@ void test_project_unproject() {
 }
 
 template <typename CamT>
-void test_unproject_jacobians() {
+void testUnprojectJacobians() {
   Eigen::aligned_vector<CamT> test_cams = CamT::getTestProjections();
 
   using VecN = typename CamT::VecN;
@@ -144,14 +144,14 @@ void test_unproject_jacobians() {
           bool success = cam.project(p_3d, p);
 
           if (success) {
-            Mat42 Jp;
-            Mat4N Jparam;
+            Mat42 J_p;
+            Mat4N J_param;
 
             Vec4 res1;
-            cam.unproject(p, res1, &Jp, &Jparam);
+            cam.unproject(p, res1, &J_p, &J_param);
 
             test_jacobian(
-                "d_r_d_p", Jp,
+                "d_r_d_p", J_p,
                 [&](const Vec2 &x) {
                   Vec4 res = Vec4::Zero();
                   cam.unproject(p + x, res);
@@ -160,7 +160,7 @@ void test_unproject_jacobians() {
                 Vec2::Zero());
 
             test_jacobian(
-                "d_r_d_param", Jparam,
+                "d_r_d_param", J_param,
                 [&](const VecN &x) {
                   Vec4 res = Vec4::Zero();
                   CamT cam1 = cam;
@@ -180,149 +180,149 @@ void test_unproject_jacobians() {
 ////////////////////////////////////////////////////////////////
 
 TEST(CameraTestCase, PinholeProjectJacobians) {
-  test_project_jacobian<basalt::PinholeCamera<double>>();
+  testProjectJacobian<basalt::PinholeCamera<double>>();
 }
 TEST(CameraTestCase, PinholeProjectJacobiansFloat) {
-  test_project_jacobian<basalt::PinholeCamera<float>>();
+  testProjectJacobian<basalt::PinholeCamera<float>>();
 }
 
 TEST(CameraTestCase, UnifiedProjectJacobians) {
-  test_project_jacobian<basalt::UnifiedCamera<double>>();
+  testProjectJacobian<basalt::UnifiedCamera<double>>();
 }
 TEST(CameraTestCase, UnifiedProjectJacobiansFloat) {
-  test_project_jacobian<basalt::UnifiedCamera<float>>();
+  testProjectJacobian<basalt::UnifiedCamera<float>>();
 }
 
 TEST(CameraTestCase, ExtendedUnifiedProjectJacobians) {
-  test_project_jacobian<basalt::ExtendedUnifiedCamera<double>>();
+  testProjectJacobian<basalt::ExtendedUnifiedCamera<double>>();
 }
 TEST(CameraTestCase, ExtendedUnifiedProjectJacobiansFloat) {
-  test_project_jacobian<basalt::ExtendedUnifiedCamera<float>>();
+  testProjectJacobian<basalt::ExtendedUnifiedCamera<float>>();
 }
 
 TEST(CameraTestCase, KannalaBrandtProjectJacobians) {
-  test_project_jacobian<basalt::KannalaBrandtCamera4<double>>();
+  testProjectJacobian<basalt::KannalaBrandtCamera4<double>>();
 }
 TEST(CameraTestCase, KannalaBrandtProjectJacobiansFloat) {
-  test_project_jacobian<basalt::KannalaBrandtCamera4<float>>();
+  testProjectJacobian<basalt::KannalaBrandtCamera4<float>>();
 }
 
 TEST(CameraTestCase, DoubleSphereJacobians) {
-  test_project_jacobian<basalt::DoubleSphereCamera<double>>();
+  testProjectJacobian<basalt::DoubleSphereCamera<double>>();
 }
 TEST(CameraTestCase, FovCameraJacobians) {
-  test_project_jacobian<basalt::FovCamera<double>>();
+  testProjectJacobian<basalt::FovCamera<double>>();
 }
 
 TEST(CameraTestCase, BalCameraJacobians) {
-  test_project_jacobian<basalt::BalCamera<double>>();
+  testProjectJacobian<basalt::BalCamera<double>>();
 }
 
 TEST(CameraTestCase, BalCameraJacobiansFloat) {
-  test_project_jacobian<basalt::BalCamera<float>>();
+  testProjectJacobian<basalt::BalCamera<float>>();
 }
 
 ////////////////////////////////////////////////////////////////
 
 TEST(CameraTestCase, PinholeProjectUnproject) {
-  test_project_unproject<basalt::PinholeCamera<double>>();
+  testProjectUnproject<basalt::PinholeCamera<double>>();
 }
 TEST(CameraTestCase, PinholeProjectUnprojectFloat) {
-  test_project_unproject<basalt::PinholeCamera<float>>();
+  testProjectUnproject<basalt::PinholeCamera<float>>();
 }
 
 TEST(CameraTestCase, UnifiedProjectUnproject) {
-  test_project_unproject<basalt::UnifiedCamera<double>>();
+  testProjectUnproject<basalt::UnifiedCamera<double>>();
 }
 TEST(CameraTestCase, UnifiedProjectUnprojectFloat) {
-  test_project_unproject<basalt::UnifiedCamera<float>>();
+  testProjectUnproject<basalt::UnifiedCamera<float>>();
 }
 
 TEST(CameraTestCase, ExtendedUnifiedProjectUnproject) {
-  test_project_unproject<basalt::ExtendedUnifiedCamera<double>>();
+  testProjectUnproject<basalt::ExtendedUnifiedCamera<double>>();
 }
 TEST(CameraTestCase, ExtendedUnifiedProjectUnprojectFloat) {
-  test_project_unproject<basalt::ExtendedUnifiedCamera<float>>();
+  testProjectUnproject<basalt::ExtendedUnifiedCamera<float>>();
 }
 
 TEST(CameraTestCase, KannalaBrandtProjectUnproject) {
-  test_project_unproject<basalt::KannalaBrandtCamera4<double>>();
+  testProjectUnproject<basalt::KannalaBrandtCamera4<double>>();
 }
 TEST(CameraTestCase, KannalaBrandtProjectUnprojectFloat) {
-  test_project_unproject<basalt::KannalaBrandtCamera4<float>>();
+  testProjectUnproject<basalt::KannalaBrandtCamera4<float>>();
 }
 
 TEST(CameraTestCase, DoubleSphereProjectUnproject) {
-  test_project_unproject<basalt::DoubleSphereCamera<double>>();
+  testProjectUnproject<basalt::DoubleSphereCamera<double>>();
 }
 TEST(CameraTestCase, DoubleSphereProjectUnprojectFloat) {
-  test_project_unproject<basalt::DoubleSphereCamera<float>>();
+  testProjectUnproject<basalt::DoubleSphereCamera<float>>();
 }
 
 TEST(CameraTestCase, FovProjectUnproject) {
-  test_project_unproject<basalt::FovCamera<double>>();
+  testProjectUnproject<basalt::FovCamera<double>>();
 }
 
 TEST(CameraTestCase, FovProjectUnprojectFloat) {
-  test_project_unproject<basalt::FovCamera<float>>();
+  testProjectUnproject<basalt::FovCamera<float>>();
 }
 
 TEST(CameraTestCase, BalProjectUnproject) {
-  test_project_unproject<basalt::BalCamera<double>>();
+  testProjectUnproject<basalt::BalCamera<double>>();
 }
 
 TEST(CameraTestCase, BalProjectUnprojectFloat) {
-  test_project_unproject<basalt::BalCamera<float>>();
+  testProjectUnproject<basalt::BalCamera<float>>();
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 TEST(CameraTestCase, PinholeUnprojectJacobians) {
-  test_unproject_jacobians<basalt::PinholeCamera<double>>();
+  testUnprojectJacobians<basalt::PinholeCamera<double>>();
 }
 TEST(CameraTestCase, PinholeUnprojectJacobiansFloat) {
-  test_unproject_jacobians<basalt::PinholeCamera<float>>();
+  testUnprojectJacobians<basalt::PinholeCamera<float>>();
 }
 
 TEST(CameraTestCase, UnifiedUnprojectJacobians) {
-  test_unproject_jacobians<basalt::UnifiedCamera<double>>();
+  testUnprojectJacobians<basalt::UnifiedCamera<double>>();
 }
 TEST(CameraTestCase, UnifiedUnprojectJacobiansFloat) {
-  test_unproject_jacobians<basalt::UnifiedCamera<float>>();
+  testUnprojectJacobians<basalt::UnifiedCamera<float>>();
 }
 
 TEST(CameraTestCase, ExtendedUnifiedUnprojectJacobians) {
-  test_unproject_jacobians<basalt::ExtendedUnifiedCamera<double>>();
+  testUnprojectJacobians<basalt::ExtendedUnifiedCamera<double>>();
 }
 TEST(CameraTestCase, ExtendedUnifiedUnprojectJacobiansFloat) {
-  test_unproject_jacobians<basalt::ExtendedUnifiedCamera<float>>();
+  testUnprojectJacobians<basalt::ExtendedUnifiedCamera<float>>();
 }
 
 TEST(CameraTestCase, KannalaBrandtUnprojectJacobians) {
-  test_unproject_jacobians<basalt::KannalaBrandtCamera4<double>>();
+  testUnprojectJacobians<basalt::KannalaBrandtCamera4<double>>();
 }
 // TEST(CameraTestCase, KannalaBrandtUnprojectJacobiansFloat) {
 //  test_unproject_jacobians<basalt::KannalaBrandtCamera4<float>>();
 //}
 
 TEST(CameraTestCase, DoubleSphereUnprojectJacobians) {
-  test_unproject_jacobians<basalt::DoubleSphereCamera<double>>();
+  testUnprojectJacobians<basalt::DoubleSphereCamera<double>>();
 }
 // TEST(CameraTestCase, DoubleSphereUnprojectJacobiansFloat) {
 //  test_unproject_jacobians<basalt::DoubleSphereCamera<float>>();
 //}
 
 TEST(CameraTestCase, FovUnprojectJacobians) {
-  test_unproject_jacobians<basalt::FovCamera<double>>();
+  testUnprojectJacobians<basalt::FovCamera<double>>();
 }
 TEST(CameraTestCase, FovUnprojectJacobiansFloat) {
-  test_unproject_jacobians<basalt::FovCamera<float>>();
+  testUnprojectJacobians<basalt::FovCamera<float>>();
 }
 
 ////////////////////////////////////////////////////////////////
 
 template <typename CamT>
-void test_stereographic_project_jacobian() {
+void testStereographicProjectJacobian() {
   using Vec2 = typename CamT::Vec2;
   using Vec4 = typename CamT::Vec4;
   using Mat24 = typename CamT::Mat24;
@@ -331,23 +331,23 @@ void test_stereographic_project_jacobian() {
     for (int y = -10; y <= 10; y++) {
       Vec4 p(x, y, 5, 0.23424);
 
-      Mat24 Jp;
+      Mat24 J_p;
 
-      Vec2 res1 = CamT::project(p, &Jp);
+      Vec2 res1 = CamT::project(p, &J_p);
       Vec2 res2 = CamT::project(p);
 
       ASSERT_TRUE(res1.isApprox(res2))
           << "res1 " << res1.transpose() << " res2 " << res2.transpose();
 
       test_jacobian(
-          "d_r_d_p", Jp, [&](const Vec4 &x) { return CamT::project(p + x); },
+          "d_r_d_p", J_p, [&](const Vec4 &x) { return CamT::project(p + x); },
           Vec4::Zero());
     }
   }
 }
 
 template <typename CamT>
-void test_stereographic_project_unproject() {
+void testStereographicProjectUnproject() {
   using Vec2 = typename CamT::Vec2;
   using Vec4 = typename CamT::Vec4;
 
@@ -368,7 +368,7 @@ void test_stereographic_project_unproject() {
 }
 
 template <typename CamT>
-void test_stereographic_unproject_jacobian() {
+void testStereographicUnprojectJacobian() {
   using Vec2 = typename CamT::Vec2;
   using Vec4 = typename CamT::Vec4;
 
@@ -380,38 +380,38 @@ void test_stereographic_unproject_jacobian() {
 
       Vec2 p = CamT::project(p_3d);
 
-      Mat42 Jp;
+      Mat42 J_p;
 
-      Vec4 res1 = CamT::unproject(p, &Jp);
+      Vec4 res1 = CamT::unproject(p, &J_p);
       Vec4 res2 = CamT::unproject(p);
 
       ASSERT_TRUE(res1.isApprox(res2))
           << "res1 " << res1.transpose() << " res2 " << res2.transpose();
 
       test_jacobian(
-          "d_r_d_p", Jp, [&](const Vec2 &x) { return CamT::unproject(p + x); },
+          "d_r_d_p", J_p, [&](const Vec2 &x) { return CamT::unproject(p + x); },
           Vec2::Zero());
     }
   }
 }
 
 TEST(CameraTestCase, StereographicParamProjectJacobians) {
-  test_stereographic_project_jacobian<basalt::StereographicParam<double>>();
+  testStereographicProjectJacobian<basalt::StereographicParam<double>>();
 }
 TEST(CameraTestCase, StereographicParamProjectJacobiansFloat) {
-  test_stereographic_project_jacobian<basalt::StereographicParam<float>>();
+  testStereographicProjectJacobian<basalt::StereographicParam<float>>();
 }
 
 TEST(CameraTestCase, StereographicParamProjectUnproject) {
-  test_stereographic_project_unproject<basalt::StereographicParam<double>>();
+  testStereographicProjectUnproject<basalt::StereographicParam<double>>();
 }
 TEST(CameraTestCase, StereographicParamProjectUnprojectFloat) {
-  test_stereographic_project_unproject<basalt::StereographicParam<float>>();
+  testStereographicProjectUnproject<basalt::StereographicParam<float>>();
 }
 
 TEST(CameraTestCase, StereographicParamUnprojectJacobians) {
-  test_stereographic_unproject_jacobian<basalt::StereographicParam<double>>();
+  testStereographicUnprojectJacobian<basalt::StereographicParam<double>>();
 }
 TEST(CameraTestCase, StereographicParamUnprojectJacobiansFloat) {
-  test_stereographic_unproject_jacobian<basalt::StereographicParam<float>>();
+  testStereographicUnprojectJacobian<basalt::StereographicParam<float>>();
 }

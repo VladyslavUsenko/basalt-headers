@@ -101,8 +101,8 @@ class RdSpline {
 
   static constexpr int DIM = _DIM;  ///< Dimension of euclidean vector space.
 
-  static constexpr _Scalar ns_to_s = 1e-9;  ///< Nanosecond to second conversion
-  static constexpr _Scalar s_to_ns = 1e9;   ///< Second to nanosecond conversion
+  static constexpr _Scalar NS_TO_S = 1e-9;  ///< Nanosecond to second conversion
+  static constexpr _Scalar S_TO_NS = 1e9;   ///< Second to nanosecond conversion
 
   using MatN = Eigen::Matrix<_Scalar, _N, _N>;
   using VecN = Eigen::Matrix<_Scalar, _N, 1>;
@@ -122,19 +122,19 @@ class RdSpline {
   };
 
   /// @brief Default constructor
-  RdSpline() : dt_ns(0), start_t_ns(0) {}
+  RdSpline() = default;
 
   /// @brief Constructor with knot interval and start time
   ///
   /// @param[in] time_interval_ns knot time interval in nanoseconds
   /// @param[in] start_time_ns start time of the spline in nanoseconds
   RdSpline(int64_t time_interval_ns, int64_t start_time_ns = 0)
-      : dt_ns(time_interval_ns), start_t_ns(start_time_ns) {
-    pow_inv_dt[0] = 1.0;
-    pow_inv_dt[1] = s_to_ns / dt_ns;
+      : dt_ns_(time_interval_ns), start_t_ns_(start_time_ns) {
+    pow_inv_dt_[0] = 1.0;
+    pow_inv_dt_[1] = S_TO_NS / dt_ns_;
 
     for (size_t i = 2; i < N; i++) {
-      pow_inv_dt[i] = pow_inv_dt[i - 1] * pow_inv_dt[1];
+      pow_inv_dt_[i] = pow_inv_dt_[i - 1] * pow_inv_dt_[1];
     }
   }
 
@@ -143,13 +143,16 @@ class RdSpline {
   inline RdSpline<_DIM, _N, Scalar2> cast() const {
     RdSpline<_DIM, _N, Scalar2> res;
 
-    res.dt_ns = dt_ns;
-    res.start_t_ns = start_t_ns;
+    res.dt_ns = dt_ns_;
+    res.start_t_ns = start_t_ns_;
 
-    for (int i = 0; i < _N; i++) res.pow_inv_dt[i] = pow_inv_dt[i];
+    for (int i = 0; i < _N; i++) {
+      res.pow_inv_dt[i] = pow_inv_dt_[i];
+    }
 
-    for (const auto& k : knots)
+    for (const auto& k : knots_) {
       res.knots.emplace_back(k.template cast<Scalar2>());
+    }
 
     return res;
   }
@@ -158,20 +161,20 @@ class RdSpline {
   ///
   /// @param[in] start_time_ns start time of the spline in nanoseconds
   inline void setStartTimeNs(int64_t start_time_ns) {
-    start_t_ns = start_time_ns;
+    start_t_ns_ = start_time_ns;
   }
 
   /// @brief Maximum time represented by spline
   ///
   /// @return maximum time represented by spline in nanoseconds
   int64_t maxTimeNs() const {
-    return start_t_ns + (knots.size() - N + 1) * dt_ns - 1;
+    return start_t_ns_ + (knots_.size() - N + 1) * dt_ns_ - 1;
   }
 
   /// @brief Minimum time represented by spline
   ///
   /// @return minimum time represented by spline in nanoseconds
-  int64_t minTimeNs() const { return start_t_ns; }
+  int64_t minTimeNs() const { return start_t_ns_; }
 
   /// @brief Gererate random trajectory
   ///
@@ -182,58 +185,64 @@ class RdSpline {
     if (static_init) {
       VecD rnd = VecD::Random() * 5;
 
-      for (int i = 0; i < N; i++) knots.push_back(rnd);
-      for (int i = 0; i < n - N; i++) knots.push_back(VecD::Random() * 5);
+      for (int i = 0; i < N; i++) {
+        knots_.push_back(rnd);
+      }
+      for (int i = 0; i < n - N; i++) {
+        knots_.push_back(VecD::Random() * 5);
+      }
     } else {
-      for (int i = 0; i < n; i++) knots.push_back(VecD::Random() * 5);
+      for (int i = 0; i < n; i++) {
+        knots_.push_back(VecD::Random() * 5);
+      }
     }
   }
 
   /// @brief Add knot to the end of the spline
   ///
   /// @param[in] knot knot to add
-  inline void knots_push_back(const VecD& knot) { knots.push_back(knot); }
+  inline void knotsPushBack(const VecD& knot) { knots_.push_back(knot); }
 
   /// @brief Remove knot from the back of the spline
-  inline void knots_pop_back() { knots.pop_back(); }
+  inline void knotsPopBack() { knots_.pop_back(); }
 
   /// @brief Return the first knot of the spline
   ///
   /// @return first knot of the spline
-  inline const VecD& knots_front() const { return knots.front(); }
+  inline const VecD& knotsFront() const { return knots_.front(); }
 
   /// @brief Remove first knot of the spline and increase the start time
-  inline void knots_pop_front() {
-    start_t_ns += dt_ns;
-    knots.pop_front();
+  inline void knotsPopFront() {
+    start_t_ns_ += dt_ns_;
+    knots_.pop_front();
   }
 
   /// @brief Resize containter with knots
   ///
   /// @param[in] n number of knots
-  inline void resize(size_t n) { knots.resize(n); }
+  inline void resize(size_t n) { knots_.resize(n); }
 
   /// @brief Return reference to the knot with index i
   ///
   /// @param i index of the knot
   /// @return reference to the knot
-  inline VecD& getKnot(int i) { return knots[i]; }
+  inline VecD& getKnot(int i) { return knots_[i]; }
 
   /// @brief Return const reference to the knot with index i
   ///
   /// @param i index of the knot
   /// @return const reference to the knot
-  inline const VecD& getKnot(int i) const { return knots[i]; }
+  inline const VecD& getKnot(int i) const { return knots_[i]; }
 
   /// @brief Return const reference to deque with knots
   ///
   /// @return const reference to deque with knots
-  const Eigen::aligned_deque<VecD>& getKnots() const { return knots; }
+  const Eigen::aligned_deque<VecD>& getKnots() const { return knots_; }
 
   /// @brief Return time interval in nanoseconds
   ///
   /// @return time interval in nanoseconds
-  int64_t getTimeIntervalNs() const { return dt_ns; }
+  int64_t getTimeIntervalNs() const { return dt_ns_; }
 
   /// @brief Evaluate value or derivative of the spline
   ///
@@ -245,23 +254,23 @@ class RdSpline {
   /// DIM.
   template <int Derivative = 0>
   VecD evaluate(int64_t time_ns, JacobianStruct* J = nullptr) const {
-    int64_t st_ns = (time_ns - start_t_ns);
+    int64_t st_ns = (time_ns - start_t_ns_);
 
     BASALT_ASSERT_STREAM(st_ns >= 0, "st_ns " << st_ns << " time_ns " << time_ns
-                                              << " start_t_ns " << start_t_ns);
+                                              << " start_t_ns " << start_t_ns_);
 
-    int64_t s = st_ns / dt_ns;
-    double u = double(st_ns % dt_ns) / double(dt_ns);
+    int64_t s = st_ns / dt_ns_;
+    double u = double(st_ns % dt_ns_) / double(dt_ns_);
 
     BASALT_ASSERT_STREAM(s >= 0, "s " << s);
-    BASALT_ASSERT_STREAM(size_t(s + N) <= knots.size(), "s " << s << " N " << N
-                                                             << " knots.size() "
-                                                             << knots.size());
+    BASALT_ASSERT_STREAM(
+        size_t(s + N) <= knots_.size(),
+        "s " << s << " N " << N << " knots.size() " << knots_.size());
 
     VecN p;
     baseCoeffsWithTime<Derivative>(p, u);
 
-    VecN coeff = pow_inv_dt[Derivative] * (blending_matrix_ * p);
+    VecN coeff = pow_inv_dt_[Derivative] * (BLENDING_MATRIX * p);
 
     // std::cerr << "p " << p.transpose() << std::endl;
     // std::cerr << "coeff " << coeff.transpose() << std::endl;
@@ -270,12 +279,16 @@ class RdSpline {
     res.setZero();
 
     for (int i = 0; i < N; i++) {
-      res += coeff[i] * knots[s + i];
+      res += coeff[i] * knots_[s + i];
 
-      if (J) J->d_val_d_knot[i] = coeff[i];
+      if (J) {
+        J->d_val_d_knot[i] = coeff[i];
+      }
     }
 
-    if (J) J->start_idx = s;
+    if (J) {
+      J->start_idx = s;
+    }
 
     return res;
   }
@@ -312,12 +325,12 @@ class RdSpline {
     res.setZero();
 
     if (Derivative < N) {
-      res[Derivative] = base_coefficients_(Derivative, Derivative);
+      res[Derivative] = BASE_COEFFICIENTS(Derivative, Derivative);
 
-      _Scalar _t = t;
+      _Scalar ti = t;
       for (int j = Derivative + 1; j < N; j++) {
-        res[j] = base_coefficients_(Derivative, j) * _t;
-        _t = _t * t;
+        res[j] = BASE_COEFFICIENTS(Derivative, j) * ti;
+        ti = ti * t;
       }
     }
   }
@@ -326,25 +339,25 @@ class RdSpline {
   friend class RdSpline;
 
   static const MatN
-      blending_matrix_;  ///< Blending matrix. See \ref computeBlendingMatrix.
+      BLENDING_MATRIX;  ///< Blending matrix. See \ref computeBlendingMatrix.
 
-  static const MatN base_coefficients_;  ///< Base coefficients matrix.
-                                         ///< See \ref computeBaseCoefficients.
+  static const MatN BASE_COEFFICIENTS;  ///< Base coefficients matrix.
+                                        ///< See \ref computeBaseCoefficients.
 
-  Eigen::aligned_deque<VecD> knots;    ///< Knots
-  int64_t dt_ns;                       ///< Knot interval in nanoseconds
-  int64_t start_t_ns;                  ///< Start time in nanoseconds
-  std::array<_Scalar, _N> pow_inv_dt;  ///< Array with inverse powers of dt
+  Eigen::aligned_deque<VecD> knots_;    ///< Knots
+  int64_t dt_ns_{0};                    ///< Knot interval in nanoseconds
+  int64_t start_t_ns_{0};               ///< Start time in nanoseconds
+  std::array<_Scalar, _N> pow_inv_dt_;  ///< Array with inverse powers of dt
 };
 
 template <int _DIM, int _N, typename _Scalar>
 const typename RdSpline<_DIM, _N, _Scalar>::MatN
-    RdSpline<_DIM, _N, _Scalar>::base_coefficients_ =
+    RdSpline<_DIM, _N, _Scalar>::BASE_COEFFICIENTS =
         computeBaseCoefficients<_N, _Scalar>();
 
 template <int _DIM, int _N, typename _Scalar>
 const typename RdSpline<_DIM, _N, _Scalar>::MatN
-    RdSpline<_DIM, _N, _Scalar>::blending_matrix_ =
+    RdSpline<_DIM, _N, _Scalar>::BLENDING_MATRIX =
         computeBlendingMatrix<_N, _Scalar, false>();
 
 }  // namespace basalt

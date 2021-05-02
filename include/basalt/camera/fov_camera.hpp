@@ -42,6 +42,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
+using std::sqrt;
+
 /// @brief Field-of-View camera model
 ///
 /// \image html fov.png
@@ -68,23 +70,23 @@ class FovCamera {
   using Mat44 = Eigen::Matrix<Scalar, 4, 4>;
 
   /// @brief Default constructor with zero intrinsics
-  FovCamera() { param.setZero(); }
+  FovCamera() { param_.setZero(); }
 
   /// @brief Construct camera model with given vector of intrinsics
   ///
   /// @param[in] p vector of intrinsic parameters [fx, fy, cx, cy, w]
-  explicit FovCamera(const VecN& p) { param = p; }
+  explicit FovCamera(const VecN& p) { param_ = p; }
 
   /// @brief Cast to different scalar type
   template <class Scalar2>
   FovCamera<Scalar2> cast() const {
-    return FovCamera<Scalar2>(param.template cast<Scalar2>());
+    return FovCamera<Scalar2>(param_.template cast<Scalar2>());
   }
 
   /// @brief Camera model name
   ///
   /// @return "fov"
-  static const std::string getName() { return "fov"; }
+  static std::string getName() { return "fov"; }
 
   /// @brief Project the point and optionally compute Jacobians
   ///
@@ -113,11 +115,11 @@ class FovCamera {
   /// @return if projection is valid
   inline bool project(const Vec4& p, Vec2& res, Mat24* d_r_d_p = nullptr,
                       Mat2N* d_r_d_param = nullptr) const {
-    const Scalar& fx = param[0];
-    const Scalar& fy = param[1];
-    const Scalar& cx = param[2];
-    const Scalar& cy = param[3];
-    const Scalar& w = param[4];
+    const Scalar& fx = param_[0];
+    const Scalar& fy = param_[1];
+    const Scalar& cx = param_[2];
+    const Scalar& cy = param_[3];
+    const Scalar& w = param_[4];
 
     const Scalar& x = p[0];
     const Scalar& y = p[1];
@@ -145,7 +147,9 @@ class FovCamera {
     bool is_valid = true;
     if (w > Sophus::Constants<Scalar>::epsilonSqrt()) {
       if (r2 < Sophus::Constants<Scalar>::epsilonSqrt()) {
-        if (z < Sophus::Constants<Scalar>::epsilonSqrt()) is_valid = false;
+        if (z < Sophus::Constants<Scalar>::epsilonSqrt()) {
+          is_valid = false;
+        }
 
         rd = Scalar(2) * tanwhalf / w;
         d_rd_d_w = Scalar(2) * (d_tanwhalf_d_w * w - tanwhalf) / (w * w);
@@ -221,11 +225,11 @@ class FovCamera {
   /// @return if unprojection is valid
   inline bool unproject(const Vec2& p, Vec4& res, Mat42* d_r_d_p = nullptr,
                         Mat4N* d_r_d_param = nullptr) const {
-    const Scalar& fx = param[0];
-    const Scalar& fy = param[1];
-    const Scalar& cx = param[2];
-    const Scalar& cy = param[3];
-    const Scalar& w = param[4];
+    const Scalar& fx = param_[0];
+    const Scalar& fy = param_[1];
+    const Scalar& cx = param_[2];
+    const Scalar& cy = param_[3];
+    const Scalar& w = param_[4];
 
     const Scalar tan_w_2 = std::tan(w / Scalar(2));
     const Scalar mul2tanwby2 = tan_w_2 * Scalar(2);
@@ -261,7 +265,8 @@ class FovCamera {
     res[3] = Scalar(0);
 
     if (d_r_d_p || d_r_d_param) {
-      Vec4 c0, c1;
+      Vec4 c0;
+      Vec4 c1;
 
       c0(0) = (ru + mx * d_ru_d_rd * mx * rd_inv) / fx;
       c0(1) = my * d_ru_d_rd * mx * rd_inv / fx;
@@ -316,8 +321,12 @@ class FovCamera {
       d_p_norm_d_p(1, 2) = -res[2] * res[1] * norm_inv3;
       d_p_norm_d_p(2, 2) = norm_inv * (Scalar(1) - res[2] * res[2] * norm_inv2);
 
-      if (d_r_d_p) (*d_r_d_p) = d_p_norm_d_p * (*d_r_d_p);
-      if (d_r_d_param) (*d_r_d_param) = d_p_norm_d_p * (*d_r_d_param);
+      if (d_r_d_p) {
+        (*d_r_d_p) = d_p_norm_d_p * (*d_r_d_p);
+      }
+      if (d_r_d_param) {
+        (*d_r_d_param) = d_p_norm_d_p * (*d_r_d_param);
+      }
     }
 
     res /= res.norm();
@@ -332,24 +341,24 @@ class FovCamera {
   ///
   /// @param[in] init vector [fx, fy, cx, cy]
   inline void setFromInit(const Vec4& init) {
-    param[0] = init[0];
-    param[1] = init[1];
-    param[2] = init[2];
-    param[3] = init[3];
-    param[4] = 1;
+    param_[0] = init[0];
+    param_[1] = init[1];
+    param_[2] = init[2];
+    param_[3] = init[3];
+    param_[4] = 1;
   }
 
   /// @brief Increment intrinsic parameters by inc
   ///
   /// @param[in] inc increment vector
-  void operator+=(const VecN& inc) { param += inc; }
+  void operator+=(const VecN& inc) { param_ += inc; }
 
   /// @brief Returns a const reference to the intrinsic parameters vector
   ///
   /// The order is following: \f$ \left[f_x, f_y, c_x, c_y, k1, k2, k3, k4
   /// \right]^T \f$
   /// @return const reference to the intrinsic parameters vector
-  const VecN& getParam() const { return param; }
+  const VecN& getParam() const { return param_; }
 
   /// @brief Projections used for unit-tests
   static Eigen::aligned_vector<FovCamera> getTestProjections() {
@@ -375,7 +384,7 @@ class FovCamera {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
  private:
-  VecN param;
+  VecN param_;
 };
 
 }  // namespace basalt

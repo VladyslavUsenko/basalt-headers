@@ -43,6 +43,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
+using std::sqrt;
+
 /// @brief Kannala-Brandt camera model
 ///
 /// \image html kb.png
@@ -71,13 +73,13 @@ class KannalaBrandtCamera4 {
   using Mat4N = Eigen::Matrix<Scalar, 4, N>;
 
   /// @brief Default constructor with zero intrinsics
-  KannalaBrandtCamera4() { param.setZero(); }
+  KannalaBrandtCamera4() { param_.setZero(); }
 
   /// @brief Construct camera model with given vector of intrinsics
   ///
   /// @param[in] p vector of intrinsic parameters [fx, fy, cx, cy, k1, k2, k3,
   /// k4]
-  explicit KannalaBrandtCamera4(const VecN& p) { param = p; }
+  explicit KannalaBrandtCamera4(const VecN& p) { param_ = p; }
 
   /// @brief Camera model name
   ///
@@ -87,7 +89,7 @@ class KannalaBrandtCamera4 {
   /// @brief Cast to different scalar type
   template <class Scalar2>
   KannalaBrandtCamera4<Scalar2> cast() const {
-    return KannalaBrandtCamera4<Scalar2>(param.template cast<Scalar2>());
+    return KannalaBrandtCamera4<Scalar2>(param_.template cast<Scalar2>());
   }
 
   /// @brief Project the point and optionally compute Jacobians
@@ -121,14 +123,14 @@ class KannalaBrandtCamera4 {
   inline bool project(const Vec4& p3d, Vec2& proj,
                       Mat24* d_proj_d_p3d = nullptr,
                       Mat2N* d_proj_d_param = nullptr) const {
-    const Scalar& fx = param[0];
-    const Scalar& fy = param[1];
-    const Scalar& cx = param[2];
-    const Scalar& cy = param[3];
-    const Scalar& k1 = param[4];
-    const Scalar& k2 = param[5];
-    const Scalar& k3 = param[6];
-    const Scalar& k4 = param[7];
+    const Scalar& fx = param_[0];
+    const Scalar& fy = param_[1];
+    const Scalar& cx = param_[2];
+    const Scalar& cy = param_[3];
+    const Scalar& k1 = param_[4];
+    const Scalar& k2 = param_[5];
+    const Scalar& k3 = param_[6];
+    const Scalar& k4 = param_[7];
 
     const Scalar& x = p3d[0];
     const Scalar& y = p3d[1];
@@ -219,7 +221,9 @@ class KannalaBrandtCamera4 {
 
     } else {
       // Check that the point is not cloze to zero norm
-      if (z < Sophus::Constants<Scalar>::epsilonSqrt()) is_valid = false;
+      if (z < Sophus::Constants<Scalar>::epsilonSqrt()) {
+        is_valid = false;
+      }
 
       proj[0] = fx * x / z + cx;
       proj[1] = fy * y / z + cy;
@@ -259,12 +263,12 @@ class KannalaBrandtCamera4 {
   /// theta at the solution
   /// @returns theta - root of the polynomial
   template <int ITER>
-  inline Scalar solve_theta(const Scalar& r_theta,
-                            Scalar& d_func_d_theta) const {
-    const Scalar& k1 = param[4];
-    const Scalar& k2 = param[5];
-    const Scalar& k3 = param[6];
-    const Scalar& k4 = param[7];
+  inline Scalar solveTheta(const Scalar& r_theta,
+                           Scalar& d_func_d_theta) const {
+    const Scalar& k1 = param_[4];
+    const Scalar& k2 = param_[5];
+    const Scalar& k3 = param_[6];
+    const Scalar& k4 = param_[7];
 
     Scalar theta = r_theta;
     for (int i = ITER; i > 0; i--) {
@@ -324,22 +328,26 @@ class KannalaBrandtCamera4 {
   inline bool unproject(const Vec2& proj, Vec4& p3d,
                         Mat42* d_p3d_d_proj = nullptr,
                         Mat4N* d_p3d_d_param = nullptr) const {
-    const Scalar& fx = param[0];
-    const Scalar& fy = param[1];
-    const Scalar& cx = param[2];
-    const Scalar& cy = param[3];
+    const Scalar& fx = param_[0];
+    const Scalar& fy = param_[1];
+    const Scalar& cx = param_[2];
+    const Scalar& cy = param_[3];
 
     const Scalar mx = (proj[0] - cx) / fx;
     const Scalar my = (proj[1] - cy) / fy;
 
-    Scalar theta = 0, sin_theta = 0, cos_theta = 1, thetad, scaling;
+    Scalar theta = 0;
+    Scalar sin_theta = 0;
+    Scalar cos_theta = 1;
+    Scalar thetad;
+    Scalar scaling;
     Scalar d_func_d_theta = 0;
 
     scaling = 1.0;
     thetad = sqrt(mx * mx + my * my);
 
     if (thetad > Sophus::Constants<Scalar>::epsilonSqrt()) {
-      theta = solve_theta<3>(thetad, d_func_d_theta);
+      theta = solveTheta<3>(thetad, d_func_d_theta);
 
       sin_theta = std::sin(theta);
       cos_theta = std::cos(theta);
@@ -390,7 +398,8 @@ class KannalaBrandtCamera4 {
       const Scalar d_res2_d_mx = -d_cos_d_thetad * d_thetad_d_mx;
       const Scalar d_res2_d_my = -d_cos_d_thetad * d_thetad_d_my;
 
-      Vec4 c0, c1;
+      Vec4 c0;
+      Vec4 c1;
 
       c0(0) = d_res0_d_mx / fx;
       c0(1) = d_res1_d_mx / fx;
@@ -432,14 +441,14 @@ class KannalaBrandtCamera4 {
   /// @brief Increment intrinsic parameters by inc
   ///
   /// @param[in] inc increment vector
-  void operator+=(const VecN& inc) { param += inc; }
+  void operator+=(const VecN& inc) { param_ += inc; }
 
   /// @brief Returns a const reference to the intrinsic parameters vector
   ///
   /// The order is following: \f$ \left[f_x, f_y, c_x, c_y, k_1, k_2, k_3, k_4
   /// \right]^T \f$
   /// @return const reference to the intrinsic parameters vector
-  const VecN& getParam() const { return param; }
+  const VecN& getParam() const { return param_; }
 
   /// @brief Set parameters from initialization
   ///
@@ -448,14 +457,14 @@ class KannalaBrandtCamera4 {
   ///
   /// @param[in] init vector [fx, fy, cx, cy]
   inline void setFromInit(const Vec4& init) {
-    param[0] = init[0];
-    param[1] = init[1];
-    param[2] = init[2];
-    param[3] = init[3];
-    param[4] = 0;
-    param[5] = 0;
-    param[6] = 0;
-    param[7] = 0;
+    param_[0] = init[0];
+    param_[1] = init[1];
+    param_[2] = init[2];
+    param_[3] = init[3];
+    param_[4] = 0;
+    param_[5] = 0;
+    param_[6] = 0;
+    param_[7] = 0;
   }
 
   /// @brief Projections used for unit-tests
@@ -472,7 +481,7 @@ class KannalaBrandtCamera4 {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
  private:
-  VecN param;
+  VecN param_;
 };
 
 }  // namespace basalt
