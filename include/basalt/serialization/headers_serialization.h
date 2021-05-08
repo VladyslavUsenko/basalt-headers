@@ -216,7 +216,7 @@ inline void load(Archive& ar, basalt::RdSpline<DIM, ORDER, Scalar>& spline) {
 
   basalt::RdSpline<DIM, ORDER, Scalar> new_spline(dt_ns, start_t_ns);
   for (const auto& k : knots) {
-    new_spline.knots_push_back(k);
+    new_spline.knotsPushBack(k);
   }
   spline = new_spline;
 }

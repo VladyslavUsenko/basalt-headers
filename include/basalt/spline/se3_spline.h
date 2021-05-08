@@ -144,18 +144,18 @@ class Se3Spline {
   ///
   /// @param[in] other spline to copy knots from
   void setKnots(const Se3Spline<N, _Scalar> &other) {
-    BASALT_ASSERT(other.dt_ns == dt_ns_);
-    BASALT_ASSERT(other.pos_spline.getKnots().size() ==
-                  other.pos_spline.getKnots().size());
+    BASALT_ASSERT(other.dt_ns_ == dt_ns_);
+    BASALT_ASSERT(other.pos_spline_.getKnots().size() ==
+                  other.pos_spline_.getKnots().size());
 
-    size_t num_knots = other.pos_spline.getKnots().size();
+    size_t num_knots = other.pos_spline_.getKnots().size();
 
     so3_spline_.resize(num_knots);
     pos_spline_.resize(num_knots);
 
     for (size_t i = 0; i < num_knots; i++) {
-      so3_spline_.getKnot(i) = other.so3_spline.getKnot(i);
-      pos_spline_.getKnot(i) = other.pos_spline.getKnot(i);
+      so3_spline_.getKnot(i) = other.so3_spline_.getKnot(i);
+      pos_spline_.getKnot(i) = other.pos_spline_.getKnot(i);
     }
   }
 
@@ -163,14 +163,14 @@ class Se3Spline {
   ///
   /// @param[in] knot knot to add
   inline void knotsPushBack(const SE3 &knot) {
-    so3_spline_.knots_push_back(knot.so3());
-    pos_spline_.knots_push_back(knot.translation());
+    so3_spline_.knotsPushBack(knot.so3());
+    pos_spline_.knotsPushBack(knot.translation());
   }
 
   /// @brief Remove knot from the back of the spline
   inline void knotsPopBack() {
-    so3_spline_.knots_pop_back();
-    pos_spline_.knots_pop_back();
+    so3_spline_.knotsPopBack();
+    pos_spline_.knotsPopBack();
   }
 
   /// @brief Return the first knot of the spline

@@ -143,15 +143,15 @@ class RdSpline {
   inline RdSpline<_DIM, _N, Scalar2> cast() const {
     RdSpline<_DIM, _N, Scalar2> res;
 
-    res.dt_ns = dt_ns_;
-    res.start_t_ns = start_t_ns_;
+    res.dt_ns_ = dt_ns_;
+    res.start_t_ns_ = start_t_ns_;
 
     for (int i = 0; i < _N; i++) {
-      res.pow_inv_dt[i] = pow_inv_dt_[i];
+      res.pow_inv_dt_[i] = pow_inv_dt_[i];
     }
 
     for (const auto& k : knots_) {
-      res.knots.emplace_back(k.template cast<Scalar2>());
+      res.knots_.emplace_back(k.template cast<Scalar2>());
     }
 
     return res;
