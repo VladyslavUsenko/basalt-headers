@@ -42,6 +42,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
+using std::sqrt;
+
 /// @brief Pinhole camera model
 ///
 /// This model has N=4 parameters \f$ \mathbf{i} = \left[f_x, f_y, c_x, c_y
@@ -65,23 +67,23 @@ class PinholeCamera {
   using Mat4N = Eigen::Matrix<Scalar, 4, N>;
 
   /// @brief Default constructor with zero intrinsics
-  PinholeCamera() { param.setZero(); }
+  PinholeCamera() { param_.setZero(); }
 
   /// @brief Construct camera model with given vector of intrinsics
   ///
   /// @param[in] p vector of intrinsic parameters [fx, fy, cx, cy]
-  explicit PinholeCamera(const VecN& p) { param = p; }
+  explicit PinholeCamera(const VecN& p) { param_ = p; }
 
   /// @brief Cast to different scalar type
   template <class Scalar2>
   PinholeCamera<Scalar2> cast() const {
-    return PinholeCamera<Scalar2>(param.template cast<Scalar2>());
+    return PinholeCamera<Scalar2>(param_.template cast<Scalar2>());
   }
 
   /// @brief Camera model name
   ///
   /// @return "pinhole"
-  static const std::string getName() { return "pinhole"; }
+  static std::string getName() { return "pinhole"; }
 
   /// @brief Project the point and optionally compute Jacobians
   ///
@@ -113,10 +115,10 @@ class PinholeCamera {
   inline bool project(const Vec4& p3d, Vec2& proj,
                       Mat24* d_proj_d_p3d = nullptr,
                       Mat2N* d_proj_d_param = nullptr) const {
-    const Scalar& fx = param[0];
-    const Scalar& fy = param[1];
-    const Scalar& cx = param[2];
-    const Scalar& cy = param[3];
+    const Scalar& fx = param_[0];
+    const Scalar& fy = param_[1];
+    const Scalar& cx = param_[2];
+    const Scalar& cy = param_[3];
 
     const Scalar& x = p3d[0];
     const Scalar& y = p3d[1];
@@ -172,10 +174,10 @@ class PinholeCamera {
   inline bool unproject(const Vec2& proj, Vec4& p3d,
                         Mat42* d_p3d_d_proj = nullptr,
                         Mat4N* d_p3d_d_param = nullptr) const {
-    const Scalar& fx = param[0];
-    const Scalar& fy = param[1];
-    const Scalar& cx = param[2];
-    const Scalar& cy = param[3];
+    const Scalar& fx = param_[0];
+    const Scalar& fy = param_[1];
+    const Scalar& cx = param_[2];
+    const Scalar& cy = param_[3];
 
     const Scalar mx = (proj[0] - cx) / fx;
     const Scalar my = (proj[1] - cy) / fy;
@@ -194,7 +196,8 @@ class PinholeCamera {
       const Scalar d_norm_inv_d_r2 =
           -Scalar(0.5) * norm_inv * norm_inv * norm_inv;
 
-      Vec4 c0, c1;
+      Vec4 c0;
+      Vec4 c1;
       c0(0) = (norm_inv + 2 * mx * mx * d_norm_inv_d_r2) / fx;
       c0(1) = (2 * my * mx * d_norm_inv_d_r2) / fx;
       c0(2) = 2 * mx * d_norm_inv_d_r2 / fx;
@@ -229,22 +232,22 @@ class PinholeCamera {
   ///
   /// @param[in] init vector [fx, fy, cx, cy]
   inline void setFromInit(const Vec4& init) {
-    param[0] = init[0];
-    param[1] = init[1];
-    param[2] = init[2];
-    param[3] = init[3];
+    param_[0] = init[0];
+    param_[1] = init[1];
+    param_[2] = init[2];
+    param_[3] = init[3];
   }
 
   /// @brief Increment intrinsic parameters by inc
   ///
   /// @param[in] inc increment vector
-  void operator+=(const VecN& inc) { param += inc; }
+  void operator+=(const VecN& inc) { param_ += inc; }
 
   /// @brief Returns a const reference to the intrinsic parameters vector
   ///
   /// The order is following: \f$ \left[f_x, f_y, c_x, c_y, \right]^T \f$
   /// @return const reference to the intrinsic parameters vector
-  const VecN& getParam() const { return param; }
+  const VecN& getParam() const { return param_; }
 
   /// @brief Projections used for unit-tests
   static Eigen::aligned_vector<PinholeCamera> getTestProjections() {
@@ -277,7 +280,7 @@ class PinholeCamera {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
  private:
-  VecN param;
+  VecN param_;
 };
 
 }  // namespace basalt

@@ -262,6 +262,7 @@ struct ImuData {
 
   /// @brief Default constructor with zero measurements.
   ImuData() {
+    t_ns = 0;
     accel.setZero();
     gyro.setZero();
   }

@@ -49,7 +49,7 @@ namespace basalt {
 /// @param[in] n
 /// @param[in] k
 /// @return binomial coefficient
-constexpr inline uint64_t C_n_k(uint64_t n, uint64_t k) {
+constexpr inline uint64_t binomialCoefficient(uint64_t n, uint64_t k) {
   if (k > n) {
     return 0;
   }
@@ -76,10 +76,10 @@ Eigen::Matrix<_Scalar, _N, _N> computeBlendingMatrix() {
       double sum = 0;
 
       for (int s = j; s < _N; ++s) {
-        sum += std::pow(-1.0, s - j) * C_n_k(_N, s - j) *
+        sum += std::pow(-1.0, s - j) * binomialCoefficient(_N, s - j) *
                std::pow(_N - s - 1.0, _N - 1.0 - i);
       }
-      m(j, i) = C_n_k(_N - 1, _N - 1 - i) * sum;
+      m(j, i) = binomialCoefficient(_N - 1, _N - 1 - i) * sum;
     }
   }
 
@@ -123,7 +123,7 @@ Eigen::Matrix<_Scalar, _N, _N> computeBaseCoefficients() {
   base_coefficients.setZero();
   base_coefficients.row(0).setOnes();
 
-  const int DEG = _N - 1;
+  constexpr int DEG = _N - 1;
   int order = DEG;
   for (int n = 1; n < _N; n++) {
     for (int i = DEG - order; i < _N; i++) {

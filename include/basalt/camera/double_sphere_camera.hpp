@@ -44,6 +44,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
+using std::sqrt;
+
 /// @brief Double Sphere camera model
 ///
 /// \image html ds.png
@@ -68,17 +70,17 @@ class DoubleSphereCamera {
   using Mat4N = Eigen::Matrix<Scalar, 4, N>;
 
   /// @brief Default constructor with zero intrinsics
-  DoubleSphereCamera() { param.setZero(); }
+  DoubleSphereCamera() { param_.setZero(); }
 
   /// @brief Construct camera model with given vector of intrinsics
   ///
   /// @param[in] p vector of intrinsic parameters [fx, fy, cx, cy, xi, alpha]
-  explicit DoubleSphereCamera(const VecN& p) { param = p; }
+  explicit DoubleSphereCamera(const VecN& p) { param_ = p; }
 
   /// @brief Cast to different scalar type
   template <class Scalar2>
   DoubleSphereCamera<Scalar2> cast() const {
-    return DoubleSphereCamera<Scalar2>(param.template cast<Scalar2>());
+    return DoubleSphereCamera<Scalar2>(param_.template cast<Scalar2>());
   }
 
   /// @brief Camera model name
@@ -122,13 +124,13 @@ class DoubleSphereCamera {
   inline bool project(const Vec4& p3d, Vec2& proj,
                       Mat24* d_proj_d_p3d = nullptr,
                       Mat2N* d_proj_d_param = nullptr) const {
-    const Scalar& fx = param[0];
-    const Scalar& fy = param[1];
-    const Scalar& cx = param[2];
-    const Scalar& cy = param[3];
+    const Scalar& fx = param_[0];
+    const Scalar& fy = param_[1];
+    const Scalar& cx = param_[2];
+    const Scalar& cy = param_[3];
 
-    const Scalar& xi = param[4];
-    const Scalar& alpha = param[5];
+    const Scalar& xi = param_[4];
+    const Scalar& alpha = param_[5];
 
     const Scalar& x = p3d[0];
     const Scalar& y = p3d[1];
@@ -247,13 +249,13 @@ class DoubleSphereCamera {
   inline bool unproject(const Vec2& proj, Vec4& p3d,
                         Mat42* d_p3d_d_proj = nullptr,
                         Mat4N* d_p3d_d_param = nullptr) const {
-    const Scalar& fx = param[0];
-    const Scalar& fy = param[1];
-    const Scalar& cx = param[2];
-    const Scalar& cy = param[3];
+    const Scalar& fx = param_[0];
+    const Scalar& fy = param_[1];
+    const Scalar& cx = param_[2];
+    const Scalar& cy = param_[3];
 
-    const Scalar& xi = param[4];
-    const Scalar& alpha = param[5];
+    const Scalar& xi = param_[4];
+    const Scalar& alpha = param_[5];
 
     const Scalar mx = (proj[0] - cx) / fx;
     const Scalar my = (proj[1] - cy) / fy;
@@ -261,10 +263,8 @@ class DoubleSphereCamera {
     const Scalar r2 = mx * mx + my * my;
 
     const bool is_valid =
-        alpha > Scalar(0.5) &&
-                (r2 >= Scalar(1) / (Scalar(2) * alpha - Scalar(1)))
-            ? false
-            : true;
+        !static_cast<bool>(alpha > Scalar(0.5) &&
+                           (r2 >= Scalar(1) / (Scalar(2) * alpha - Scalar(1))));
 
     const Scalar xi2_2 = alpha * alpha;
     const Scalar xi1_2 = xi * xi;
@@ -312,7 +312,8 @@ class DoubleSphereCamera {
       const Scalar d_k_d_mx = d_k_d_r2 * 2 * mx;
       const Scalar d_k_d_my = d_k_d_r2 * 2 * my;
 
-      Vec4 c0, c1;
+      Vec4 c0;
+      Vec4 c1;
 
       c0[0] = (mx * d_k_d_mx + k);
       c0[1] = my * d_k_d_mx;
@@ -371,12 +372,12 @@ class DoubleSphereCamera {
   ///
   /// @param[in] init vector [fx, fy, cx, cy]
   inline void setFromInit(const Vec4& init) {
-    param[0] = init[0];
-    param[1] = init[1];
-    param[2] = init[2];
-    param[3] = init[3];
-    param[4] = 0;
-    param[5] = 0.5;
+    param_[0] = init[0];
+    param_[1] = init[1];
+    param_[2] = init[2];
+    param_[3] = init[3];
+    param_[4] = 0;
+    param_[5] = 0.5;
   }
 
   /// @brief Increment intrinsic parameters by inc and clamp the values to the
@@ -384,9 +385,9 @@ class DoubleSphereCamera {
   ///
   /// @param[in] inc increment vector
   void operator+=(const VecN& inc) {
-    param += inc;
-    param[4] = std::clamp(param[4], Scalar(-1), Scalar(1));
-    param[5] = std::clamp(param[5], Scalar(0), Scalar(1));
+    param_ += inc;
+    param_[4] = std::clamp(param_[4], Scalar(-1), Scalar(1));
+    param_[5] = std::clamp(param_[5], Scalar(0), Scalar(1));
   }
 
   /// @brief Returns a const reference to the intrinsic parameters vector
@@ -394,7 +395,7 @@ class DoubleSphereCamera {
   /// The order is following: \f$ \left[f_x, f_y, c_x, c_y, \xi, \alpha
   /// \right]^T \f$
   /// @return const reference to the intrinsic parameters vector
-  const VecN& getParam() const { return param; }
+  const VecN& getParam() const { return param_; }
 
   /// @brief Projections used for unit-tests
   static Eigen::aligned_vector<DoubleSphereCamera> getTestProjections() {
@@ -409,7 +410,7 @@ class DoubleSphereCamera {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
  private:
-  VecN param;
+  VecN param_;
 };
 
 }  // namespace basalt

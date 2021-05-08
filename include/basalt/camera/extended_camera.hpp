@@ -44,6 +44,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
+using std::sqrt;
+
 /// @brief Extended unified camera model
 ///
 /// \image html eucm.png
@@ -68,23 +70,23 @@ class ExtendedUnifiedCamera {
   using Mat4N = Eigen::Matrix<Scalar, 4, N>;
 
   /// @brief Default constructor with zero intrinsics
-  ExtendedUnifiedCamera() { param.setZero(); }
+  ExtendedUnifiedCamera() { param_.setZero(); }
 
   /// @brief Construct camera model with given vector of intrinsics
   ///
   /// @param[in] p vector of intrinsic parameters [fx, fy, cx, cy, alpha, beta]
-  explicit ExtendedUnifiedCamera(const VecN& p) { param = p; }
+  explicit ExtendedUnifiedCamera(const VecN& p) { param_ = p; }
 
   /// @brief Cast to different scalar type
   template <class Scalar2>
   ExtendedUnifiedCamera<Scalar2> cast() const {
-    return ExtendedUnifiedCamera<Scalar2>(param.template cast<Scalar2>());
+    return ExtendedUnifiedCamera<Scalar2>(param_.template cast<Scalar2>());
   }
 
   /// @brief Camera model name
   ///
   /// @return "eucm"
-  static const std::string getName() { return "eucm"; }
+  static std::string getName() { return "eucm"; }
 
   /// @brief Project the point and optionally compute Jacobians
   ///
@@ -119,12 +121,12 @@ class ExtendedUnifiedCamera {
   inline bool project(const Vec4& p3d, Vec2& proj,
                       Mat24* d_proj_d_p3d = nullptr,
                       Mat2N* d_proj_d_param = nullptr) const {
-    const Scalar& fx = param[0];
-    const Scalar& fy = param[1];
-    const Scalar& cx = param[2];
-    const Scalar& cy = param[3];
-    const Scalar& alpha = param[4];
-    const Scalar& beta = param[5];
+    const Scalar& fx = param_[0];
+    const Scalar& fy = param_[1];
+    const Scalar& cx = param_[2];
+    const Scalar& cy = param_[3];
+    const Scalar& alpha = param_[4];
+    const Scalar& beta = param_[5];
 
     const Scalar& x = p3d[0];
     const Scalar& y = p3d[1];
@@ -221,13 +223,13 @@ class ExtendedUnifiedCamera {
   inline bool unproject(const Vec2& proj, Vec4& p3d,
                         Mat42* d_p3d_d_proj = nullptr,
                         Mat4N* d_p3d_d_param = nullptr) const {
-    const Scalar& fx = param[0];
-    const Scalar& fy = param[1];
-    const Scalar& cx = param[2];
-    const Scalar& cy = param[3];
+    const Scalar& fx = param_[0];
+    const Scalar& fy = param_[1];
+    const Scalar& cx = param_[2];
+    const Scalar& cy = param_[3];
 
-    const Scalar& alpha = param[4];
-    const Scalar& beta = param[5];
+    const Scalar& alpha = param_[4];
+    const Scalar& beta = param_[5];
 
     const Scalar mx = (proj[0] - cx) / fx;
     const Scalar my = (proj[1] - cy) / fy;
@@ -236,10 +238,8 @@ class ExtendedUnifiedCamera {
     const Scalar gamma = Scalar(1) - alpha;
 
     // Check if valid
-    const bool is_valid =
-        alpha > Scalar(0.5) && (r2 >= Scalar(1) / ((alpha - gamma) * beta))
-            ? false
-            : true;
+    const bool is_valid = !static_cast<bool>(
+        alpha > Scalar(0.5) && (r2 >= Scalar(1) / ((alpha - gamma) * beta)));
 
     const Scalar tmp1 = (Scalar(1) - alpha * alpha * beta * r2);
     const Scalar tmp_sqrt = sqrt(Scalar(1) - (alpha - gamma) * beta * r2);
@@ -264,7 +264,8 @@ class ExtendedUnifiedCamera {
       const Scalar d_norm_inv_d_r2 =
           -Scalar(0.5) * (Scalar(1) + Scalar(2) * k * d_k_d_r2) / norm2;
 
-      Vec4 c0, c1;
+      Vec4 c0;
+      Vec4 c1;
       c0[0] = (1 + 2 * mx * mx * d_norm_inv_d_r2);
       c0[1] = (2 * my * mx * d_norm_inv_d_r2);
       c0[2] = 2 * mx * (k * d_norm_inv_d_r2 + d_k_d_r2);
@@ -325,12 +326,12 @@ class ExtendedUnifiedCamera {
   ///
   /// @param[in] init vector [fx, fy, cx, cy]
   inline void setFromInit(const Vec4& init) {
-    param[0] = init[0];
-    param[1] = init[1];
-    param[2] = init[2];
-    param[3] = init[3];
-    param[4] = 0.5;
-    param[5] = 1;
+    param_[0] = init[0];
+    param_[1] = init[1];
+    param_[2] = init[2];
+    param_[3] = init[3];
+    param_[4] = 0.5;
+    param_[5] = 1;
   }
 
   /// @brief Increment intrinsic parameters by inc and clamp the values to the
@@ -338,12 +339,13 @@ class ExtendedUnifiedCamera {
   ///
   /// @param[in] inc increment vector
   void operator+=(const VecN& inc) {
-    param += inc;
+    param_ += inc;
 
     // alpha in [0, 1], beta > 0
-    param[4] = std::clamp(param[4], Scalar(0), Scalar(1));
-    if (param[5] < Sophus::Constants<Scalar>::epsilonSqrt())
-      param[5] = Sophus::Constants<Scalar>::epsilonSqrt();
+    param_[4] = std::clamp(param_[4], Scalar(0), Scalar(1));
+    if (param_[5] < Sophus::Constants<Scalar>::epsilonSqrt()) {
+      param_[5] = Sophus::Constants<Scalar>::epsilonSqrt();
+    }
   }
 
   /// @brief Returns a const reference to the intrinsic parameters vector
@@ -351,7 +353,7 @@ class ExtendedUnifiedCamera {
   /// The order is following: \f$ \left[f_x, f_y, c_x, c_y, \alpha, \beta
   /// \right]^T \f$
   /// @return const reference to the intrinsic parameters vector
-  const VecN& getParam() const { return param; }
+  const VecN& getParam() const { return param_; }
 
   /// @brief Projections used for unit-tests
   static Eigen::aligned_vector<ExtendedUnifiedCamera> getTestProjections() {
@@ -384,7 +386,7 @@ class ExtendedUnifiedCamera {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
  private:
-  VecN param;
+  VecN param_;
 };
 
 }  // namespace basalt

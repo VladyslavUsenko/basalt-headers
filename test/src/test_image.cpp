@@ -6,12 +6,12 @@
 #include "gtest/gtest.h"
 #include "test_utils.h"
 
-void setImageData(uint16_t *imageArray, int size) {
+void setImageData(uint16_t* image_array, int size) {
   double norm = RAND_MAX;
   norm /= (double)std::numeric_limits<uint16_t>::max();
 
   for (int i = 0; i < size; i++) {
-    imageArray[i] = (unsigned char)(rand() / norm);
+    image_array[i] = (unsigned char)(rand() / norm);
   }
 }
 
@@ -25,7 +25,7 @@ TEST(Image, ImageInterpolate) {
   double threshold = 1e-8;
 
   {
-    Eigen::Vector2i pi = offset;
+    const Eigen::Vector2i& pi = offset;
     Eigen::Vector2d pd = pi.cast<double>() + Eigen::Vector2d(eps, eps);
 
     uint16_t val1 = img(pi);
@@ -37,7 +37,7 @@ TEST(Image, ImageInterpolate) {
   }
 
   {
-    Eigen::Vector2i pi = offset;
+    const Eigen::Vector2i& pi = offset;
     Eigen::Vector2d pd = pi.cast<double>() + Eigen::Vector2d(eps, eps);
 
     uint16_t val1 = img(pi);
@@ -93,12 +93,12 @@ TEST(Image, ImageInterpolateGrad) {
 
   Eigen::Vector2d pd = offset.cast<double>() + Eigen::Vector2d(0.4, 0.34345);
 
-  Eigen::Vector3d valGrad = img.interpGrad<double>(pd);
-  Eigen::Matrix<double, 1, 2> J = valGrad.tail<2>();
+  Eigen::Vector3d val_grad = img.interpGrad<double>(pd);
+  Eigen::Matrix<double, 1, 2> J_x = val_grad.tail<2>();
 
   test_jacobian(
-      "d_res_d_x", J,
-      [&](const Eigen::Vector2d &x) {
+      "d_res_d_x", J_x,
+      [&](const Eigen::Vector2d& x) {
         return Eigen::Matrix<double, 1, 1>(img.interp<double>(pd + x));
       },
       Eigen::Vector2d::Zero(), 1);
