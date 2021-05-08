@@ -38,8 +38,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "test_utils.h"
 
 template <int N>
-void test_gyro_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
-  typename basalt::Se3Spline<N>::SO3JacobianStruct Ja;
+void testGyroRes(const basalt::Se3Spline<N> &s, int64_t t_ns) {
+  typename basalt::Se3Spline<N>::SO3JacobianStruct J_spline;
   Eigen::Matrix<double, 3, 12> J_bias;
 
   basalt::CalibGyroBias<double> bias;
@@ -49,7 +49,7 @@ void test_gyro_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
   // bias << 0.01, -0.02, 0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0;
   Eigen::Vector3d measurement = s.rotVelBody(t_ns);
 
-  s.gyroResidual(t_ns, measurement, bias, &Ja, &J_bias);
+  s.gyroResidual(t_ns, measurement, bias, &J_spline, &J_bias);
 
   for (size_t i = 0; i < s.numKnots(); i++) {
     Sophus::Vector3d x0;
@@ -58,16 +58,16 @@ void test_gyro_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
     std::stringstream ss;
     ss << "Spline order " << N << " d_gyro_res_d_knot" << i << " time " << t_ns;
 
-    Sophus::Matrix3d J;
+    Sophus::Matrix3d J_a;
 
-    if (i >= Ja.start_idx && i < Ja.start_idx + N) {
-      J = Ja.d_val_d_knot[i - Ja.start_idx];
+    if (i >= J_spline.start_idx && i < J_spline.start_idx + N) {
+      J_a = J_spline.d_val_d_knot[i - J_spline.start_idx];
     } else {
-      J.setZero();
+      J_a.setZero();
     }
 
     test_jacobian(
-        ss.str(), J,
+        ss.str(), J_a,
         [&](const Sophus::Vector3d &x) {
           basalt::Se3Spline<N> s1 = s;
           s1.getKnotSO3(i) = Sophus::SO3d::exp(x) * s.getKnotSO3(i);
@@ -96,8 +96,8 @@ void test_gyro_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
 }
 
 template <int N>
-void test_accel_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
-  typename basalt::Se3Spline<N>::AccelPosSO3JacobianStruct Ja;
+void testAccelRes(const basalt::Se3Spline<N> &s, int64_t t_ns) {
+  typename basalt::Se3Spline<N>::AccelPosSO3JacobianStruct J_spline;
   Eigen::Matrix3d J_g;
 
   Eigen::Matrix<double, 3, 9> J_bias;
@@ -109,7 +109,7 @@ void test_accel_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
   Eigen::Vector3d g(0, 0, -9.81);
   Eigen::Vector3d measurement = s.transAccelWorld(t_ns) + g;
 
-  s.accelResidual(t_ns, measurement, bias, g, &Ja, &J_bias, &J_g);
+  s.accelResidual(t_ns, measurement, bias, g, &J_spline, &J_bias, &J_g);
 
   for (size_t i = 0; i < s.numKnots(); i++) {
     Sophus::Vector6d x0;
@@ -118,16 +118,16 @@ void test_accel_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
     std::stringstream ss;
     ss << "Spline order " << N << " d_accel_res_d_knot" << i;
 
-    typename basalt::Se3Spline<N>::Mat36 J;
+    typename basalt::Se3Spline<N>::Mat36 J_a;
 
-    if (i >= Ja.start_idx && i < Ja.start_idx + N) {
-      J = Ja.d_val_d_knot[i - Ja.start_idx];
+    if (i >= J_spline.start_idx && i < J_spline.start_idx + N) {
+      J_a = J_spline.d_val_d_knot[i - J_spline.start_idx];
     } else {
-      J.setZero();
+      J_a.setZero();
     }
 
     test_jacobian(
-        ss.str(), J,
+        ss.str(), J_a,
         [&](const Sophus::Vector6d &x) {
           basalt::Se3Spline<N> s1 = s;
           s1.applyInc(i, x);
@@ -171,31 +171,31 @@ void test_accel_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
 }
 
 template <int N>
-void test_orientation_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
-  typename basalt::Se3Spline<N>::SO3JacobianStruct Ja;
+void testOrientationRes(const basalt::Se3Spline<N> &s, int64_t t_ns) {
+  typename basalt::Se3Spline<N>::SO3JacobianStruct J_spline;
 
   Sophus::SO3d measurement =
       s.pose(t_ns).so3();  // * Sophus::expd(Sophus::Vector6d::Random() / 10);
 
-  s.orientationResidual(t_ns, measurement, &Ja);
+  s.orientationResidual(t_ns, measurement, &J_spline);
 
   for (size_t i = 0; i < s.numKnots(); i++) {
     std::stringstream ss;
     ss << "Spline order " << N << " d_rot_res_d_knot" << i;
 
-    Sophus::Matrix3d J;
+    Sophus::Matrix3d J_a;
 
-    if (i >= Ja.start_idx && i < Ja.start_idx + N) {
-      J = Ja.d_val_d_knot[i - Ja.start_idx];
+    if (i >= J_spline.start_idx && i < J_spline.start_idx + N) {
+      J_a = J_spline.d_val_d_knot[i - J_spline.start_idx];
     } else {
-      J.setZero();
+      J_a.setZero();
     }
 
     Sophus::Vector3d x0;
     x0.setZero();
 
     test_jacobian(
-        ss.str(), J,
+        ss.str(), J_a,
         [&](const Sophus::Vector3d &x_rot) {
           Sophus::Vector6d x;
           x.setZero();
@@ -211,31 +211,31 @@ void test_orientation_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
 }
 
 template <int N>
-void test_position_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
-  typename basalt::Se3Spline<N>::PosJacobianStruct Ja;
+void testPositionRes(const basalt::Se3Spline<N> &s, int64_t t_ns) {
+  typename basalt::Se3Spline<N>::PosJacobianStruct J_spline;
 
   Eigen::Vector3d measurement =
       s.pose(t_ns)
           .translation();  // * Sophus::expd(Sophus::Vector6d::Random() / 10);
 
-  s.positionResidual(t_ns, measurement, &Ja);
+  s.positionResidual(t_ns, measurement, &J_spline);
 
   for (size_t i = 0; i < s.numKnots(); i++) {
     std::stringstream ss;
     ss << "Spline order " << N << " d_pos_res_d_knot" << i;
 
-    Sophus::Matrix3d J;
-    J.setZero();
+    Sophus::Matrix3d J_a;
+    J_a.setZero();
 
-    if (i >= Ja.start_idx && i < Ja.start_idx + N) {
-      J.diagonal().setConstant(Ja.d_val_d_knot[i - Ja.start_idx]);
+    if (i >= J_spline.start_idx && i < J_spline.start_idx + N) {
+      J_a.diagonal().setConstant(J_spline.d_val_d_knot[i - J_spline.start_idx]);
     }
 
     Sophus::Vector3d x0;
     x0.setZero();
 
     test_jacobian(
-        ss.str(), J,
+        ss.str(), J_a,
         [&](const Sophus::Vector3d &x_rot) {
           Sophus::Vector6d x;
           x.setZero();
@@ -251,10 +251,10 @@ void test_position_res(const basalt::Se3Spline<N> &s, int64_t t_ns) {
 }
 
 template <int N>
-void test_pose(const basalt::Se3Spline<N> &s, int64_t t_ns) {
-  typename basalt::Se3Spline<N>::PosePosSO3JacobianStruct Ja;
+void testPose(const basalt::Se3Spline<N> &s, int64_t t_ns) {
+  typename basalt::Se3Spline<N>::PosePosSO3JacobianStruct J_spline;
 
-  Sophus::SE3d res = s.pose(t_ns, &Ja);
+  Sophus::SE3d res = s.pose(t_ns, &J_spline);
 
   Sophus::Vector6d x0;
   x0.setZero();
@@ -263,16 +263,16 @@ void test_pose(const basalt::Se3Spline<N> &s, int64_t t_ns) {
     std::stringstream ss;
     ss << "Spline order " << N << " d_pose_d_knot" << i;
 
-    typename basalt::Se3Spline<N>::Mat6 J;
+    typename basalt::Se3Spline<N>::Mat6 J_a;
 
-    if (i >= Ja.start_idx && i < Ja.start_idx + N) {
-      J = Ja.d_val_d_knot[i - Ja.start_idx];
+    if (i >= J_spline.start_idx && i < J_spline.start_idx + N) {
+      J_a = J_spline.d_val_d_knot[i - J_spline.start_idx];
     } else {
-      J.setZero();
+      J_a.setZero();
     }
 
     test_jacobian(
-        ss.str(), J,
+        ss.str(), J_a,
         [&](const Sophus::Vector6d &x) {
           basalt::Se3Spline<N> s1 = s;
           s1.applyInc(i, x);
@@ -286,15 +286,15 @@ void test_pose(const basalt::Se3Spline<N> &s, int64_t t_ns) {
     Eigen::Matrix<double, 1, 1> x0;
     x0[0] = 0;
 
-    typename basalt::Se3Spline<N>::Vec6 J;
+    typename basalt::Se3Spline<N>::Vec6 J_a;
 
     //    J.template head<3>() = res.so3().inverse() * s.transVelWorld(t_ns);
     //    J.template tail<3>() = s.rotVelBody(t_ns);
 
-    s.d_pose_d_t(t_ns, J);
+    s.d_pose_d_t(t_ns, J_a);
 
     test_jacobian(
-        "J_pose_time", J,
+        "J_pose_time", J_a,
         [&](const Eigen::Matrix<double, 1, 1> &x) {
           int64_t t_ns_new = t_ns;
           t_ns_new += x[0] * 1e9;
@@ -306,55 +306,55 @@ void test_pose(const basalt::Se3Spline<N> &s, int64_t t_ns) {
 }
 
 TEST(SplineSE3, GyroResidualTest) {
-  static const int N = 5;
+  static constexpr int N = 5;
 
   const int num_knots = 3 * N;
   basalt::Se3Spline<N> s(int64_t(2e9));
   s.genRandomTrajectory(num_knots);
 
   for (int64_t t_ns = 0; t_ns < s.maxTimeNs(); t_ns += 1e8) {
-    test_gyro_res<N>(s, t_ns);
+    testGyroRes<N>(s, t_ns);
   }
 }
 
 TEST(SplineSE3, AccelResidualTest) {
-  static const int N = 5;
+  static constexpr int N = 5;
 
   const int num_knots = 3 * N;
   basalt::Se3Spline<N> s(int64_t(2e9));
   s.genRandomTrajectory(num_knots);
 
   for (int64_t t_ns = 0; t_ns < s.maxTimeNs(); t_ns += 1e8) {
-    test_accel_res<N>(s, t_ns);
+    testAccelRes<N>(s, t_ns);
   }
 }
 
 TEST(SplineSE3, PositionResidualTest) {
-  static const int N = 5;
+  static constexpr int N = 5;
 
   const int num_knots = 3 * N;
   basalt::Se3Spline<N> s(int64_t(2e9));
   s.genRandomTrajectory(num_knots);
 
   for (int64_t t_ns = 0; t_ns < s.maxTimeNs(); t_ns += 1e8) {
-    test_position_res<N>(s, t_ns);
+    testPositionRes<N>(s, t_ns);
   }
 }
 
 TEST(SplineSE3, OrientationResidualTest) {
-  static const int N = 5;
+  static constexpr int N = 5;
 
   const int num_knots = 3 * N;
   basalt::Se3Spline<N> s(int64_t(2e9));
   s.genRandomTrajectory(num_knots);
 
   for (int64_t t_ns = 0; t_ns < s.maxTimeNs(); t_ns += 1e8) {
-    test_orientation_res<N>(s, t_ns);
+    testOrientationRes<N>(s, t_ns);
   }
 }
 
 TEST(SplineSE3, PoseTest) {
-  static const int N = 5;
+  static constexpr int N = 5;
 
   const int num_knots = 3 * N;
   basalt::Se3Spline<N> s(int64_t(2e9));
@@ -363,6 +363,6 @@ TEST(SplineSE3, PoseTest) {
   int64_t offset = 100;
 
   for (int64_t t_ns = offset; t_ns < s.maxTimeNs() - offset; t_ns += 1e8) {
-    test_pose<N>(s, t_ns);
+    testPose<N>(s, t_ns);
   }
 }

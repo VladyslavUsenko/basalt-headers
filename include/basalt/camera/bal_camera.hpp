@@ -42,6 +42,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
+using std::sqrt;
+
 /// @brief Camera model used in the paper "Bundle Adjustment in the Large".
 ///
 /// See https://grail.cs.washington.edu/projects/bal/ for details.
@@ -84,23 +86,23 @@ class BalCamera {
   using Mat4N = Eigen::Matrix<Scalar, 4, N>;
 
   /// @brief Default constructor with zero intrinsics
-  BalCamera() { param.setZero(); }
+  BalCamera() { param_.setZero(); }
 
   /// @brief Construct camera model with given vector of intrinsics
   ///
   /// @param[in] p vector of intrinsic parameters [f, k1, k2]
-  explicit BalCamera(const VecN& p) { param = p; }
+  explicit BalCamera(const VecN& p) { param_ = p; }
 
   /// @brief Cast to different scalar type
   template <class Scalar2>
   BalCamera<Scalar2> cast() const {
-    return BalCamera<Scalar2>(param.template cast<Scalar2>());
+    return BalCamera<Scalar2>(param_.template cast<Scalar2>());
   }
 
   /// @brief Camera model name
   ///
   /// @return "bal"
-  static const std::string getName() { return "bal"; }
+  static std::string getName() { return "bal"; }
 
   /// @brief Project the point and optionally compute Jacobians
   ///
@@ -114,9 +116,9 @@ class BalCamera {
   inline bool project(const Vec4& p3d, Vec2& proj,
                       Mat24* d_proj_d_p3d = nullptr,
                       Mat2N* d_proj_d_param = nullptr) const {
-    const Scalar& f = param[0];
-    const Scalar& k1 = param[1];
-    const Scalar& k2 = param[2];
+    const Scalar& f = param_[0];
+    const Scalar& k1 = param_[1];
+    const Scalar& k2 = param_[2];
 
     const Scalar& x = p3d[0];
     const Scalar& y = p3d[1];
@@ -178,9 +180,9 @@ class BalCamera {
   inline bool unproject(const Vec2& proj, Vec4& p3d,
                         Mat42* d_p3d_d_proj = nullptr,
                         Mat4N* d_p3d_d_param = nullptr) const {
-    const Scalar& f = param[0];
-    const Scalar& k1 = param[1];
-    const Scalar& k2 = param[2];
+    const Scalar& f = param_[0];
+    const Scalar& k1 = param_[1];
+    const Scalar& k2 = param_[2];
 
     const Scalar& u = proj[0];
     const Scalar& v = proj[1];
@@ -197,13 +199,13 @@ class BalCamera {
 
       const Scalar tmp = k1 + k2 * Scalar(2) * r2;
 
-      Mat2 J;
-      J(0, 0) = (rp + Scalar(2) * p[0] * p[0] * tmp);
-      J(1, 1) = (rp + Scalar(2) * p[1] * p[1] * tmp);
-      J(1, 0) = J(0, 1) = p[0] * p[1] * Scalar(2) * tmp;
+      Mat2 J_p;
+      J_p(0, 0) = (rp + Scalar(2) * p[0] * p[0] * tmp);
+      J_p(1, 1) = (rp + Scalar(2) * p[1] * p[1] * tmp);
+      J_p(1, 0) = J_p(0, 1) = p[0] * p[1] * Scalar(2) * tmp;
 
-      const Vec2 dp =
-          (J.transpose() * J).inverse() * J.transpose() * (pp_computed - pp);
+      const Vec2 dp = (J_p.transpose() * J_p).inverse() * J_p.transpose() *
+                      (pp_computed - pp);
 
       p -= dp;
     }
@@ -227,22 +229,22 @@ class BalCamera {
   ///
   /// @param[in] init vector [fx, fy, cx, cy]
   inline void setFromInit(const Vec4& init) {
-    param[0] = init[0];
-    param[1] = 0;
-    param[2] = 0;
+    param_[0] = init[0];
+    param_[1] = 0;
+    param_[2] = 0;
   }
 
   /// @brief Increment intrinsic parameters by inc and clamp the values to the
   /// valid range
   ///
   /// @param[in] inc increment vector
-  void operator+=(const VecN& inc) { param += inc; }
+  void operator+=(const VecN& inc) { param_ += inc; }
 
   /// @brief Returns a const reference to the intrinsic parameters vector
   ///
   /// The order is following: \f$ \left[f, k1, k2 \right]^T \f$
   /// @return const reference to the intrinsic parameters vector
-  const VecN& getParam() const { return param; }
+  const VecN& getParam() const { return param_; }
 
   /// @brief Projections used for unit-tests
   static Eigen::aligned_vector<BalCamera> getTestProjections() {
@@ -267,7 +269,7 @@ class BalCamera {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
  private:
-  VecN param;
+  VecN param_;
 };
 
 }  // namespace basalt

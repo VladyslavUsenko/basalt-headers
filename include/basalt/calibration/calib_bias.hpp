@@ -60,42 +60,42 @@ class CalibAccelBias {
   using Mat33 = Eigen::Matrix<Scalar, 3, 3>;
 
   /// @brief Default constructor with zero initialization.
-  inline CalibAccelBias() { accel_bias_full.setZero(); }
+  inline CalibAccelBias() { accel_bias_full_.setZero(); }
 
   /// @brief  Set calibration to random values (used in unit-tests).
   inline void setRandom() {
-    accel_bias_full.setRandom();
-    accel_bias_full.template head<3>() /= 10;
-    accel_bias_full.template tail<6>() /= 100;
+    accel_bias_full_.setRandom();
+    accel_bias_full_.template head<3>() /= 10;
+    accel_bias_full_.template tail<6>() /= 100;
   }
 
   /// @brief Return const vector of parameters.
   /// See detailed description in \ref CalibAccelBias.
   inline const Eigen::Matrix<Scalar, 9, 1>& getParam() const {
-    return accel_bias_full;
+    return accel_bias_full_;
   }
 
   /// @brief Return vector of parameters. See detailed description in \ref
   /// CalibAccelBias.
-  inline Eigen::Matrix<Scalar, 9, 1>& getParam() { return accel_bias_full; }
+  inline Eigen::Matrix<Scalar, 9, 1>& getParam() { return accel_bias_full_; }
 
   /// @brief Increment the calibration vector
   ///
   /// @param inc increment vector
   inline void operator+=(const Eigen::Matrix<Scalar, 9, 1>& inc) {
-    accel_bias_full += inc;
+    accel_bias_full_ += inc;
   }
 
   /// @brief Return bias vector and scale matrix. See detailed description in
   /// \ref CalibAccelBias.
   inline void getBiasAndScale(Vec3& accel_bias, Mat33& accel_scale) const {
-    accel_bias = accel_bias_full.template head<3>();
+    accel_bias = accel_bias_full_.template head<3>();
 
     accel_scale.setZero();
-    accel_scale.col(0) = accel_bias_full.template segment<3>(3);
-    accel_scale(1, 1) = accel_bias_full(6);
-    accel_scale(2, 1) = accel_bias_full(7);
-    accel_scale(2, 2) = accel_bias_full(8);
+    accel_scale.col(0) = accel_bias_full_.template segment<3>(3);
+    accel_scale(1, 1) = accel_bias_full_(6);
+    accel_scale(2, 1) = accel_bias_full_(7);
+    accel_scale(2, 2) = accel_bias_full_(8);
   }
 
   /// @brief Calibrate the measurement. See detailed description in
@@ -129,7 +129,7 @@ class CalibAccelBias {
   }
 
  private:
-  Eigen::Matrix<Scalar, 9, 1> accel_bias_full;
+  Eigen::Matrix<Scalar, 9, 1> accel_bias_full_;
 };
 
 /// @brief Static calibration for gyroscope.
@@ -148,39 +148,39 @@ class CalibGyroBias {
   using Mat33 = Eigen::Matrix<Scalar, 3, 3>;
 
   /// @brief Default constructor with zero initialization.
-  inline CalibGyroBias() { gyro_bias_full.setZero(); }
+  inline CalibGyroBias() { gyro_bias_full_.setZero(); }
 
   /// @brief  Set calibration to random values (used in unit-tests).
   inline void setRandom() {
-    gyro_bias_full.setRandom();
-    gyro_bias_full.template head<3>() /= 10;
-    gyro_bias_full.template tail<9>() /= 100;
+    gyro_bias_full_.setRandom();
+    gyro_bias_full_.template head<3>() /= 10;
+    gyro_bias_full_.template tail<9>() /= 100;
   }
 
   /// @brief Return const vector of parameters.
   /// See detailed description in \ref CalibGyroBias.
   inline const Eigen::Matrix<Scalar, 12, 1>& getParam() const {
-    return gyro_bias_full;
+    return gyro_bias_full_;
   }
 
   /// @brief Return vector of parameters.
   /// See detailed description in \ref CalibGyroBias.
-  inline Eigen::Matrix<Scalar, 12, 1>& getParam() { return gyro_bias_full; }
+  inline Eigen::Matrix<Scalar, 12, 1>& getParam() { return gyro_bias_full_; }
 
   /// @brief Increment the calibration vector
   ///
   /// @param inc increment vector
   inline void operator+=(const Eigen::Matrix<Scalar, 12, 1>& inc) {
-    gyro_bias_full += inc;
+    gyro_bias_full_ += inc;
   }
 
   /// @brief Return bias vector and scale matrix. See detailed description in
   /// \ref CalibGyroBias.
   inline void getBiasAndScale(Vec3& gyro_bias, Mat33& gyro_scale) const {
-    gyro_bias = gyro_bias_full.template head<3>();
-    gyro_scale.col(0) = gyro_bias_full.template segment<3>(3);
-    gyro_scale.col(1) = gyro_bias_full.template segment<3>(6);
-    gyro_scale.col(2) = gyro_bias_full.template segment<3>(9);
+    gyro_bias = gyro_bias_full_.template head<3>();
+    gyro_scale.col(0) = gyro_bias_full_.template segment<3>(3);
+    gyro_scale.col(1) = gyro_bias_full_.template segment<3>(6);
+    gyro_scale.col(2) = gyro_bias_full_.template segment<3>(9);
   }
 
   /// @brief Calibrate the measurement. See detailed description in
@@ -213,7 +213,7 @@ class CalibGyroBias {
   }
 
  private:
-  Eigen::Matrix<Scalar, 12, 1> gyro_bias_full;
+  Eigen::Matrix<Scalar, 12, 1> gyro_bias_full_;
 };
 
 }  // namespace basalt
