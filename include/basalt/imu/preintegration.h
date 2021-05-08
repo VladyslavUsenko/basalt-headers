@@ -168,7 +168,8 @@ class IntegratedImuMeasurement {
     PoseVelState<Scalar> new_state;
 
     MatNN F;
-    MatN3 A, G;
+    MatN3 A;
+    MatN3 G;
 
     propagateState(delta_state_, data_corrected, new_state, &F, &A, &G);
 
@@ -225,7 +226,8 @@ class IntegratedImuMeasurement {
     Scalar dt = delta_state_.t_ns * Scalar(1e-9);
     VecN res;
 
-    VecN bg_diff, ba_diff;
+    VecN bg_diff;
+    VecN ba_diff;
     bg_diff = d_state_d_bg_ * (curr_bg - bias_gyro_lin_);
     ba_diff = d_state_d_ba_ * (curr_ba - bias_accel_lin_);
 
