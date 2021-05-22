@@ -39,6 +39,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
+#include <basalt/camera/camera_static_assert.hpp>
+
 #include <basalt/utils/sophus_utils.hpp>
 
 namespace basalt {
@@ -120,9 +122,18 @@ class KannalaBrandtCamera4 {
   /// @param[out] d_proj_d_param point if not nullptr computed Jacobian of
   /// projection with respect to intrinsic parameters
   /// @return if projection is valid
-  inline bool project(const Vec4& p3d, Vec2& proj,
-                      Mat24* d_proj_d_p3d = nullptr,
-                      Mat2N* d_proj_d_param = nullptr) const {
+  template <class DerivedPoint3D, class DerivedPoint2D,
+            class DerivedJ3D = std::nullptr_t,
+            class DerivedJparam = std::nullptr_t>
+  inline bool project(const Eigen::MatrixBase<DerivedPoint3D>& p3d,
+                      Eigen::MatrixBase<DerivedPoint2D>& proj,
+                      DerivedJ3D d_proj_d_p3d = nullptr,
+                      DerivedJparam d_proj_d_param = nullptr) const {
+    checkProjectionDerivedTypes<DerivedPoint3D, DerivedPoint2D, DerivedJ3D,
+                                DerivedJparam, N>();
+
+    const typename EvalOrReference<DerivedPoint3D>::Type p3d_eval(p3d);
+
     const Scalar& fx = param_[0];
     const Scalar& fy = param_[1];
     const Scalar& cx = param_[2];
@@ -132,9 +143,9 @@ class KannalaBrandtCamera4 {
     const Scalar& k3 = param_[6];
     const Scalar& k4 = param_[7];
 
-    const Scalar& x = p3d[0];
-    const Scalar& y = p3d[1];
-    const Scalar& z = p3d[2];
+    const Scalar& x = p3d_eval[0];
+    const Scalar& y = p3d_eval[1];
+    const Scalar& z = p3d_eval[2];
 
     const Scalar r2 = x * x + y * y;
     const Scalar r = sqrt(r2);
@@ -160,7 +171,8 @@ class KannalaBrandtCamera4 {
       proj[0] = fx * mx + cx;
       proj[1] = fy * my + cy;
 
-      if (d_proj_d_p3d) {
+      if constexpr (!std::is_same_v<DerivedJ3D, std::nullptr_t>) {
+        BASALT_ASSERT(d_proj_d_p3d);
         const Scalar d_r_d_x = x / r;
         const Scalar d_r_d_y = y / r;
 
@@ -177,6 +189,8 @@ class KannalaBrandtCamera4 {
         d_r_theta_d_theta += Scalar(3) * k1;
         d_r_theta_d_theta *= theta2;
         d_r_theta_d_theta += Scalar(1);
+
+        d_proj_d_p3d->setZero();
 
         (*d_proj_d_p3d)(0, 0) =
             fx *
@@ -199,12 +213,12 @@ class KannalaBrandtCamera4 {
 
         (*d_proj_d_p3d)(0, 2) = fx * x * d_r_theta_d_theta * d_theta_d_z / r;
         (*d_proj_d_p3d)(1, 2) = fy * y * d_r_theta_d_theta * d_theta_d_z / r;
-
-        (*d_proj_d_p3d)(0, 3) = Scalar(0);
-        (*d_proj_d_p3d)(1, 3) = Scalar(0);
+      } else {
+        UNUSED(d_proj_d_p3d);
       }
 
-      if (d_proj_d_param) {
+      if constexpr (!std::is_same_v<DerivedJparam, std::nullptr_t>) {
+        BASALT_ASSERT(d_proj_d_param);
         (*d_proj_d_param).setZero();
         (*d_proj_d_param)(0, 0) = mx;
         (*d_proj_d_param)(0, 2) = Scalar(1);
@@ -217,6 +231,8 @@ class KannalaBrandtCamera4 {
         d_proj_d_param->col(5) = d_proj_d_param->col(4) * theta2;
         d_proj_d_param->col(6) = d_proj_d_param->col(5) * theta2;
         d_proj_d_param->col(7) = d_proj_d_param->col(6) * theta2;
+      } else {
+        UNUSED(d_proj_d_param);
       }
 
     } else {
@@ -228,7 +244,9 @@ class KannalaBrandtCamera4 {
       proj[0] = fx * x / z + cx;
       proj[1] = fy * y / z + cy;
 
-      if (d_proj_d_p3d) {
+      if constexpr (!std::is_same_v<DerivedJ3D, std::nullptr_t>) {
+        BASALT_ASSERT(d_proj_d_p3d);
+
         d_proj_d_p3d->setZero();
         const Scalar z2 = z * z;
 
@@ -237,14 +255,20 @@ class KannalaBrandtCamera4 {
 
         (*d_proj_d_p3d)(1, 1) = fy / z;
         (*d_proj_d_p3d)(1, 2) = -fy * y / z2;
+      } else {
+        UNUSED(d_proj_d_p3d);
       }
 
-      if (d_proj_d_param) {
+      if constexpr (!std::is_same_v<DerivedJparam, std::nullptr_t>) {
+        BASALT_ASSERT(d_proj_d_param);
+
         d_proj_d_param->setZero();
         (*d_proj_d_param)(0, 0) = x / z;
         (*d_proj_d_param)(0, 2) = Scalar(1);
         (*d_proj_d_param)(1, 1) = y / z;
         (*d_proj_d_param)(1, 3) = Scalar(1);
+      } else {
+        UNUSED(d_proj_d_param);
       }
     }
 
@@ -325,26 +349,32 @@ class KannalaBrandtCamera4 {
   /// @param[out] d_p3d_d_param point if not nullptr computed Jacobian of
   /// unprojection with respect to intrinsic parameters
   /// @return if unprojection is valid
-  inline bool unproject(const Vec2& proj, Vec4& p3d,
-                        Mat42* d_p3d_d_proj = nullptr,
-                        Mat4N* d_p3d_d_param = nullptr) const {
+  template <class DerivedPoint2D, class DerivedPoint3D,
+            class DerivedJ2D = std::nullptr_t,
+            class DerivedJparam = std::nullptr_t>
+  inline bool unproject(const Eigen::MatrixBase<DerivedPoint2D>& proj,
+                        Eigen::MatrixBase<DerivedPoint3D>& p3d,
+                        DerivedJ2D d_p3d_d_proj = nullptr,
+                        DerivedJparam d_p3d_d_param = nullptr) const {
+    checkUnprojectionDerivedTypes<DerivedPoint2D, DerivedPoint3D, DerivedJ2D,
+                                  DerivedJparam, N>();
+
+    const typename EvalOrReference<DerivedPoint2D>::Type proj_eval(proj);
+
     const Scalar& fx = param_[0];
     const Scalar& fy = param_[1];
     const Scalar& cx = param_[2];
     const Scalar& cy = param_[3];
 
-    const Scalar mx = (proj[0] - cx) / fx;
-    const Scalar my = (proj[1] - cy) / fy;
+    const Scalar mx = (proj_eval[0] - cx) / fx;
+    const Scalar my = (proj_eval[1] - cy) / fy;
 
-    Scalar theta = 0;
-    Scalar sin_theta = 0;
-    Scalar cos_theta = 1;
-    Scalar thetad;
-    Scalar scaling;
-    Scalar d_func_d_theta = 0;
-
-    scaling = 1.0;
-    thetad = sqrt(mx * mx + my * my);
+    Scalar theta(0);
+    Scalar sin_theta(0);
+    Scalar cos_theta(1);
+    Scalar thetad = sqrt(mx * mx + my * my);
+    Scalar scaling(1);
+    Scalar d_func_d_theta(0);
 
     if (thetad > Sophus::Constants<Scalar>::epsilonSqrt()) {
       theta = solveTheta<3>(thetad, d_func_d_theta);
@@ -354,12 +384,13 @@ class KannalaBrandtCamera4 {
       scaling = sin_theta / thetad;
     }
 
+    p3d.setZero();
     p3d[0] = mx * scaling;
     p3d[1] = my * scaling;
     p3d[2] = cos_theta;
-    p3d[3] = Scalar(0);
 
-    if (d_p3d_d_proj || d_p3d_d_param) {
+    if constexpr (!std::is_same_v<DerivedJ2D, std::nullptr_t> ||
+                  !std::is_same_v<DerivedJparam, std::nullptr_t>) {
       Scalar d_thetad_d_mx = Scalar(0);
       Scalar d_thetad_d_my = Scalar(0);
       Scalar d_scaling_d_thetad = Scalar(0);
@@ -398,25 +429,29 @@ class KannalaBrandtCamera4 {
       const Scalar d_res2_d_mx = -d_cos_d_thetad * d_thetad_d_mx;
       const Scalar d_res2_d_my = -d_cos_d_thetad * d_thetad_d_my;
 
-      Vec4 c0;
-      Vec4 c1;
+      constexpr int SIZE_3D = DerivedPoint3D::SizeAtCompileTime;
+      Eigen::Matrix<Scalar, SIZE_3D, 1> c0, c1;
 
+      c0.setZero();
       c0(0) = d_res0_d_mx / fx;
       c0(1) = d_res1_d_mx / fx;
       c0(2) = d_res2_d_mx / fx;
-      c0(3) = Scalar(0);
 
+      c1.setZero();
       c1(0) = d_res0_d_my / fy;
       c1(1) = d_res1_d_my / fy;
       c1(2) = d_res2_d_my / fy;
-      c1(3) = Scalar(0);
 
-      if (d_p3d_d_proj) {
+      if constexpr (!std::is_same_v<DerivedJ2D, std::nullptr_t>) {
+        BASALT_ASSERT(d_p3d_d_proj);
         d_p3d_d_proj->col(0) = c0;
         d_p3d_d_proj->col(1) = c1;
+      } else {
+        UNUSED(d_p3d_d_proj);
       }
 
-      if (d_p3d_d_param) {
+      if constexpr (!std::is_same_v<DerivedJparam, std::nullptr_t>) {
+        BASALT_ASSERT(d_p3d_d_param);
         d_p3d_d_param->setZero();
 
         d_p3d_d_param->col(2) = -c0;
@@ -428,13 +463,20 @@ class KannalaBrandtCamera4 {
         (*d_p3d_d_param)(0, 4) = mx * d_scaling_d_k1;
         (*d_p3d_d_param)(1, 4) = my * d_scaling_d_k1;
         (*d_p3d_d_param)(2, 4) = d_cos_d_k1;
-        (*d_p3d_d_param)(3, 4) = Scalar(0);
 
         d_p3d_d_param->col(5) = d_p3d_d_param->col(4) * theta2;
         d_p3d_d_param->col(6) = d_p3d_d_param->col(5) * theta2;
         d_p3d_d_param->col(7) = d_p3d_d_param->col(6) * theta2;
+      } else {
+        UNUSED(d_p3d_d_param);
+        UNUSED(d_scaling_d_k1);
+        UNUSED(d_cos_d_k1);
       }
+    } else {
+      UNUSED(d_p3d_d_proj);
+      UNUSED(d_p3d_d_param);
     }
+
     return true;
   }
 

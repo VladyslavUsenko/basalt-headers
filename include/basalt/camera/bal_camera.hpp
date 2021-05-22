@@ -38,6 +38,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
+#include <basalt/camera/camera_static_assert.hpp>
+
 #include <basalt/utils/sophus_utils.hpp>
 
 namespace basalt {
@@ -113,16 +115,25 @@ class BalCamera {
   /// @param[out] d_proj_d_param point if not nullptr computed Jacobian of
   /// projection with respect to intrinsic parameters
   /// @return if projection is valid
-  inline bool project(const Vec4& p3d, Vec2& proj,
-                      Mat24* d_proj_d_p3d = nullptr,
-                      Mat2N* d_proj_d_param = nullptr) const {
+  template <class DerivedPoint3D, class DerivedPoint2D,
+            class DerivedJ3D = std::nullptr_t,
+            class DerivedJparam = std::nullptr_t>
+  inline bool project(const Eigen::MatrixBase<DerivedPoint3D>& p3d,
+                      Eigen::MatrixBase<DerivedPoint2D>& proj,
+                      DerivedJ3D d_proj_d_p3d = nullptr,
+                      DerivedJparam d_proj_d_param = nullptr) const {
+    checkProjectionDerivedTypes<DerivedPoint3D, DerivedPoint2D, DerivedJ3D,
+                                DerivedJparam, N>();
+
+    const typename EvalOrReference<DerivedPoint3D>::Type p3d_eval(p3d);
+
     const Scalar& f = param_[0];
     const Scalar& k1 = param_[1];
     const Scalar& k2 = param_[2];
 
-    const Scalar& x = p3d[0];
-    const Scalar& y = p3d[1];
-    const Scalar& z = p3d[2];
+    const Scalar& x = p3d_eval[0];
+    const Scalar& y = p3d_eval[1];
+    const Scalar& z = p3d_eval[2];
 
     const Scalar mx = x / z;
     const Scalar my = y / z;
@@ -139,7 +150,8 @@ class BalCamera {
 
     const bool is_valid = z >= Sophus::Constants<Scalar>::epsilonSqrt();
 
-    if (d_proj_d_p3d) {
+    if constexpr (!std::is_same_v<DerivedJ3D, std::nullptr_t>) {
+      BASALT_ASSERT(d_proj_d_p3d);
       d_proj_d_p3d->setZero();
 
       const Scalar tmp = k1 + k2 * Scalar(2) * r2;
@@ -152,9 +164,12 @@ class BalCamera {
 
       (*d_proj_d_p3d)(0, 2) = -f * mx * (rp + Scalar(2) * tmp * r2) / z;
       (*d_proj_d_p3d)(1, 2) = -f * my * (rp + Scalar(2) * tmp * r2) / z;
+    } else {
+      UNUSED(d_proj_d_p3d);
     }
 
-    if (d_proj_d_param) {
+    if constexpr (!std::is_same_v<DerivedJparam, std::nullptr_t>) {
+      BASALT_ASSERT(d_proj_d_param);
       (*d_proj_d_param).setZero();
       (*d_proj_d_param)(0, 0) = mx * rp;
       (*d_proj_d_param)(1, 0) = my * rp;
@@ -162,6 +177,8 @@ class BalCamera {
       (*d_proj_d_param)(1, 1) = f * my * r2;
       (*d_proj_d_param)(0, 2) = f * mx * r4;
       (*d_proj_d_param)(1, 2) = f * my * r4;
+    } else {
+      UNUSED(d_proj_d_param);
     }
 
     return is_valid;
@@ -177,15 +194,24 @@ class BalCamera {
   /// @param[out] d_p3d_d_param point if not nullptr computed Jacobian of
   /// unprojection with respect to intrinsic parameters
   /// @return if unprojection is valid
-  inline bool unproject(const Vec2& proj, Vec4& p3d,
-                        Mat42* d_p3d_d_proj = nullptr,
-                        Mat4N* d_p3d_d_param = nullptr) const {
+  template <class DerivedPoint2D, class DerivedPoint3D,
+            class DerivedJ2D = std::nullptr_t,
+            class DerivedJparam = std::nullptr_t>
+  inline bool unproject(const Eigen::MatrixBase<DerivedPoint2D>& proj,
+                        Eigen::MatrixBase<DerivedPoint3D>& p3d,
+                        DerivedJ2D d_p3d_d_proj = nullptr,
+                        DerivedJparam d_p3d_d_param = nullptr) const {
+    checkUnprojectionDerivedTypes<DerivedPoint2D, DerivedPoint3D, DerivedJ2D,
+                                  DerivedJparam, N>();
+
+    const typename EvalOrReference<DerivedPoint2D>::Type proj_eval(proj);
+
     const Scalar& f = param_[0];
     const Scalar& k1 = param_[1];
     const Scalar& k2 = param_[2];
 
-    const Scalar& u = proj[0];
-    const Scalar& v = proj[1];
+    const Scalar& u = proj_eval[0];
+    const Scalar& v = proj_eval[1];
 
     const Vec2 pp(u / f, v / f);
 
@@ -210,15 +236,17 @@ class BalCamera {
       p -= dp;
     }
 
+    p3d.setZero();
     p3d[0] = p[0];
     p3d[1] = p[1];
     p3d[2] = 1;
-    p3d[3] = Scalar(0);
 
     p3d.normalize();
 
     BASALT_ASSERT_STREAM(d_p3d_d_proj == nullptr && d_p3d_d_param == nullptr,
                          "Jacobians for unprojection are not implemented");
+    UNUSED(d_p3d_d_proj);
+    UNUSED(d_p3d_d_param);
 
     return true;
   }

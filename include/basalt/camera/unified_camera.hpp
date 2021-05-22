@@ -38,6 +38,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
+#include <basalt/camera/camera_static_assert.hpp>
+
 #include <basalt/utils/sophus_utils.hpp>
 
 namespace basalt {
@@ -116,18 +118,24 @@ class UnifiedCamera {
   /// @param[out] d_proj_d_param point if not nullptr computed Jacobian of
   /// projection with respect to intrinsic parameters
   /// @return if projection is valid
-  inline bool project(const Vec4& p3d, Vec2& proj,
-                      Mat24* d_proj_d_p3d = nullptr,
-                      Mat2N* d_proj_d_param = nullptr) const {
+  template <class DerivedPoint3D, class DerivedPoint2D,
+            class DerivedJ3D = std::nullptr_t,
+            class DerivedJparam = std::nullptr_t>
+  inline bool project(const Eigen::MatrixBase<DerivedPoint3D>& p3d,
+                      Eigen::MatrixBase<DerivedPoint2D>& proj,
+                      DerivedJ3D d_proj_d_p3d = nullptr,
+                      DerivedJparam d_proj_d_param = nullptr) const {
+    const typename EvalOrReference<DerivedPoint3D>::Type p3d_eval(p3d);
+
     const Scalar& fx = param_[0];
     const Scalar& fy = param_[1];
     const Scalar& cx = param_[2];
     const Scalar& cy = param_[3];
     const Scalar& alpha = param_[4];
 
-    const Scalar& x = p3d[0];
-    const Scalar& y = p3d[1];
-    const Scalar& z = p3d[2];
+    const Scalar& x = p3d_eval[0];
+    const Scalar& y = p3d_eval[1];
+    const Scalar& z = p3d_eval[2];
 
     const Scalar r2 = x * x + y * y;
     const Scalar rho2 = r2 + z * z;
@@ -145,25 +153,28 @@ class UnifiedCamera {
                                          : alpha / (Scalar(1) - alpha);
     const bool is_valid = (z > -w * rho);
 
-    if (d_proj_d_p3d) {
+    if constexpr (!std::is_same_v<DerivedJ3D, std::nullptr_t>) {
+      BASALT_ASSERT(d_proj_d_p3d);
       const Scalar denom = norm * norm * rho;
       const Scalar mid = -(alpha * x * y);
       const Scalar add = norm * rho;
       const Scalar addz = (alpha * z + (Scalar(1) - alpha) * rho);
 
+      d_proj_d_p3d->setZero();
       (*d_proj_d_p3d)(0, 0) = fx * (add - x * x * alpha);
       (*d_proj_d_p3d)(1, 0) = fy * mid;
       (*d_proj_d_p3d)(0, 1) = fx * mid;
       (*d_proj_d_p3d)(1, 1) = fy * (add - y * y * alpha);
       (*d_proj_d_p3d)(0, 2) = -fx * x * addz;
       (*d_proj_d_p3d)(1, 2) = -fy * y * addz;
-      (*d_proj_d_p3d)(0, 3) = Scalar(0);
-      (*d_proj_d_p3d)(1, 3) = Scalar(0);
 
       (*d_proj_d_p3d) /= denom;
+    } else {
+      UNUSED(d_proj_d_p3d);
     }
 
-    if (d_proj_d_param) {
+    if constexpr (!std::is_same_v<DerivedJparam, std::nullptr_t>) {
+      BASALT_ASSERT(d_proj_d_param);
       const Scalar norm2 = norm * norm;
 
       (*d_proj_d_param).setZero();
@@ -179,6 +190,8 @@ class UnifiedCamera {
 
       (*d_proj_d_param)(0, 4) = tmp_x * tmp4;
       (*d_proj_d_param)(1, 4) = tmp_y * tmp4;
+    } else {
+      UNUSED(d_proj_d_param);
     }
 
     return is_valid;
@@ -203,28 +216,38 @@ class UnifiedCamera {
   /// \Theta &=
   ///  \begin{cases}
   ///  \mathbb{R}^2 & \mbox{if } \alpha \le 0.5
-  ///  \\ \{ \mathbf{u} \in \mathbb{R}^2 ~|~ r^2 \le \frac{(1-\alpha)^2}{2\alpha
+  ///  \\ \{ \mathbf{u} \in \mathbb{R}^2 ~|~ r^2 \le
+  ///  \frac{(1-\alpha)^2}{2\alpha
   ///  - 1} \}  & \mbox{if } \alpha > 0.5 \end{cases}
   /// \f}
   ///
   /// @param[in] proj point to unproject
   /// @param[out] p3d result of unprojection
-  /// @param[out] d_p3d_d_proj if not nullptr computed Jacobian of unprojection
-  /// with respect to proj
+  /// @param[out] d_p3d_d_proj if not nullptr computed Jacobian of
+  /// unprojection with respect to proj
   /// @param[out] d_p3d_d_param point if not nullptr computed Jacobian of
   /// unprojection with respect to intrinsic parameters
   /// @return if unprojection is valid
-  inline bool unproject(const Vec2& proj, Vec4& p3d,
-                        Mat42* d_p3d_d_proj = nullptr,
-                        Mat4N* d_p3d_d_param = nullptr) const {
+  template <class DerivedPoint2D, class DerivedPoint3D,
+            class DerivedJ2D = std::nullptr_t,
+            class DerivedJparam = std::nullptr_t>
+  inline bool unproject(const Eigen::MatrixBase<DerivedPoint2D>& proj,
+                        Eigen::MatrixBase<DerivedPoint3D>& p3d,
+                        DerivedJ2D d_p3d_d_proj = nullptr,
+                        DerivedJparam d_p3d_d_param = nullptr) const {
+    checkUnprojectionDerivedTypes<DerivedPoint2D, DerivedPoint3D, DerivedJ2D,
+                                  DerivedJparam, N>();
+
+    const typename EvalOrReference<DerivedPoint2D>::Type proj_eval(proj);
+
     const Scalar& fx = param_[0];
     const Scalar& fy = param_[1];
     const Scalar& cx = param_[2];
     const Scalar& cy = param_[3];
     const Scalar& alpha = param_[4];
 
-    const Scalar& u = proj[0];
-    const Scalar& v = proj[1];
+    const Scalar& u = proj_eval[0];
+    const Scalar& v = proj_eval[1];
 
     const Scalar xi = alpha / (Scalar(1) - alpha);
 
@@ -248,39 +271,44 @@ class UnifiedCamera {
 
     const Scalar k = (xi + n) / m;
 
+    p3d.setZero();
     p3d[0] = k * mx;
     p3d[1] = k * my;
     p3d[2] = k - xi;
-    p3d[3] = Scalar(0);
 
-    if (d_p3d_d_proj || d_p3d_d_param) {
+    if constexpr (!std::is_same_v<DerivedJ2D, std::nullptr_t> ||
+                  !std::is_same_v<DerivedJparam, std::nullptr_t>) {
       const Scalar dk_dmx = -Scalar(2) * mx * (n + xi) / (m * m) +
                             mx * (Scalar(1) - xi2) / (n * m);
       const Scalar dk_dmy = -Scalar(2) * my * (n + xi) / (m * m) +
                             my * (Scalar(1) - xi2) / (n * m);
 
-      Vec4 c0;
-      Vec4 c1;
+      constexpr int SIZE_3D = DerivedPoint3D::SizeAtCompileTime;
+      Eigen::Matrix<Scalar, SIZE_3D, 1> c0, c1;
 
+      c0.setZero();
       c0(0) = (dk_dmx * mx + k) / fx;
       c0(1) = dk_dmx * my / fx;
       c0(2) = dk_dmx / fx;
-      c0(3) = Scalar(0);
 
+      c1.setZero();
       c1(0) = dk_dmy * mx / fy;
       c1(1) = (dk_dmy * my + k) / fy;
       c1(2) = dk_dmy / fy;
-      c1(3) = Scalar(0);
 
       c0 *= (1 - alpha);
       c1 *= (1 - alpha);
 
-      if (d_p3d_d_proj) {
+      if constexpr (!std::is_same_v<DerivedJ2D, std::nullptr_t>) {
+        BASALT_ASSERT(d_p3d_d_proj);
         d_p3d_d_proj->col(0) = c0;
         d_p3d_d_proj->col(1) = c1;
+      } else {
+        UNUSED(d_p3d_d_proj);
       }
 
-      if (d_p3d_d_param) {
+      if constexpr (!std::is_same_v<DerivedJparam, std::nullptr_t>) {
+        BASALT_ASSERT(d_p3d_d_param);
         const Scalar d_xi_d_alpha =
             Scalar(1) / ((Scalar(1) - alpha) * (Scalar(1) - alpha));
         const Scalar d_m_d_alpha =
@@ -301,7 +329,12 @@ class UnifiedCamera {
         (*d_p3d_d_param)(0, 4) = dk_d_alpha * mx - k * mxx;
         (*d_p3d_d_param)(1, 4) = dk_d_alpha * my - k * myy;
         (*d_p3d_d_param)(2, 4) = dk_d_alpha - d_xi_d_alpha;
+      } else {
+        UNUSED(d_p3d_d_param);
       }
+    } else {
+      UNUSED(d_p3d_d_proj);
+      UNUSED(d_p3d_d_param);
     }
 
     return is_valid;

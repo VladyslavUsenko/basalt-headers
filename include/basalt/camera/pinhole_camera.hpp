@@ -38,6 +38,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
+#include <basalt/camera/camera_static_assert.hpp>
+
 #include <basalt/utils/sophus_utils.hpp>
 
 namespace basalt {
@@ -112,24 +114,35 @@ class PinholeCamera {
   /// @param[out] d_proj_d_param point if not nullptr computed Jacobian of
   /// projection with respect to intrinsic parameters
   /// @return if projection is valid
-  inline bool project(const Vec4& p3d, Vec2& proj,
-                      Mat24* d_proj_d_p3d = nullptr,
-                      Mat2N* d_proj_d_param = nullptr) const {
+  template <class DerivedPoint3D, class DerivedPoint2D,
+            class DerivedJ3D = std::nullptr_t,
+            class DerivedJparam = std::nullptr_t>
+  inline bool project(const Eigen::MatrixBase<DerivedPoint3D>& p3d,
+                      Eigen::MatrixBase<DerivedPoint2D>& proj,
+                      DerivedJ3D d_proj_d_p3d = nullptr,
+                      DerivedJparam d_proj_d_param = nullptr) const {
+    checkProjectionDerivedTypes<DerivedPoint3D, DerivedPoint2D, DerivedJ3D,
+                                DerivedJparam, N>();
+
+    const typename EvalOrReference<DerivedPoint3D>::Type p3d_eval(p3d);
+
     const Scalar& fx = param_[0];
     const Scalar& fy = param_[1];
     const Scalar& cx = param_[2];
     const Scalar& cy = param_[3];
 
-    const Scalar& x = p3d[0];
-    const Scalar& y = p3d[1];
-    const Scalar& z = p3d[2];
+    const Scalar& x = p3d_eval[0];
+    const Scalar& y = p3d_eval[1];
+    const Scalar& z = p3d_eval[2];
 
     proj[0] = fx * x / z + cx;
     proj[1] = fy * y / z + cy;
 
     const bool is_valid = z >= Sophus::Constants<Scalar>::epsilonSqrt();
 
-    if (d_proj_d_p3d) {
+    if constexpr (!std::is_same_v<DerivedJ3D, std::nullptr_t>) {
+      BASALT_ASSERT(d_proj_d_p3d);
+
       d_proj_d_p3d->setZero();
       const Scalar z2 = z * z;
 
@@ -138,14 +151,19 @@ class PinholeCamera {
 
       (*d_proj_d_p3d)(1, 1) = fy / z;
       (*d_proj_d_p3d)(1, 2) = -fy * y / z2;
+    } else {
+      UNUSED(d_proj_d_p3d);
     }
 
-    if (d_proj_d_param) {
+    if constexpr (!std::is_same_v<DerivedJparam, std::nullptr_t>) {
+      BASALT_ASSERT(d_proj_d_param);
       d_proj_d_param->setZero();
       (*d_proj_d_param)(0, 0) = x / z;
       (*d_proj_d_param)(0, 2) = Scalar(1);
       (*d_proj_d_param)(1, 1) = y / z;
       (*d_proj_d_param)(1, 3) = Scalar(1);
+    } else {
+      UNUSED(d_proj_d_param);
     }
 
     return is_valid;
@@ -166,60 +184,80 @@ class PinholeCamera {
   ///
   /// @param[in] proj point to unproject
   /// @param[out] p3d result of unprojection
-  /// @param[out] d_p3d_d_proj if not nullptr computed Jacobian of unprojection
-  /// with respect to proj
+  /// @param[out] d_p3d_d_proj if not nullptr computed Jacobian of
+  /// unprojection with respect to proj
   /// @param[out] d_p3d_d_param point if not nullptr computed Jacobian of
   /// unprojection with respect to intrinsic parameters
   /// @return if unprojection is valid
-  inline bool unproject(const Vec2& proj, Vec4& p3d,
-                        Mat42* d_p3d_d_proj = nullptr,
-                        Mat4N* d_p3d_d_param = nullptr) const {
+  template <class DerivedPoint2D, class DerivedPoint3D,
+            class DerivedJ2D = std::nullptr_t,
+            class DerivedJparam = std::nullptr_t>
+  inline bool unproject(const Eigen::MatrixBase<DerivedPoint2D>& proj,
+                        Eigen::MatrixBase<DerivedPoint3D>& p3d,
+                        DerivedJ2D d_p3d_d_proj = nullptr,
+                        DerivedJparam d_p3d_d_param = nullptr) const {
+    checkUnprojectionDerivedTypes<DerivedPoint2D, DerivedPoint3D, DerivedJ2D,
+                                  DerivedJparam, N>();
+
+    const typename EvalOrReference<DerivedPoint2D>::Type proj_eval(proj);
+
     const Scalar& fx = param_[0];
     const Scalar& fy = param_[1];
     const Scalar& cx = param_[2];
     const Scalar& cy = param_[3];
 
-    const Scalar mx = (proj[0] - cx) / fx;
-    const Scalar my = (proj[1] - cy) / fy;
+    const Scalar mx = (proj_eval[0] - cx) / fx;
+    const Scalar my = (proj_eval[1] - cy) / fy;
 
     const Scalar r2 = mx * mx + my * my;
 
     const Scalar norm = sqrt(Scalar(1) + r2);
     const Scalar norm_inv = Scalar(1) / norm;
 
+    p3d.setZero();
     p3d[0] = mx * norm_inv;
     p3d[1] = my * norm_inv;
     p3d[2] = norm_inv;
-    p3d[3] = Scalar(0);
 
-    if (d_p3d_d_proj || d_p3d_d_param) {
+    if constexpr (!std::is_same_v<DerivedJ2D, std::nullptr_t> ||
+                  !std::is_same_v<DerivedJparam, std::nullptr_t>) {
       const Scalar d_norm_inv_d_r2 =
           -Scalar(0.5) * norm_inv * norm_inv * norm_inv;
 
-      Vec4 c0;
-      Vec4 c1;
+      constexpr int SIZE_3D = DerivedPoint3D::SizeAtCompileTime;
+      Eigen::Matrix<Scalar, SIZE_3D, 1> c0, c1;
+
+      c0.setZero();
       c0(0) = (norm_inv + 2 * mx * mx * d_norm_inv_d_r2) / fx;
       c0(1) = (2 * my * mx * d_norm_inv_d_r2) / fx;
       c0(2) = 2 * mx * d_norm_inv_d_r2 / fx;
-      c0(3) = Scalar(0);
 
+      c1.setZero();
       c1(0) = (2 * my * mx * d_norm_inv_d_r2) / fy;
       c1(1) = (norm_inv + 2 * my * my * d_norm_inv_d_r2) / fy;
       c1(2) = 2 * my * d_norm_inv_d_r2 / fy;
-      c1(3) = Scalar(0);
 
-      if (d_p3d_d_proj) {
+      if constexpr (!std::is_same_v<DerivedJ2D, std::nullptr_t>) {
+        BASALT_ASSERT(d_p3d_d_proj);
         d_p3d_d_proj->col(0) = c0;
         d_p3d_d_proj->col(1) = c1;
+      } else {
+        UNUSED(d_p3d_d_proj);
       }
 
-      if (d_p3d_d_param) {
+      if constexpr (!std::is_same_v<DerivedJparam, std::nullptr_t>) {
+        BASALT_ASSERT(d_p3d_d_param);
         d_p3d_d_param->col(2) = -c0;
         d_p3d_d_param->col(3) = -c1;
 
         d_p3d_d_param->col(0) = -c0 * mx;
         d_p3d_d_param->col(1) = -c1 * my;
+      } else {
+        UNUSED(d_p3d_d_param);
       }
+    } else {
+      UNUSED(d_p3d_d_proj);
+      UNUSED(d_p3d_d_param);
     }
 
     return true;
