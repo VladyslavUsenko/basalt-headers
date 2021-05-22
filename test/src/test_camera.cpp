@@ -90,6 +90,71 @@ void testProjectJacobian() {
 }
 
 template <typename CamT>
+void testProjectJacobian3() {
+  Eigen::aligned_vector<CamT> test_cams = CamT::getTestProjections();
+
+  constexpr int N = CamT::N;
+
+  using Scalar = typename CamT::Scalar;
+  using VecN = typename CamT::VecN;
+  using Vec2 = typename CamT::Vec2;
+  using Vec3 = Eigen::Matrix<Scalar, 3, 1>;
+
+  using Mat23 = Eigen::Matrix<Scalar, 2, 3, Eigen::RowMajor>;
+  using Mat2N = Eigen::Matrix<Scalar, 2, N, Eigen::RowMajor>;
+
+  for (const CamT &cam : test_cams) {
+    for (int x = -10; x <= 10; x++) {
+      for (int y = -10; y <= 10; y++) {
+        for (int z = -1; z <= 5; z++) {
+          Vec3 p_init(x, y, z);
+
+          Scalar p_raw_array[3];
+          Scalar res_raw_array[2];
+          Scalar J_p_raw_array[2 * 3];
+          Scalar J_param_raw_array[2 * N];
+
+          Eigen::Map<Vec3> p(p_raw_array);
+          p = p_init;
+
+          Eigen::Map<Mat23> J_p(J_p_raw_array);
+          Eigen::Map<Mat2N> J_param(J_param_raw_array);
+
+          Eigen::Map<Vec2> res1(res_raw_array);
+
+          bool success = cam.project(p, res1, &J_p, nullptr);
+          success = cam.project(p, res1, nullptr, &J_param);
+
+          if (success) {
+            test_jacobian(
+                "d_r_d_p", J_p,
+                [&](const Vec3 &x) {
+                  Vec2 res;
+                  cam.project(p + x, res);
+                  return res;
+                },
+                Vec3::Zero());
+
+            test_jacobian(
+                "d_r_d_param", J_param,
+                [&](const VecN &x) {
+                  Vec2 res;
+
+                  CamT cam1 = cam;
+                  cam1 += x;
+
+                  cam1.project(p, res);
+                  return res;
+                },
+                VecN::Zero());
+          }
+        }
+      }
+    }
+  }
+}
+
+template <typename CamT>
 void testProjectUnproject() {
   Eigen::aligned_vector<CamT> test_cams = CamT::getTestProjections();
 
@@ -163,6 +228,64 @@ void testUnprojectJacobians() {
                 "d_r_d_param", J_param,
                 [&](const VecN &x) {
                   Vec4 res = Vec4::Zero();
+                  CamT cam1 = cam;
+                  cam1 += x;
+
+                  cam1.unproject(p, res);
+                  return res;
+                },
+                VecN::Zero());
+          }
+        }
+      }
+    }
+  }
+}
+
+template <typename CamT>
+void testUnprojectJacobians3() {
+  Eigen::aligned_vector<CamT> test_cams = CamT::getTestProjections();
+
+  using Scalar = typename CamT::Scalar;
+  constexpr int N = CamT::N;
+
+  using VecN = typename CamT::VecN;
+  using Vec2 = typename CamT::Vec2;
+  using Vec3 = Eigen::Matrix<Scalar, 3, 1>;
+
+  using Mat32 = Eigen::Matrix<Scalar, 3, 2, Eigen::RowMajor>;
+  using Mat3N = Eigen::Matrix<Scalar, 3, N, Eigen::RowMajor>;
+
+  for (const CamT &cam : test_cams) {
+    for (int x = -10; x <= 10; x++) {
+      for (int y = -10; y <= 10; y++) {
+        for (int z = 0; z <= 5; z++) {
+          Vec3 p_3d(x, y, z);
+
+          Vec2 p;
+          bool success = cam.project(p_3d, p);
+
+          if (success) {
+            Mat32 J_p;
+            Mat3N J_param;
+
+            Vec3 res1;
+            cam.unproject(p, res1, &J_p, nullptr);
+            cam.unproject(p, res1, nullptr, &J_param);
+
+            test_jacobian(
+                "d_r_d_p", J_p,
+                [&](const Vec2 &x) {
+                  Vec3 res = Vec3::Zero();
+                  cam.unproject(p + x, res);
+                  return res;
+                },
+                Vec2::Zero());
+
+            test_jacobian(
+                "d_r_d_param", J_param,
+                [&](const VecN &x) {
+                  Vec3 res = Vec3::Zero();
                   CamT cam1 = cam;
                   cam1 += x;
 
@@ -321,6 +444,95 @@ TEST(CameraTestCase, FovUnprojectJacobiansFloat) {
 
 ////////////////////////////////////////////////////////////////
 
+TEST(CameraTestCase, PinholeProjectJacobians3) {
+  testProjectJacobian3<basalt::PinholeCamera<double>>();
+}
+TEST(CameraTestCase, PinholeProjectJacobiansFloat3) {
+  testProjectJacobian3<basalt::PinholeCamera<float>>();
+}
+
+TEST(CameraTestCase, UnifiedProjectJacobians3) {
+  testProjectJacobian3<basalt::UnifiedCamera<double>>();
+}
+TEST(CameraTestCase, UnifiedProjectJacobiansFloat3) {
+  testProjectJacobian3<basalt::UnifiedCamera<float>>();
+}
+
+TEST(CameraTestCase, ExtendedUnifiedProjectJacobians3) {
+  testProjectJacobian3<basalt::ExtendedUnifiedCamera<double>>();
+}
+TEST(CameraTestCase, ExtendedUnifiedProjectJacobiansFloat3) {
+  testProjectJacobian3<basalt::ExtendedUnifiedCamera<float>>();
+}
+
+TEST(CameraTestCase, KannalaBrandtProjectJacobians3) {
+  testProjectJacobian3<basalt::KannalaBrandtCamera4<double>>();
+}
+TEST(CameraTestCase, KannalaBrandtProjectJacobiansFloat3) {
+  testProjectJacobian3<basalt::KannalaBrandtCamera4<float>>();
+}
+
+TEST(CameraTestCase, DoubleSphereJacobians3) {
+  testProjectJacobian3<basalt::DoubleSphereCamera<double>>();
+}
+TEST(CameraTestCase, FovCameraJacobians3) {
+  testProjectJacobian3<basalt::FovCamera<double>>();
+}
+
+TEST(CameraTestCase, BalCameraJacobians3) {
+  testProjectJacobian3<basalt::BalCamera<double>>();
+}
+
+TEST(CameraTestCase, BalCameraJacobiansFloat3) {
+  testProjectJacobian3<basalt::BalCamera<float>>();
+}
+
+////////////////////////////////////////////////////////////////
+
+TEST(CameraTestCase, PinholeUnprojectJacobians3) {
+  testUnprojectJacobians3<basalt::PinholeCamera<double>>();
+}
+TEST(CameraTestCase, PinholeUnprojectJacobiansFloat3) {
+  testUnprojectJacobians3<basalt::PinholeCamera<float>>();
+}
+
+TEST(CameraTestCase, UnifiedUnprojectJacobians3) {
+  testUnprojectJacobians3<basalt::UnifiedCamera<double>>();
+}
+TEST(CameraTestCase, UnifiedUnprojectJacobiansFloat3) {
+  testUnprojectJacobians3<basalt::UnifiedCamera<float>>();
+}
+
+TEST(CameraTestCase, ExtendedUnifiedUnprojectJacobians3) {
+  testUnprojectJacobians3<basalt::ExtendedUnifiedCamera<double>>();
+}
+TEST(CameraTestCase, ExtendedUnifiedUnprojectJacobiansFloat3) {
+  testUnprojectJacobians3<basalt::ExtendedUnifiedCamera<float>>();
+}
+
+TEST(CameraTestCase, KannalaBrandtUnprojectJacobians3) {
+  testUnprojectJacobians3<basalt::KannalaBrandtCamera4<double>>();
+}
+// TEST(CameraTestCase, KannalaBrandtUnprojectJacobiansFloat3) {
+//  test_unproject_jacobians3<basalt::KannalaBrandtCamera4<float>>();
+//}
+
+TEST(CameraTestCase, DoubleSphereUnprojectJacobians3) {
+  testUnprojectJacobians3<basalt::DoubleSphereCamera<double>>();
+}
+// TEST(CameraTestCase, DoubleSphereUnprojectJacobiansFloat3) {
+//  test_unproject_jacobians3<basalt::DoubleSphereCamera<float>>();
+//}
+
+TEST(CameraTestCase, FovUnprojectJacobians3) {
+  testUnprojectJacobians3<basalt::FovCamera<double>>();
+}
+TEST(CameraTestCase, FovUnprojectJacobiansFloat3) {
+  testUnprojectJacobians3<basalt::FovCamera<float>>();
+}
+
+////////////////////////////////////////////////////////////////
+
 template <typename CamT>
 void testStereographicProjectJacobian() {
   using Vec2 = typename CamT::Vec2;
@@ -414,4 +626,53 @@ TEST(CameraTestCase, StereographicParamUnprojectJacobians) {
 }
 TEST(CameraTestCase, StereographicParamUnprojectJacobiansFloat) {
   testStereographicUnprojectJacobian<basalt::StereographicParam<float>>();
+}
+
+template <class Scalar, int N>
+void testEvalOrReference() {
+  using VecType = Eigen::Matrix<Scalar, N, 1>;
+  using MapType = Eigen::Map<Eigen::Matrix<Scalar, N, 1>>;
+  using MatType = Eigen::Matrix<Scalar, N, N>;
+
+  Scalar raw_array[N];
+  MapType mapped_p(raw_array);
+  VecType p1, p2;
+  MatType m1;
+  p1.setRandom();
+  p2.setRandom();
+  m1.setRandom();
+  mapped_p.setRandom();
+
+  // Non-evaluated sum
+  auto sum = p1 + p2;
+  typename basalt::EvalOrReference<decltype(sum)>::Type res1(sum);
+  static_assert(std::is_same_v<VecType, decltype(res1)>);
+
+  // Non-evaluated operations with matrix
+  auto affine = m1 * p1 + p2;
+  typename basalt::EvalOrReference<decltype(affine)>::Type res2(affine);
+  static_assert(std::is_same_v<VecType, decltype(res2)>);
+
+  // Vector: Should be reference. No data copy.
+  typename basalt::EvalOrReference<decltype(p1)>::Type res3(p1);
+  static_assert(std::is_same_v<const VecType &, decltype(res3)>);
+  ASSERT_EQ(&res3[0], &p1[0]);
+
+  // Map: Should be reference. No data copy.
+  typename basalt::EvalOrReference<decltype(mapped_p)>::Type res4(mapped_p);
+  static_assert(
+      std::is_same_v<const Eigen::MatrixBase<MapType> &, decltype(res4)>);
+  ASSERT_EQ(&res4[0], &mapped_p[0]);
+
+  // Map with standard Eigen eval: Copies data. Should not be used in the code.
+  typename Eigen::internal::eval<MapType>::type res5(mapped_p);
+  static_assert(std::is_same_v<VecType, decltype(res5)>);
+  ASSERT_NE(&res5[0], &mapped_p[0]);
+}
+
+TEST(CameraTestCase, EvalOrReferenceTypeCast) {
+  testEvalOrReference<double, 3>();
+  testEvalOrReference<double, 4>();
+  testEvalOrReference<float, 3>();
+  testEvalOrReference<float, 4>();
 }
