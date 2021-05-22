@@ -131,8 +131,13 @@ class GenericCamera {
   /// @param[out] d_proj_d_p3d if not nullptr computed Jacobian of projection
   /// with respect to p3d
   /// @return if projection is valid
+  template <typename DerivedJ3D = std::nullptr_t>
   inline bool project(const Vec4& p3d, Vec2& proj,
-                      Mat24* d_proj_d_p3d = nullptr) const {
+                      DerivedJ3D d_proj_d_p3d = nullptr) const {
+    if constexpr (!std::is_same_v<DerivedJ3D, std::nullptr_t>) {
+      static_assert(std::is_same_v<DerivedJ3D, Mat24*>);
+    }
+
     bool res;
     std::visit(
         [&](const auto& cam) { res = cam.project(p3d, proj, d_proj_d_p3d); },
@@ -149,8 +154,13 @@ class GenericCamera {
   /// @param[out] d_p3d_d_proj if not nullptr computed Jacobian of unprojection
   /// with respect to proj
   /// @return if unprojection is valid
+  template <typename DerivedJ2D = std::nullptr_t>
   inline bool unproject(const Vec2& proj, Vec4& p3d,
-                        Mat42* d_p3d_d_proj = nullptr) const {
+                        DerivedJ2D d_p3d_d_proj = nullptr) const {
+    if constexpr (!std::is_same_v<DerivedJ2D, std::nullptr_t>) {
+      static_assert(std::is_same_v<DerivedJ2D, Mat42*>);
+    }
+
     bool res;
     std::visit(
         [&](const auto& cam) { res = cam.unproject(proj, p3d, d_p3d_d_proj); },
