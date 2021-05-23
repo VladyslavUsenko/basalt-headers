@@ -40,6 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <basalt/serialization/eigen_io.h>
 #include <basalt/calibration/calibration.hpp>
+#include <basalt/camera/bal_camera.hpp>
 
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/json.hpp>
@@ -194,6 +195,23 @@ inline void load(Archive& ar, basalt::FovCamera<Scalar>& cam) {
      cereal::make_nvp("w", intr[4]));
 
   cam = basalt::FovCamera<Scalar>(intr);
+}
+
+template <class Archive, class Scalar>
+inline void save(Archive& ar, const basalt::BalCamera<Scalar>& cam) {
+  ar(cereal::make_nvp("f", cam.getParam()[0]),
+     cereal::make_nvp("k1", cam.getParam()[1]),
+     cereal::make_nvp("k2", cam.getParam()[2]));
+}
+
+template <class Archive, class Scalar>
+inline void load(Archive& ar, basalt::BalCamera<Scalar>& cam) {
+  Eigen::Matrix<Scalar, 3, 1> intr;
+
+  ar(cereal::make_nvp("f", intr[0]), cereal::make_nvp("k1", intr[1]),
+     cereal::make_nvp("k2", intr[2]));
+
+  cam = basalt::BalCamera<Scalar>(intr);
 }
 
 template <class Archive, class Scalar, int DIM, int ORDER>
