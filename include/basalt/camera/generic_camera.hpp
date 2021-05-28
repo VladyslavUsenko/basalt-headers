@@ -131,11 +131,13 @@ class GenericCamera {
   /// @param[out] d_proj_d_p3d if not nullptr computed Jacobian of projection
   /// with respect to p3d
   /// @return if projection is valid
-  template <typename DerivedJ3D = std::nullptr_t>
+  template <typename DerivedJ3DPtr = std::nullptr_t>
   inline bool project(const Vec4& p3d, Vec2& proj,
-                      DerivedJ3D d_proj_d_p3d = nullptr) const {
-    if constexpr (!std::is_same_v<DerivedJ3D, std::nullptr_t>) {
-      static_assert(std::is_same_v<DerivedJ3D, Mat24*>);
+                      DerivedJ3DPtr d_proj_d_p3d = nullptr) const {
+    if constexpr (!std::is_same_v<DerivedJ3DPtr, std::nullptr_t>) {
+      static_assert(std::is_pointer_v<DerivedJ3DPtr>);
+      using DerivedJ3D = typename std::remove_pointer<DerivedJ3DPtr>::type;
+      EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(DerivedJ3D, 2, 4);
     }
 
     bool res;
@@ -154,11 +156,63 @@ class GenericCamera {
   /// @param[out] d_p3d_d_proj if not nullptr computed Jacobian of unprojection
   /// with respect to proj
   /// @return if unprojection is valid
-  template <typename DerivedJ2D = std::nullptr_t>
+  template <typename DerivedJ2DPtr = std::nullptr_t>
   inline bool unproject(const Vec2& proj, Vec4& p3d,
-                        DerivedJ2D d_p3d_d_proj = nullptr) const {
-    if constexpr (!std::is_same_v<DerivedJ2D, std::nullptr_t>) {
-      static_assert(std::is_same_v<DerivedJ2D, Mat42*>);
+                        DerivedJ2DPtr d_p3d_d_proj = nullptr) const {
+    if constexpr (!std::is_same_v<DerivedJ2DPtr, std::nullptr_t>) {
+      static_assert(std::is_pointer_v<DerivedJ2DPtr>);
+      using DerivedJ2D = typename std::remove_pointer<DerivedJ2DPtr>::type;
+      EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(DerivedJ2D, 4, 2);
+    }
+
+    bool res;
+    std::visit(
+        [&](const auto& cam) { res = cam.unproject(proj, p3d, d_p3d_d_proj); },
+        variant);
+    return res;
+  }
+
+  /// @brief Project a single point and optionally compute Jacobian
+  ///
+  /// **SLOW** function, as it requires vtable lookup for every projection.
+  ///
+  /// @param[in] p3d point to project
+  /// @param[out] proj result of projection
+  /// @param[out] d_proj_d_p3d if not nullptr computed Jacobian of projection
+  /// with respect to p3d
+  /// @return if projection is valid
+  template <typename DerivedJ3DPtr = std::nullptr_t>
+  inline bool project(const Vec3& p3d, Vec2& proj,
+                      DerivedJ3DPtr d_proj_d_p3d = nullptr) const {
+    if constexpr (!std::is_same_v<DerivedJ3DPtr, std::nullptr_t>) {
+      static_assert(std::is_pointer_v<DerivedJ3DPtr>);
+      using DerivedJ3D = typename std::remove_pointer<DerivedJ3DPtr>::type;
+      EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(DerivedJ3D, 2, 3);
+    }
+
+    bool res;
+    std::visit(
+        [&](const auto& cam) { res = cam.project(p3d, proj, d_proj_d_p3d); },
+        variant);
+    return res;
+  }
+
+  /// @brief Unproject a single point and optionally compute Jacobian
+  ///
+  /// **SLOW** function, as it requires vtable lookup for every unprojection.
+  ///
+  /// @param[in] proj point to unproject
+  /// @param[out] p3d result of unprojection
+  /// @param[out] d_p3d_d_proj if not nullptr computed Jacobian of unprojection
+  /// with respect to proj
+  /// @return if unprojection is valid
+  template <typename DerivedJ2DPtr = std::nullptr_t>
+  inline bool unproject(const Vec2& proj, Vec3& p3d,
+                        DerivedJ2DPtr d_p3d_d_proj = nullptr) const {
+    if constexpr (!std::is_same_v<DerivedJ2DPtr, std::nullptr_t>) {
+      static_assert(std::is_pointer_v<DerivedJ2DPtr>);
+      using DerivedJ2D = typename std::remove_pointer<DerivedJ2DPtr>::type;
+      EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(DerivedJ2D, 3, 2);
     }
 
     bool res;
