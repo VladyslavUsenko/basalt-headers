@@ -45,6 +45,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace basalt {
 
+using std::cos;
+using std::sin;
 using std::sqrt;
 
 /// @brief Kannala-Brandt camera model
@@ -305,17 +307,17 @@ class KannalaBrandtCamera4 {
       func *= theta2;
       func += k1;
       func *= theta2;
-      func += 1;
+      func += Scalar(1);
       func *= theta;
 
-      d_func_d_theta = 9 * k4 * theta2;
-      d_func_d_theta += 7 * k3;
+      d_func_d_theta = Scalar(9) * k4 * theta2;
+      d_func_d_theta += Scalar(7) * k3;
       d_func_d_theta *= theta2;
-      d_func_d_theta += 5 * k2;
+      d_func_d_theta += Scalar(5) * k2;
       d_func_d_theta *= theta2;
-      d_func_d_theta += 3 * k1;
+      d_func_d_theta += Scalar(3) * k1;
       d_func_d_theta *= theta2;
-      d_func_d_theta += 1;
+      d_func_d_theta += Scalar(1);
 
       // Iteration of Newton method
       theta += (r_theta - func) / d_func_d_theta;
@@ -379,8 +381,8 @@ class KannalaBrandtCamera4 {
     if (thetad > Sophus::Constants<Scalar>::epsilonSqrt()) {
       theta = solveTheta<3>(thetad, d_func_d_theta);
 
-      sin_theta = std::sin(theta);
-      cos_theta = std::cos(theta);
+      sin_theta = sin(theta);
+      cos_theta = cos(theta);
       scaling = sin_theta / thetad;
     }
 
